@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>armsword的涅槃之地</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="搜索引擎,调度系统,北邮人,阿里巴巴,美团,滴滴出行,Presto,Linux,C&#x2F;C++">
+<meta property="og:type" content="website">
+<meta property="og:title" content="armsword的涅槃之地">
+<meta property="og:url" content="http://armsword.com/page/3/index.html">
+<meta property="og:site_name" content="armsword的涅槃之地">
+<meta property="og:description" content="搜索引擎,调度系统,北邮人,阿里巴巴,美团,滴滴出行,Presto,Linux,C&#x2F;C++">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 5.2.0"><link rel="alternate" href="/atom.xml" title="armsword的涅槃之地" type="application/atom+xml">
+</head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/document">Document</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer">
+      <article id="post-optimize-query-search-tree" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/10/12/optimize-query-search-tree/">一些常见的搜索查询树优化方法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2016/10/12/optimize-query-search-tree/" class="article-date">
+  <time datetime="2016-10-12T11:33:21.000Z" itemprop="datePublished">2016-10-12</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/">搜索引擎</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>搜索引擎服务收到一个Query后，一般引擎这边是这么搞得，解析语法，生成后缀表达式，即查询搜索树（Search Tree）。搜索查询树负责求交、求并和过滤。所以这个地方也是性能关键点。所以在解析语法后，一般要做查询搜索树优化，减少求交，求并和过滤操作的次数，以此来提高搜索服务的QPS和查询Latency。</p>
+<p>因为同事在负责新实时索引的性能优化，我正好负责将全量索引格式迁移到新实时索引上面，即实时索引的代码即支持全量索引也支持实时索引，减少运维和代码维护成本。我在查阅代码的同事，顺便与同事沟通了一些优化方法，进入全量索引代码里发现老的全量索引里已经有一些优化方法了，这些方法应该是市面上常见的方法，多数人也是应该知道的，这里记录下吧。主流优化操作主要包括以下四种：</p>
+<h3 id="全AND操作"><a href="#全AND操作" class="headerlink" title="全AND操作"></a>全AND操作</h3><p>如果父子节点都是AND，则可以合并，如（A &amp; B）&amp;  (C &amp; D)，优化后为 A &amp; B &amp; C &amp; D ，能提早发现交为空，并退出，如下图所示。</p>
+        
+          <p class="article-more-link">
+            <a href="/2016/10/12/optimize-query-search-tree/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-a-high-performace-and-thread-safe-cpp-log-lib" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/09/10/a-high-performace-and-thread-safe-cpp-log-lib/">dlog:高性能线程安全的C++日志库</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2016/09/10/a-high-performace-and-thread-safe-cpp-log-lib/" class="article-date">
+  <time datetime="2016-09-10T13:53:09.000Z" itemprop="datePublished">2016-09-10</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>打算闲暇时光写点靠谱的东西比如名字服务、KV存储等基础服务类软件，所以周末就先从封装一些基础库开始。上周末写了个C++日志库，支持多线程，性能也还不错，今天就做了下测试和修改了下bug。这里说下该库的使用方法，以及实现思路以及一些性能调优方法。欢迎交流和指教。</p>
+<h3 id="源码地址"><a href="#源码地址" class="headerlink" title="源码地址"></a>源码地址</h3><p><a target="_blank" rel="noopener" href="https://github.com/armsword/dlog">https://github.com/armsword/dlog</a></p>
+<h3 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h3><p>执行build.sh，在上层目录里会生成build文件，测试的可执行文件在release/bin目录下。</p>
+        
+          <p class="article-more-link">
+            <a href="/2016/09/10/a-high-performace-and-thread-safe-cpp-log-lib/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-earlybird" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/08/17/earlybird/">Earlybird:Twitter实时搜索引擎</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2016/08/17/earlybird/" class="article-date">
+  <time datetime="2016-08-16T16:49:46.000Z" itemprop="datePublished">2016-08-17</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/">搜索引擎</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>简单说下，2011年左右的Paper，Paper里说Twitter的实时索引和检索系统叫做Earlybird，Paper中主要讲了2件事，第一个就是支持Twitter的实时索引的倒排索引结构是怎么样的，第二个就是利用Java并发模型，处理并发读写。</p>
+<h4 id="该引擎功能："><a href="#该引擎功能：" class="headerlink" title="该引擎功能："></a>该引擎功能：</h4><ul>
+<li>低延时、高吞吐能力；</li>
+<li>能处理突发峰值（Weibo的特性）；</li>
+<li>突出时效性，时间越近，排名应该越靠前；</li>
+<li>该实时引擎支持AND、OR、NOT以及短语查询，实时性大约10S，查询latency 50ms；</li>
+</ul>
+<h4 id="该实时引擎，基于Lucene，使用Java开发，理由是："><a href="#该实时引擎，基于Lucene，使用Java开发，理由是：" class="headerlink" title="该实时引擎，基于Lucene，使用Java开发，理由是："></a>该实时引擎，基于Lucene，使用Java开发，理由是：</h4><ul>
+<li>利用已存在的Lucene代码，并用来做全量索引；</li>
+<li>适用于Twitter以JVM为中心的开发环境；</li>
+<li>利用Java和JVM提供容易理解的并发模型；</li>
+</ul>
+<p>其实上面几条理由与阿里很多开发项目类似，但是阿里的搜索引擎是C++编写的，质量也是非常不错的，叫问天(HA3)。</p>
+        
+          <p class="article-more-link">
+            <a href="/2016/08/17/earlybird/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-find-socket-bug-in-proxy" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/08/10/find-socket-bug-in-proxy/">记一次线上Bug的查找过程和思路</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2016/08/10/find-socket-bug-in-proxy/" class="article-date">
+  <time datetime="2016-08-10T13:33:40.000Z" itemprop="datePublished">2016-08-10</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>简单说下问题情况，Proxy即作为客户端又有服务端功能，其接受QS（Query Server）的请求，之后向BS（索引服务）发送请求，然后根据BS的返回结果Merge后返回给QS。不能泄露太多东西，所以本文主要是整理一些知识点和问题查找思路。</p>
+<h2 id="问题和现象："><a href="#问题和现象：" class="headerlink" title="问题和现象："></a>问题和现象：</h2><ul>
+<li>Proxy机器上出现大量的CLOSE_WAIT。</li>
+<li>Proxy失去服务能力，内存使用不为0，CPU使用率为0。</li>
+<li>机器报警，TcpListenOverFlows。</li>
+</ul>
+<figure class="highlight properties"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">命令查看：</span></span><br><span class="line"><span class="attr">netstat</span> <span class="string">-n | awk &#x27;/^tcp/ &#123;++S[$NF]&#125; END &#123;for(a in S) print a, S[a]&#125;&#x27;</span></span><br><span class="line"> </span><br><span class="line"> </span><br><span class="line"><span class="attr">结果：</span></span><br><span class="line"><span class="attr">TIME_WAIT</span> <span class="string">31927</span></span><br><span class="line"><span class="attr">CLOSE_WAIT</span> <span class="string">1570</span></span><br><span class="line"><span class="attr">ESTABLISHED</span> <span class="string">40</span></span><br><span class="line"> </span><br><span class="line"><span class="attr">TIME_WAIT：表示主动关闭，通过优化系统内核参数可容易解决。</span></span><br><span class="line"><span class="attr">CLOSE_WAIT：表示被动关闭，需要从程序本身出发。</span></span><br><span class="line"><span class="attr">ESTABLISHED：表示正在通信</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="attr">注：以上数据非真实线上情况，只为举例</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+        
+          <p class="article-more-link">
+            <a href="/2016/08/10/find-socket-bug-in-proxy/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-linux-max-locked-memory-ulimit" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/07/09/linux-max-locked-memory-ulimit/">浅谈Linux ulimit以及max memory locked</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2016/07/09/linux-max-locked-memory-ulimit/" class="article-date">
+  <time datetime="2016-07-09T13:39:42.000Z" itemprop="datePublished">2016-07-09</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>刚入职，我在索引这个组，需要熟悉下之前的搜索索引模块的代码，以便后续开发。我在新申请的测试机器上编译代码部署索引这个模块就报错了。定位出现问题的地方，代码大致流程是这样子的：</p>
+<figure class="highlight gcode"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> <span class="comment">(conf-&gt;use_memlock_for_mmap)</span> &#123;</span><br><span class="line">    <span class="comment">// add MAP_LOCKED to lock the buffer</span></span><br><span class="line"></span><br><span class="line">    attr_hash = <span class="comment">(AttrIndexInfo*)</span>mmap<span class="comment">(NULL, fsize, PROT_WRITE | PROT_READ, MAP_SHARED | MAP_LOCKED, fd, 0)</span>;</span><br><span class="line"></span><br><span class="line">&#125; else &#123;</span><br><span class="line"></span><br><span class="line">    attr_hash = <span class="comment">(AttrIndexInfo*)</span>mmap<span class="comment">(NULL, fsize, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0)</span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>而参数里配置了use_memlock_for_mmap 选项，于是代码就走到第一个mmap逻辑处。</p>
+<p>使用ulimit -a查看下系统属性：</p>
+<figure class="highlight mel"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[armsword@search-querybs1 ~]$ ulimit -a</span><br><span class="line">core <span class="keyword">file</span> <span class="keyword">size</span>          (blocks, -c) <span class="number">4194304</span></span><br><span class="line">data seg <span class="keyword">size</span>           (kbytes, -d) unlimited</span><br><span class="line">scheduling priority             (-e) <span class="number">0</span></span><br><span class="line"><span class="keyword">file</span> <span class="keyword">size</span>               (blocks, -f) unlimited</span><br><span class="line">pending signals                 (-i) <span class="number">256726</span></span><br><span class="line"><span class="keyword">max</span> locked <span class="keyword">memory</span>       (kbytes, -l) <span class="number">64</span></span><br><span class="line"><span class="keyword">max</span> <span class="keyword">memory</span> <span class="keyword">size</span>         (kbytes, -m) unlimited</span><br><span class="line">open files                      (-n) <span class="number">1000000</span></span><br><span class="line">pipe <span class="keyword">size</span>            (<span class="number">512</span> bytes, -p) <span class="number">8</span></span><br><span class="line">POSIX message queues     (bytes, -q) <span class="number">819200</span></span><br><span class="line">real-time priority              (-r) <span class="number">0</span></span><br><span class="line">stack <span class="keyword">size</span>              (kbytes, -s) <span class="number">10240</span></span><br><span class="line">cpu time               (seconds, -t) unlimited</span><br><span class="line"><span class="keyword">max</span> user processes              (-u) <span class="number">102400</span></span><br><span class="line">virtual <span class="keyword">memory</span>          (kbytes, -v) unlimited      （注：相当于limits.conf中的as和cgroup中的<span class="keyword">memory</span>.limit_in_bytes.）</span><br><span class="line"><span class="keyword">file</span> locks                      (-x) unlimited</span><br></pre></td></tr></table></figure>
+        
+          <p class="article-more-link">
+            <a href="/2016/07/09/linux-max-locked-memory-ulimit/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-several-realization-of-hash-algorithm" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/03/02/several-realization-of-hash-algorithm/">几种Hash算法的实现</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2015/03/02/several-realization-of-hash-algorithm/" class="article-date">
+  <time datetime="2015-03-02T08:38:51.000Z" itemprop="datePublished">2015-03-02</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">算法/数据结构</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>哈希被广泛使用在很多领域，如数据存储，加密，计算机视觉（几何哈希），此处就简单整理下几个常见的Hash函数的实现，有空陆续补充吧。</p>
+<h2 id="BKDR-Hash-Function"><a href="#BKDR-Hash-Function" class="headerlink" title="BKDR Hash Function"></a>BKDR Hash Function</h2><figure class="highlight angelscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 本算法由于在Brian Kernighan与Dennis Ritchie的《The C Programming Language》一书被展示而得名</span></span><br><span class="line"><span class="comment">// 是一种简单快捷的hash算法。</span></span><br><span class="line"><span class="comment">// 也是Java目前采用的字符串的Hash算法（累乘因子为31）。</span></span><br><span class="line"><span class="comment">// 此哈希函数用的最多</span></span><br><span class="line"></span><br><span class="line">template&lt;<span class="keyword">class</span> <span class="symbol">T</span>&gt;</span><br><span class="line"><span class="symbol">size_t</span> <span class="symbol">BKDRHash</span>(<span class="symbol">const</span> <span class="symbol">T</span> *<span class="symbol">str</span>)</span><br><span class="line">&#123;</span><br><span class="line">	register size_t hash = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">while</span> (size_t ch = (size_t)*str++)</span><br><span class="line">	&#123;		</span><br><span class="line">		hash = hash * <span class="number">131</span> + ch;   <span class="comment">// 也可以乘以31、131、1313、13131、131313..</span></span><br><span class="line">		<span class="comment">// 可将乘法分解为位运算及加减法可以提高效率</span></span><br><span class="line">		<span class="comment">// 如将上式表达为：hash = hash &lt;&lt; 7 + hash &lt;&lt; 1 + hash + ch;</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> hash;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>其中累乘因子也可以为131、1313、13131，比如下述代码就使用了33。</p>
+        
+          <p class="article-more-link">
+            <a href="/2015/03/02/several-realization-of-hash-algorithm/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-baidu-lossless-music-downloader" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/01/31/baidu-lossless-music-downloader/">写了一个Chrome插件 - 百度无损音乐下载插件</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2015/01/31/baidu-lossless-music-downloader/" class="article-date">
+  <time datetime="2015-01-31T12:39:13.000Z" itemprop="datePublished">2015-01-31</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Web-Script/">Web/Script</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>1、之前是从<a target="_blank" rel="noopener" href="http://music.baidu.com/">http://music.baidu.com/</a> 入手的，现在发现从此处入手已经找不到方法了。由于我又不是太懂JS语法，于是用了几十分钟，没分析到地址放弃。</p>
+<p>2、灵光一闪，从<a target="_blank" rel="noopener" href="http://fm.baidu.com/">http://fm.baidu.com/</a> 入手，在Chrome下抓包，细心分析后，果然发现蜘丝马迹，如下图所示：</p>
+<p><img src="/img/2014/08/20140809213933.png"></p>
+<p>见左图那个灰色的链接，我们打开[链接](<a target="_blank" rel="noopener" href="http://music.baidu.com/data/music/fmlink?songIds=1181294,291890,620023,7329389,448152,7325038,2119209,309877">http://music.baidu.com/data/music/fmlink?songIds=1181294,291890,620023,7329389,448152,7325038,2119209,309877</a>,     7331713,2121730&amp;type=mp3&amp;rate=320&amp;callback=jQuery1102037159983557648957_1407590773561&amp;_=1407590773570                                  “百度无损音乐下载方法”)看下，嘿，发现了许多歌曲信息哦，如下图所示：</p>
+        
+          <p class="article-more-link">
+            <a href="/2015/01/31/baidu-lossless-music-downloader/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <nav id="page-nav">
+        <a class="extend prev" rel="prev" href="/page/2/">&amp;laquo; 上一页</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/4/">下一页 &amp;raquo;</a>
+      </nav>
+    </section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a target="_blank" rel="noopener" href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>
