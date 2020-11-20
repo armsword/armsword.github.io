@@ -107,13 +107,6 @@
   </url>
   
   <url>
-    <loc>http://armsword.com/2014/10/26/webbench-source-analyse/</loc>
-    
-    <lastmod>2020-11-03</lastmod>
-    
-  </url>
-  
-  <url>
     <loc>http://armsword.com/2018/05/22/the-memory-management-and-tuning-experience-of-presto/</loc>
     
     <lastmod>2020-11-03</lastmod>
@@ -121,7 +114,7 @@
   </url>
   
   <url>
-    <loc>http://armsword.com/2014/03/07/linux-io-multiplexing/</loc>
+    <loc>http://armsword.com/2014/10/26/webbench-source-analyse/</loc>
     
     <lastmod>2020-11-03</lastmod>
     
@@ -142,6 +135,13 @@
   </url>
   
   <url>
+    <loc>http://armsword.com/2014/03/07/linux-io-multiplexing/</loc>
+    
+    <lastmod>2020-11-03</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://armsword.com/2016/07/09/linux-max-locked-memory-ulimit/</loc>
     
     <lastmod>2020-11-03</lastmod>
@@ -156,13 +156,6 @@
   </url>
   
   <url>
-    <loc>http://armsword.com/2013/12/14/tcp-and-udp-note/</loc>
-    
-    <lastmod>2020-11-03</lastmod>
-    
-  </url>
-  
-  <url>
     <loc>http://armsword.com/2019/11/13/the-configuration-settings-of-presto-memory-management/</loc>
     
     <lastmod>2020-11-03</lastmod>
@@ -170,7 +163,7 @@
   </url>
   
   <url>
-    <loc>http://armsword.com/2012/10/01/install-tools/</loc>
+    <loc>http://armsword.com/2013/12/14/tcp-and-udp-note/</loc>
     
     <lastmod>2020-11-03</lastmod>
     
@@ -178,6 +171,13 @@
   
   <url>
     <loc>http://armsword.com/2017/01/16/distributed-solutions-for-search-engines/</loc>
+    
+    <lastmod>2020-11-03</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://armsword.com/2012/10/01/install-tools/</loc>
     
     <lastmod>2020-11-03</lastmod>
     
