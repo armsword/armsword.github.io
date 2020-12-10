@@ -53,6 +53,60 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-distributed-solutions-for-search-engines" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2017/01/16/distributed-solutions-for-search-engines/">说说常见搜索引擎的分布式解决方法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2017/01/16/distributed-solutions-for-search-engines/" class="article-date">
+  <time datetime="2017-01-16T08:36:49.000Z" itemprop="datePublished">2017-01-16</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/">搜索引擎</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>随着索引数据的增大以及请求的增多，分布式搜索是最好的一种解决方案，主要解决两个问题，其一是能让单台机器load所有索引数据到内存中，其二是请求延时大，解决请求latency问题。我之前为团队写了篇专利，内容是关于分布式搜索解决方案的，所以粗略的看了下大部分开源的搜索引擎是怎么实现分布式的，后面的文章我会简单说下常见的搜索引擎的分布式解决方案。</p>
+<p>首先我们先说下几个简单概念，分布式搜索都是M*N（横向切分数据，纵向切分流量）这个维度去解决问题的，虽然不同产品或场景概念不完全相同，读者可以简单认为一份完整的数据，被均分为M份，每一份被称为一个分配（Shard或者Partition），然后提供对每个Shard提供N份副本（Replica）。那么分布式的设计就围绕着以下问题：</p>
+<ul>
+<li>如何选择合适的分片(Shard)，副本(Replica)的数量</li>
+<li>如何做路由，即怎么在所有Shard里找到一份完整的数据（找到对应的机器列表）</li>
+<li>如何做负载均衡</li>
+<li>如果提高服务的可扩展性</li>
+<li>如何提高服务的服务能力（QPS），当索引和搜索并发量增大时，如何平滑解决</li>
+<li>如何更新索引，全量和增量索引的更新解决方法</li>
+<li>如果提高服务的稳定性，单台服务挂掉怎么不影响整体服务等等</li>
+</ul>
+<p>下面就说下常见的搜索引擎的分布式解决方案，因为开源的搜索产品基本上都没有在工作中用过，对代码细节并不是太了解，只是研究了下其原理，所以理解的会有些偏差，看官们如果发现错误直接指出即可。</p>
+        
+          <p class="article-more-link">
+            <a href="/2017/01/16/distributed-solutions-for-search-engines/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-minder" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -332,51 +386,6 @@
         
           <p class="article-more-link">
             <a href="/2016/07/09/linux-max-locked-memory-ulimit/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-several-realization-of-hash-algorithm" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2015/03/02/several-realization-of-hash-algorithm/">几种Hash算法的实现</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2015/03/02/several-realization-of-hash-algorithm/" class="article-date">
-  <time datetime="2015-03-02T08:38:51.000Z" itemprop="datePublished">2015-03-02</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">算法/数据结构</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>哈希被广泛使用在很多领域，如数据存储，加密，计算机视觉（几何哈希），此处就简单整理下几个常见的Hash函数的实现，有空陆续补充吧。</p>
-<h2 id="BKDR-Hash-Function"><a href="#BKDR-Hash-Function" class="headerlink" title="BKDR Hash Function"></a>BKDR Hash Function</h2><figure class="highlight angelscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 本算法由于在Brian Kernighan与Dennis Ritchie的《The C Programming Language》一书被展示而得名</span></span><br><span class="line"><span class="comment">// 是一种简单快捷的hash算法。</span></span><br><span class="line"><span class="comment">// 也是Java目前采用的字符串的Hash算法（累乘因子为31）。</span></span><br><span class="line"><span class="comment">// 此哈希函数用的最多</span></span><br><span class="line"></span><br><span class="line">template&lt;<span class="keyword">class</span> <span class="symbol">T</span>&gt;</span><br><span class="line"><span class="symbol">size_t</span> <span class="symbol">BKDRHash</span>(<span class="symbol">const</span> <span class="symbol">T</span> *<span class="symbol">str</span>)</span><br><span class="line">&#123;</span><br><span class="line">	register size_t hash = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">while</span> (size_t ch = (size_t)*str++)</span><br><span class="line">	&#123;		</span><br><span class="line">		hash = hash * <span class="number">131</span> + ch;   <span class="comment">// 也可以乘以31、131、1313、13131、131313..</span></span><br><span class="line">		<span class="comment">// 可将乘法分解为位运算及加减法可以提高效率</span></span><br><span class="line">		<span class="comment">// 如将上式表达为：hash = hash &lt;&lt; 7 + hash &lt;&lt; 1 + hash + ch;</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> hash;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>其中累乘因子也可以为131、1313、13131，比如下述代码就使用了33。</p>
-        
-          <p class="article-more-link">
-            <a href="/2015/03/02/several-realization-of-hash-algorithm/#more">Read More</a>
           </p>
         
       
