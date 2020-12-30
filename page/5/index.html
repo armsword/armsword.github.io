@@ -53,6 +53,55 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-consistent-hashing" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/07/21/consistent-hashing/">一致性哈希算法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/07/21/consistent-hashing/" class="article-date">
+  <time datetime="2014-07-21T14:04:29.000Z" itemprop="datePublished">2014-07-21</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">算法/数据结构</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>一致性hash算法在分布式系统里面使用比较广，我也只是听说过这个概念，今天看到一个<a target="_blank" rel="noopener" href="http://www.codeproject.com/Articles/56138/Consistent-hashing">一致性hash开源库</a>，随手写篇文章，记录下吧。</p>
+<p>假如我们使用普通的哈希方式来处理负载均衡，到目标机器的映射使用的算法为：</p>
+<p>hash(o) mod n (n表示机器的总数)</p>
+<p>如果需要增加或减少一台机器的时候，算法就变为 hash(o) mod (n + 1) / hash(o) mod (n - 1)</p>
+<p>不仅需要重新编写代码，当服务器做了大量变更，大量的o会重定向不同的服务器而导致了缓冲不被命中，所以此时，就提出了一致性hash算法。</p>
+<h3 id="一致性哈希算法："><a href="#一致性哈希算法：" class="headerlink" title="一致性哈希算法："></a>一致性哈希算法：</h3><p>简单的说，哈希函数将o映射到 0 ~ 2^32 - 1的值区间，将这些数字头尾相连，然后将它们组织成一个闭合的圆环。如图一所示：<br><img src="/img/2014/07/2014721circle.jpg"></p>
+<p>要实现一致性哈希算法，思路就是下面2个步骤：</p>
+        
+          <p class="article-more-link">
+            <a href="/2014/07/21/consistent-hashing/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-light-cgi-server" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -328,52 +377,6 @@ Although the above answer is in lexicographical order, your answer could be in a
         
           <p class="article-more-link">
             <a href="/2013/12/14/tcp-and-udp-note/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-lru-cache" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2013/09/26/lru-cache/">实现一个LRU Cache</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2013/09/26/lru-cache/" class="article-date">
-  <time datetime="2013-09-26T07:20:43.000Z" itemprop="datePublished">2013-09-26</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">算法/数据结构</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>1.什么是Cache和LRU Cache</p>
-<p>狭义的Cache指的是位于CPU和主存间的快速RAM， 通常它不像系统主存那样使用DRAM技术，而使用昂贵但较快速的SRAM技术。 广义上的Cache指的是位于速度相差较大的两种硬件之间， 用于协调两者数据传输速度差异的结构。除了CPU与主存之间有Cache， 内存与硬盘之间也有Cache，乃至在硬盘与网络之间也有某种意义上的Cache── 称为Internet临时文件夹或网络内容缓存等。</p>
-<p>CPU中Cache能极大提高存取数据和指令的时间，让整个存储器(Cache和内存)既有Cache的高速度，又能有内存的大容量；操作系统中的内存Page中使用的Cache能使得频繁读取的内存磁盘文件较少的被置换出内存，从而提高访问速度；数据库中数据查询也用到Cache来提高效率；即便是Powerbuilder的DataWindow数据处理也用到了Cache的类似设计。</p>
-<p>Cache的算法设计常见的有FIFO(first in first out)和LRU(least recently used)。LRU是Least Recently Used的缩写，意思是最近最少使用，它是一种Cache替换算法。Cache的容量有限，因此当Cache的容量用完后，而又有新的内容需要添加进来时， 就需要挑选并舍弃原有的部分内容，从而腾出空间来放新内容。LRU Cache 的替换原则就是将最近最少使用的内容替换掉。其实，LRU译成最久未使用会更形象， 因为该算法每次替换掉的就是一段时间内最久没有使用过的内容。</p>
-        
-          <p class="article-more-link">
-            <a href="/2013/09/26/lru-cache/#more">Read More</a>
           </p>
         
       

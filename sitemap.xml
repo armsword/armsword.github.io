@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://armsword.com/2020/12/30/slove-jit-deoptimization-and-es-insert-performance-improvement/</loc>
+    
+    <lastmod>2020-12-30</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://armsword.com/2020/12/10/solve-presto-jvm-coredump/</loc>
     
     <lastmod>2020-12-10</lastmod>
@@ -86,14 +93,14 @@
   </url>
   
   <url>
-    <loc>http://armsword.com/2016/08/17/earlybird/</loc>
+    <loc>http://armsword.com/2020/06/23/jetty-cause-presto-memory-leak/</loc>
     
     <lastmod>2020-11-03</lastmod>
     
   </url>
   
   <url>
-    <loc>http://armsword.com/2020/06/23/jetty-cause-presto-memory-leak/</loc>
+    <loc>http://armsword.com/2016/08/17/earlybird/</loc>
     
     <lastmod>2020-11-03</lastmod>
     
@@ -312,7 +319,7 @@
 
   <url>
     <loc>http://armsword.com/</loc>
-    <lastmod>2020-12-10</lastmod>
+    <lastmod>2020-12-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
@@ -320,14 +327,21 @@
   
   <url>
     <loc>http://armsword.com/tags/presto/</loc>
-    <lastmod>2020-12-10</lastmod>
+    <lastmod>2020-12-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://armsword.com/tags/Presto/</loc>
-    <lastmod>2020-12-10</lastmod>
+    <lastmod>2020-12-30</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>http://armsword.com/tags/Elasticsearch/</loc>
+    <lastmod>2020-12-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -336,70 +350,70 @@
   
   <url>
     <loc>http://armsword.com/categories/Linux/</loc>
-    <lastmod>2020-12-10</lastmod>
+    <lastmod>2020-12-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://armsword.com/categories/Web-Script/</loc>
-    <lastmod>2020-12-10</lastmod>
+    <lastmod>2020-12-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://armsword.com/categories/%E7%AE%97%E6%B3%95-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/</loc>
-    <lastmod>2020-12-10</lastmod>
+    <lastmod>2020-12-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://armsword.com/categories/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/</loc>
-    <lastmod>2020-12-10</lastmod>
+    <lastmod>2020-12-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://armsword.com/categories/%E6%88%91%E7%9A%84%E7%94%9F%E6%B4%BB/</loc>
-    <lastmod>2020-12-10</lastmod>
+    <lastmod>2020-12-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://armsword.com/categories/C-C/</loc>
-    <lastmod>2020-12-10</lastmod>
+    <lastmod>2020-12-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://armsword.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/</loc>
-    <lastmod>2020-12-10</lastmod>
+    <lastmod>2020-12-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://armsword.com/categories/ML-NLP/</loc>
-    <lastmod>2020-12-10</lastmod>
+    <lastmod>2020-12-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://armsword.com/categories/Database/</loc>
-    <lastmod>2020-12-10</lastmod>
+    <lastmod>2020-12-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://armsword.com/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/</loc>
-    <lastmod>2020-12-10</lastmod>
+    <lastmod>2020-12-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>

@@ -6,7 +6,7 @@
   <link href="http://armsword.com/atom.xml" rel="self"/>
   
   <link href="http://armsword.com/"/>
-  <updated>2020-12-10T12:05:59.118Z</updated>
+  <updated>2020-12-30T13:34:49.300Z</updated>
   <id>http://armsword.com/</id>
   
   <author>
@@ -15,6 +15,33 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>解决JIT Deoptimization，ES插入性能提升7倍</title>
+    <link href="http://armsword.com/2020/12/30/slove-jit-deoptimization-and-es-insert-performance-improvement/"/>
+    <id>http://armsword.com/2020/12/30/slove-jit-deoptimization-and-es-insert-performance-improvement/</id>
+    <published>2020-12-30T12:47:51.000Z</published>
+    <updated>2020-12-30T13:34:49.300Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="背景描述"><a href="#背景描述" class="headerlink" title="背景描述"></a>背景描述</h2><p>ES节点写入到5.7K，会产生比较多的reject，CPU利用率才30%，部分索引延迟在增加。如图所示：</p><img src="/img/2020/12/arius.jpg" width = "90%" /><p>CPU使用率在30%，但是Rejected记录达到8W行</p><h2 id="原因分析"><a href="#原因分析" class="headerlink" title="原因分析"></a>原因分析</h2><p>写入场景，CPU打不满且出现异常，根据之前Presto的经验，大概率是JVM问题。打下火焰图看下：</p><img src="/img/2020/12/perf.png" width = "90%" /><p>可以看到接近35%的CPU在做JIT Deoptimization。</p><h3 id="JIT"><a href="#JIT" class="headerlink" title="JIT"></a>JIT</h3><p>为了提高热点代码（Hot Spot Code）的执行效率，在运行时，虚拟机将会把这些代码编译成与本地平台相关的机器码，并进行各种层次的优化，完成这个任务的编译器称为即时编译器（JIT）。</p><a id="more"></a><p>“热点代码”两类:</p><ul><li>被多次调用的方法</li><li>被多次执行的循环体 – 尽管编译动作是由循环体所触发的，但编译器依然会以整个方法（而不是单独的循环体）作为编译对象。</li></ul><p>编译器根据概率选择一些大多数时候都能提升运行速度的优化手段，当优化的假设不成立，出现“罕见陷阱”（Uncommon Trap）时可以通过逆优化（Deoptimization）退回到解释状态继续执行。而逆优化有参数是可以控制其阈值的，详细原理可以参考Presto遇到的问题：</p><p><a href="https://mp.weixin.qq.com/s/OK39zkUj-kJfY6HYixj_Lw">https://mp.weixin.qq.com/s/OK39zkUj-kJfY6HYixj_Lw</a></p><h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h2><p>所以JVM修改下面参数验证：</p><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-XX:<span class="attribute">ReservedCodeCacheSize</span>=512M</span><br><span class="line">-XX:<span class="attribute">PerMethodRecompilationCutoff</span>=10000</span><br><span class="line">-XX:<span class="attribute">PerBytecodeRecompilationCutoff</span>=10000</span><br></pre></td></tr></table></figure><h2 id="线上效果"><a href="#线上效果" class="headerlink" title="线上效果"></a>线上效果</h2><p>如下图所示：<br><img src="/img/2020/12/write.png" width = "90%" /></p><img src="/img/2020/12/cpu.png" width = "90%" /><p>写入性能从单节点5.7k/s提升到40k/s，性能提升7倍，而CPU使用率从30%下降到20%，提升了写入上限值。而这个具体能提升多少其实与具体的Case有关，之前测试遇到过逆优化占用90% CPU的情况。</p>]]></content>
+    
+    
+    <summary type="html">&lt;h2 id=&quot;背景描述&quot;&gt;&lt;a href=&quot;#背景描述&quot; class=&quot;headerlink&quot; title=&quot;背景描述&quot;&gt;&lt;/a&gt;背景描述&lt;/h2&gt;&lt;p&gt;ES节点写入到5.7K，会产生比较多的reject，CPU利用率才30%，部分索引延迟在增加。如图所示：&lt;/p&gt;
+&lt;img src=&quot;/img/2020/12/arius.jpg&quot; width = &quot;90%&quot; /&gt;
+
+&lt;p&gt;CPU使用率在30%，但是Rejected记录达到8W行&lt;/p&gt;
+&lt;h2 id=&quot;原因分析&quot;&gt;&lt;a href=&quot;#原因分析&quot; class=&quot;headerlink&quot; title=&quot;原因分析&quot;&gt;&lt;/a&gt;原因分析&lt;/h2&gt;&lt;p&gt;写入场景，CPU打不满且出现异常，根据之前Presto的经验，大概率是JVM问题。打下火焰图看下：&lt;/p&gt;
+&lt;img src=&quot;/img/2020/12/perf.png&quot; width = &quot;90%&quot; /&gt;
+
+&lt;p&gt;可以看到接近35%的CPU在做JIT Deoptimization。&lt;/p&gt;
+&lt;h3 id=&quot;JIT&quot;&gt;&lt;a href=&quot;#JIT&quot; class=&quot;headerlink&quot; title=&quot;JIT&quot;&gt;&lt;/a&gt;JIT&lt;/h3&gt;&lt;p&gt;为了提高热点代码（Hot Spot Code）的执行效率，在运行时，虚拟机将会把这些代码编译成与本地平台相关的机器码，并进行各种层次的优化，完成这个任务的编译器称为即时编译器（JIT）。&lt;/p&gt;</summary>
+    
+    
+    
+    
+    <category term="Elasticsearch" scheme="http://armsword.com/tags/Elasticsearch/"/>
+    
+  </entry>
   
   <entry>
     <title>Presto Master JVM Core问题调研</title>
@@ -506,31 +533,6 @@
     
     
     <category term="搜索引擎" scheme="http://armsword.com/categories/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/"/>
-    
-    
-  </entry>
-  
-  <entry>
-    <title>记一次线上Bug的查找过程和思路</title>
-    <link href="http://armsword.com/2016/08/10/find-socket-bug-in-proxy/"/>
-    <id>http://armsword.com/2016/08/10/find-socket-bug-in-proxy/</id>
-    <published>2016-08-10T13:33:40.000Z</published>
-    <updated>2020-11-03T07:37:50.321Z</updated>
-    
-    <content type="html"><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>简单说下问题情况，Proxy即作为客户端又有服务端功能，其接受QS（Query Server）的请求，之后向BS（索引服务）发送请求，然后根据BS的返回结果Merge后返回给QS。不能泄露太多东西，所以本文主要是整理一些知识点和问题查找思路。</p><h2 id="问题和现象："><a href="#问题和现象：" class="headerlink" title="问题和现象："></a>问题和现象：</h2><ul><li>Proxy机器上出现大量的CLOSE_WAIT。</li><li>Proxy失去服务能力，内存使用不为0，CPU使用率为0。</li><li>机器报警，TcpListenOverFlows。</li></ul><figure class="highlight properties"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">命令查看：</span></span><br><span class="line"><span class="attr">netstat</span> <span class="string">-n | awk &#x27;/^tcp/ &#123;++S[$NF]&#125; END &#123;for(a in S) print a, S[a]&#125;&#x27;</span></span><br><span class="line"> </span><br><span class="line"> </span><br><span class="line"><span class="attr">结果：</span></span><br><span class="line"><span class="attr">TIME_WAIT</span> <span class="string">31927</span></span><br><span class="line"><span class="attr">CLOSE_WAIT</span> <span class="string">1570</span></span><br><span class="line"><span class="attr">ESTABLISHED</span> <span class="string">40</span></span><br><span class="line"> </span><br><span class="line"><span class="attr">TIME_WAIT：表示主动关闭，通过优化系统内核参数可容易解决。</span></span><br><span class="line"><span class="attr">CLOSE_WAIT：表示被动关闭，需要从程序本身出发。</span></span><br><span class="line"><span class="attr">ESTABLISHED：表示正在通信</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="attr">注：以上数据非真实线上情况，只为举例</span></span><br><span class="line"></span><br></pre></td></tr></table></figure><a id="more"></a><h2 id="一些知识点"><a href="#一些知识点" class="headerlink" title="一些知识点"></a>一些知识点</h2><h3 id="TCP握手图"><a href="#TCP握手图" class="headerlink" title="TCP握手图"></a>TCP握手图</h3></div><div  align="center">    <img src="/img/2016/08/tcp.jpg" width = "550" height = "660" alt="" align=center /></div><h3 id="TIME-WAIT"><a href="#TIME-WAIT" class="headerlink" title="TIME_WAIT:"></a>TIME_WAIT:</h3><p>Linux系统下，TCP/IP连接断开后，会以TIME_WAIT状态保留一定的时间（2MSL：max segment lifetime），默认为4分钟，然后才会关闭回收资源。当并发请求过多的时候，就会产生大量的 TIME_WAIT状态的连接，无法及时断开的话，会占用大量的端口资源和服务器资源。<br>状态保持2MSL的原因：<br>1.防止上一次连接中的包，迷路后重新出现，影响新连接（经过2MSL，上一次连接中所有的重复包都会消失）<br>2.可靠的关闭TCP连接。在主动关闭方发送的最后一个 ack(fin) ，有可能丢失，这时被动方会重新发fin, 如果这时主动方处于 CLOSED 状态 ，就会响应 rst 而不是 ack。所以主动方要处于 TIME_WAIT 状态，而不能是 CLOSED 。另外这么设计TIME_WAIT 会定时的回收资源，并不会占用很大资源的，除非短时间内接受大量请求或者受到攻击。<br>一些解决方法：<br>通过修改/etc/sysctl.conf文件，服务器能够快速回收和重用那些TIME_WAIT的资源 。 </p><figure class="highlight angelscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">#表示开启SYN Cookies。当出现SYN等待队列溢出时，启用cookies来处理，可防范少量SYN攻击，默认为<span class="number">0</span>，表示关闭</span><br><span class="line">net.ipv4.tcp_syncookies = <span class="number">1</span>  </span><br><span class="line"></span><br><span class="line">#表示开启重用。允许将TIME-WAIT sockets重新用于新的TCP连接，默认为<span class="number">0</span>，表示关闭  </span><br><span class="line">net.ipv4.tcp_tw_reuse = <span class="number">1</span>  </span><br><span class="line"></span><br><span class="line">#表示开启TCP连接中TIME-WAIT sockets的快速回收，默认为<span class="number">0</span>，表示关闭  </span><br><span class="line">net.ipv4.tcp_tw_recycle = <span class="number">1</span></span><br><span class="line"></span><br><span class="line">#表示如果套接字由本端要求关闭，这个参数决定了它保持在FIN-WAIT<span class="number">-2</span>状态的时间  </span><br><span class="line">net.ipv4.tcp_fin_timeout=<span class="number">30</span></span><br><span class="line"></span><br><span class="line">生效命令：</span><br><span class="line">/sbin/sysctl -p</span><br></pre></td></tr></table></figure><h3 id="CLOSE-WAIT："><a href="#CLOSE-WAIT：" class="headerlink" title="CLOSE_WAIT："></a>CLOSE_WAIT：</h3><p>CLOSE_WAIT表示被动关闭，出现这种问题，基本是就是客户端连接异常或者自己没有迅速回收资源。<br>什么情况下，连接处于CLOSE_WAIT状态呢？</p><ul><li>在被动关闭连接情况下，在已经接收到FIN，但是还没有发送自己的FIN的时刻，连接处于CLOSE_WAIT状态。通常来讲，CLOSE_WAIT状态的持续时间应该很短，正如SYN_RCVD状态。但是在一些特殊情况下，就会出现连接长时间处于CLOSE_WAIT状态的情况。</li><li>出现大量close_wait的现象，主要原因是某种情况下对方关闭了socket链接，但是我方忙与读或者写，没有关闭连接（CLOSE_WAIT应该是默认2小时才会关闭）。代码需要判断socket，一旦读到0，断开连接，read返回负，检查一下errno，如果不是AGAIN，就断开连接。</li><li>scoket阻塞，无超时或非阻塞处理。</li></ul><h3 id="EPOLL"><a href="#EPOLL" class="headerlink" title="EPOLL:"></a>EPOLL:</h3><ul><li>EPOLLIN：连接，对端发送普通数据，对端socket正常关闭。</li><li>EPOLLPRI：带外数据，文件描述符有紧急的数据可读。</li><li>EPOLLOUT：数据可写。</li><li>对端正常关闭（close()，shell下kill或ctr+c），触发EPOLLIN和EPOLLRDHUP，但是不触发EPOLLERR和EPOLLHUP。//重要</li><li>对端异常断开连接（如网线），不会触发任何事件。判断方式是向已经断开的socket写或者读，会发生EPOLLERR错误。</li></ul><h3 id="socket接口的几个知识点："><a href="#socket接口的几个知识点：" class="headerlink" title="socket接口的几个知识点："></a>socket接口的几个知识点：</h3><ul><li>read总是在接收缓冲区有数据时立即返回，而不是等到给定的read buffer填满时返回。<br>只有当receive buffer为空时，blocking模式才会等待，而nonblock模式下会立即返回-1（errno = EAGAIN或EWOULDBLOCK）</li><li>blocking的write只有在缓冲区足以放下整个buffer时才返回（与blocking read并不相同）<br>nonblock write则是返回能够放下的字节数，之后调用则返回-1（errno = EAGAIN或EWOULDBLOCK）<br>对于blocking的write有个特例：当write正阻塞等待时对面关闭了socket，则write则会立即将剩余缓冲区填满并返回所写的字节数，再次调用则write失败（connection reset by peer）</li></ul><h3 id="Bug查找"><a href="#Bug查找" class="headerlink" title="Bug查找"></a>Bug查找</h3><p>通过以上的知识点，我们就可以很好的定位问题原因了，因为Proxy即作为客户端，又有服务端功能，其转发QS的结果到BS之后，再将BS的结果merge后回复给QS。仔细排查代码，发现2处引起Proxy大量出现CLOSE_TIMEWAIT。<br>&lt;1&gt;、Proxy将BS的结果merge后，发送QS时，socket是阻塞的，也未做超时处理。<br>&lt;2&gt;、QS超时（3S），会主动关闭socket，而Proxy这层没有关闭fd，可能原作者认为会触发EPOLLERR和EPOLLHUP（这里面做了处理）。</p><h2 id="参考链接："><a href="#参考链接：" class="headerlink" title="参考链接："></a>参考链接：</h2><p>1、<a href="http://www.cnblogs.com/promise6522/archive/2012/03/03/2377935.html">http://www.cnblogs.com/promise6522/archive/2012/03/03/2377935.html</a><br>2、<a href="http://originlee.com/2015/04/22/nonblocking-tcp-socket/">http://originlee.com/2015/04/22/nonblocking-tcp-socket/</a> </p>]]></content>
-    
-    
-    <summary type="html">&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h2&gt;&lt;p&gt;简单说下问题情况，Proxy即作为客户端又有服务端功能，其接受QS（Query Server）的请求，之后向BS（索引服务）发送请求，然后根据BS的返回结果Merge后返回给QS。不能泄露太多东西，所以本文主要是整理一些知识点和问题查找思路。&lt;/p&gt;
-&lt;h2 id=&quot;问题和现象：&quot;&gt;&lt;a href=&quot;#问题和现象：&quot; class=&quot;headerlink&quot; title=&quot;问题和现象：&quot;&gt;&lt;/a&gt;问题和现象：&lt;/h2&gt;&lt;ul&gt;
-&lt;li&gt;Proxy机器上出现大量的CLOSE_WAIT。&lt;/li&gt;
-&lt;li&gt;Proxy失去服务能力，内存使用不为0，CPU使用率为0。&lt;/li&gt;
-&lt;li&gt;机器报警，TcpListenOverFlows。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;figure class=&quot;highlight properties&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;11&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;12&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;13&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;14&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;15&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;16&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;attr&quot;&gt;命令查看：&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;attr&quot;&gt;netstat&lt;/span&gt; &lt;span class=&quot;string&quot;&gt;-n | awk &amp;#x27;/^tcp/ &amp;#123;++S[$NF]&amp;#125; END &amp;#123;for(a in S) print a, S[a]&amp;#125;&amp;#x27;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt; &lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt; &lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;attr&quot;&gt;结果：&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;attr&quot;&gt;TIME_WAIT&lt;/span&gt; &lt;span class=&quot;string&quot;&gt;31927&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;attr&quot;&gt;CLOSE_WAIT&lt;/span&gt; &lt;span class=&quot;string&quot;&gt;1570&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;attr&quot;&gt;ESTABLISHED&lt;/span&gt; &lt;span class=&quot;string&quot;&gt;40&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt; &lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;attr&quot;&gt;TIME_WAIT：表示主动关闭，通过优化系统内核参数可容易解决。&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;attr&quot;&gt;CLOSE_WAIT：表示被动关闭，需要从程序本身出发。&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;attr&quot;&gt;ESTABLISHED：表示正在通信&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;attr&quot;&gt;注：以上数据非真实线上情况，只为举例&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;</summary>
-    
-    
-    
-    <category term="Linux" scheme="http://armsword.com/categories/Linux/"/>
     
     
   </entry>
