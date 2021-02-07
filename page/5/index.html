@@ -53,6 +53,52 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-redis-ae-analyse" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/09/04/redis-ae-analyse/">Redis AE事件库源码剖析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/09/04/redis-ae-analyse/" class="article-date">
+  <time datetime="2014-09-03T17:56:57.000Z" itemprop="datePublished">2014-09-04</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>很久之前就看过AE库了，不过这东西好久不看，也忘得差不多了，正好要找工作了，简历上写了之前的项目用过这个AE事件库，索性我就又把AE库看了一遍，本来表达能力就差，复习下吧。</p>
+<p>先上张图，下图左侧是ae.c文件里所有的函数，一目了然。</p>
+<p><img src="/img/2014/09/201409040835.png"></p>
+<p>AE事件库包含文件事件和时间事件，其包含2个源文件ae.c和ae.h，当然还有四个不同的多用复用封装的文件：ae_epoll.c、ae_select.c、ae_evport.c、ae_kqueue.c。一般常用的是ae_select.c（跨平台用），linux下多用ae_epoll.c。我们就以ae_epoll.c为例吧。</p>
+        
+          <p class="article-more-link">
+            <a href="/2014/09/04/redis-ae-analyse/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-consistent-hashing" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -331,52 +377,6 @@ Although the above answer is in lexicographical order, your answer could be in a
         
           <p class="article-more-link">
             <a href="/2014/03/07/linux-io-multiplexing/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-tcp-and-udp-note" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2013/12/14/tcp-and-udp-note/">记录下传输层协议TCP和UDP的一些特性</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2013/12/14/tcp-and-udp-note/" class="article-date">
-  <time datetime="2013-12-13T17:05:21.000Z" itemprop="datePublished">2013-12-14</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/">计算机网络</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>在TCP/IP中能够实现传输层功能的、具有代表性的协议是TCP和UDP。</p>
-<h2 id="TCP"><a href="#TCP" class="headerlink" title="TCP"></a>TCP</h2><p>TCP是面向连接的、可靠的流协议。流就是指不间断的数据结构，你可以把它想象成排水道中的水流。当应用程序采用TCP发送消息时，虽然可以保证发送的顺序，但还是犹如没有任何间隔的数据流发送给接收端。TCP充分地实现了数据传输时各种控制功能，可以进行丢包时的重发控制，还可以对次序乱掉的分包进行顺序控制。而这些在UDP中都没有。此外，TCP作为一种面向有连接的协议，只有在确认通信对端存在时才会发送数据，从而可以控制通信流量的浪费。根据TCP的这些机制，在IP这种无连接的网络上也能够实现高可靠性的通信。</p>
-<p>TCP为提供可靠性传输，实行“顺序控制”或“重发控制”机制。此外还具备“流控制（流量控制）”、“拥塞控制”、提供网络利用率等众多功能。</p>
-<p>TCP通过检验和、序列号、确认应答、重发控制、连接管理以及窗口控制等机制实现可靠性传输。</p>
-        
-          <p class="article-more-link">
-            <a href="/2013/12/14/tcp-and-udp-note/#more">Read More</a>
           </p>
         
       

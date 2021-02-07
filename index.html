@@ -53,6 +53,49 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-jvm-bug-causes-Presto-queries-to-slow-down" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2021/02/07/jvm-bug-causes-Presto-queries-to-slow-down/">说下那些导致Presto查询变慢的JVM Bug和解决方法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2021/02/07/jvm-bug-causes-Presto-queries-to-slow-down/" class="article-date">
+  <time datetime="2021-02-07T02:24:48.000Z" itemprop="datePublished">2021-02-07</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>维护Presto集群，遇到了一些JVM Bug会严重导致Presto查询变慢，这里分享下Bugs表现及解决方法。</p>
+<h2 id="Ref-Proc-耗时太久"><a href="#Ref-Proc-耗时太久" class="headerlink" title="Ref Proc 耗时太久"></a>Ref Proc 耗时太久</h2><p>线上Presto运行一段时间后，查询会越来越慢，打了下火焰图，发现30%的CPU都浪费在young gc上了，看了下gc log，如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="number">2020-12-21T20:50:15.009</span><span class="string">+0800:</span> <span class="attr">4753827.928:</span> [<span class="string">GC</span> <span class="string">pause</span> <span class="string">(GCLocker</span> <span class="string">Initiated</span> <span class="string">GC)</span> <span class="string">(young)</span> <span class="string">(initial-mark)</span>, <span class="number">0.5723063</span> <span class="string">secs</span>]</span><br><span class="line">   [<span class="attr">Parallel Time:</span> <span class="number">66.9</span> <span class="string">ms</span>, <span class="attr">GC Workers:</span> <span class="number">33</span>]</span><br><span class="line">      [<span class="string">GC</span> <span class="string">Worker</span> <span class="string">Start</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">4753827940.4</span>, <span class="attr">Avg:</span> <span class="number">4753827940.5</span>, <span class="attr">Max:</span> <span class="number">4753827940.7</span>, <span class="attr">Diff:</span> <span class="number">0.4</span>]</span><br><span class="line">      [<span class="string">Ext</span> <span class="string">Root</span> <span class="string">Scanning</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">26.2</span>, <span class="attr">Avg:</span> <span class="number">27.3</span>, <span class="attr">Max:</span> <span class="number">54.9</span>, <span class="attr">Diff:</span> <span class="number">28.7</span>, <span class="attr">Sum:</span> <span class="number">899.6</span>]</span><br><span class="line">      [<span class="string">Update</span> <span class="string">RS</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">9.2</span>, <span class="attr">Max:</span> <span class="number">9.8</span>, <span class="attr">Diff:</span> <span class="number">9.8</span>, <span class="attr">Sum:</span> <span class="number">304.3</span>]</span><br><span class="line">         [<span class="attr">Processed Buffers: Min:</span> <span class="number">0</span>, <span class="attr">Avg:</span> <span class="number">19.9</span>, <span class="attr">Max:</span> <span class="number">35</span>, <span class="attr">Diff:</span> <span class="number">35</span>, <span class="attr">Sum:</span> <span class="number">657</span>]</span><br><span class="line">      [<span class="string">Scan</span> <span class="string">RS</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">0.0</span>, <span class="attr">Max:</span> <span class="number">0.0</span>, <span class="attr">Diff:</span> <span class="number">0.0</span>, <span class="attr">Sum:</span> <span class="number">0.1</span>]</span><br><span class="line">      [<span class="string">Code</span> <span class="string">Root</span> <span class="string">Scanning</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">0.0</span>, <span class="attr">Max:</span> <span class="number">0.0</span>, <span class="attr">Diff:</span> <span class="number">0.0</span>, <span class="attr">Sum:</span> <span class="number">0.0</span>]</span><br><span class="line">      [<span class="string">Object</span> <span class="string">Copy</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">0.5</span>, <span class="attr">Avg:</span> <span class="number">11.2</span>, <span class="attr">Max:</span> <span class="number">13.8</span>, <span class="attr">Diff:</span> <span class="number">13.3</span>, <span class="attr">Sum:</span> <span class="number">369.9</span>]</span><br><span class="line">      [<span class="string">Termination</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">7.8</span>, <span class="attr">Max:</span> <span class="number">8.4</span>, <span class="attr">Diff:</span> <span class="number">8.4</span>, <span class="attr">Sum:</span> <span class="number">256.8</span>]</span><br><span class="line">         [<span class="attr">Termination Attempts: Min:</span> <span class="number">1</span>, <span class="attr">Avg:</span> <span class="number">1.5</span>, <span class="attr">Max:</span> <span class="number">4</span>, <span class="attr">Diff:</span> <span class="number">3</span>, <span class="attr">Sum:</span> <span class="number">51</span>]</span><br><span class="line">      [<span class="string">GC</span> <span class="string">Worker</span> <span class="string">Other</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">0.0</span>, <span class="attr">Max:</span> <span class="number">0.0</span>, <span class="attr">Diff:</span> <span class="number">0.0</span>, <span class="attr">Sum:</span> <span class="number">0.5</span>]</span><br><span class="line">      [<span class="string">GC</span> <span class="string">Worker</span> <span class="string">Total</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">55.3</span>, <span class="attr">Avg:</span> <span class="number">55.5</span>, <span class="attr">Max:</span> <span class="number">55.7</span>, <span class="attr">Diff:</span> <span class="number">0.5</span>, <span class="attr">Sum:</span> <span class="number">1831.3</span>]</span><br><span class="line">      [<span class="string">GC</span> <span class="string">Worker</span> <span class="string">End</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">4753827996.0</span>, <span class="attr">Avg:</span> <span class="number">4753827996.0</span>, <span class="attr">Max:</span> <span class="number">4753827996.1</span>, <span class="attr">Diff:</span> <span class="number">0.1</span>]</span><br><span class="line">   [<span class="attr">Code Root Fixup:</span> <span class="number">0.4</span> <span class="string">ms</span>]</span><br><span class="line">   [<span class="attr">Code Root Purge:</span> <span class="number">0.0</span> <span class="string">ms</span>]</span><br><span class="line">   [<span class="attr">Clear CT:</span> <span class="number">0.6</span> <span class="string">ms</span>]</span><br><span class="line">   [<span class="attr">Other:</span> <span class="number">504.4</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Choose CSet:</span> <span class="number">0.0</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Ref Proc:</span> <span class="number">501.3</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Ref Enq:</span> <span class="number">0.0</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Redirty Cards:</span> <span class="number">0.5</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Humongous Register:</span> <span class="number">0.2</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Humongous Reclaim:</span> <span class="number">0.0</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Free CSet:</span> <span class="number">0.2</span> <span class="string">ms</span>]</span><br><span class="line">   [<span class="attr">Eden:</span> <span class="number">320.</span><span class="string">0M(3264.0M)-&gt;0.0B(3392.0M)</span> <span class="attr">Survivors:</span> <span class="number">416.</span><span class="string">0M-&gt;288.0M</span> <span class="attr">Heap:</span> <span class="number">9068.</span><span class="string">7M(72.0G)-&gt;8759.2M(72.0G)</span>]</span><br><span class="line"> [<span class="attr">Times:</span> <span class="string">user=1.70</span> <span class="string">sys=0.39</span>, <span class="string">real=0.57</span> <span class="string">secs</span>]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>从上面我们可以看到 Ref Proc: 501.3 ms，总共young gc耗时0.57s，而Ref Proc耗时就达到了0.5s。我们需要看下Ref Proc耗时主要在哪个地方。<br>我们通过配置gc参数<code>-XX:+PrintReferenceGC</code>，可以看到详细的Reference GC时间，并且如下图Case，JNI Weak Reference是主要瓶颈点。</p>
+        
+          <p class="article-more-link">
+            <a href="/2021/02/07/jvm-bug-causes-Presto-queries-to-slow-down/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-slove-jit-deoptimization-and-es-insert-performance-improvement" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -353,54 +396,6 @@
       
     </div>
     
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-presto-scheduling-task" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/04/08/presto-scheduling-task/">Presto调度task选择Worker方法</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2020/04/08/presto-scheduling-task/" class="article-date">
-  <time datetime="2020-04-08T06:30:22.000Z" itemprop="datePublished">2020-04-08</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h3 id="Presto调度task方式："><a href="#Presto调度task方式：" class="headerlink" title="Presto调度task方式："></a>Presto调度task方式：</h3><figure class="highlight crystal"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">public final <span class="class"><span class="keyword">class</span> <span class="title">SystemPartitioningHandle</span></span></span><br><span class="line">        implements ConnectorPartitioningHandle</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="class"><span class="keyword">enum</span> <span class="title">SystemPartitioning</span></span></span><br><span class="line">    &#123;</span><br><span class="line">        SINGLE,</span><br><span class="line">        FIXED,</span><br><span class="line">        SOURCE,</span><br><span class="line">        SCALED,</span><br><span class="line">        COORDINATOR_ONLY,</span><br><span class="line">        ARBITRARY</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>常见的场景主要包含SINGLE、FIXED及SOURCE类型，其中SINGLE表示最后数据的汇总输出，FIXED表示中间数据的计算，如JOIN等，SOURCE类型表示与源数据打交道的类型。</p>
-<p>以下SQL为例：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> (<span class="keyword">select</span> * <span class="keyword">from</span> <span class="number">1</span><span class="keyword">test</span> <span class="keyword">join</span> <span class="number">2</span>test1 <span class="keyword">on</span> <span class="number">1</span>test.id = <span class="number">2</span>test1<span class="number">.123</span><span class="keyword">id</span>);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-        
-          <p class="article-more-link">
-            <a href="/2020/04/08/presto-scheduling-task/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
-
-      </footer>
     
   </div>
   
