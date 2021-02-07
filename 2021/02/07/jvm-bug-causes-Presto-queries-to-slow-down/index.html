@@ -17,7 +17,7 @@
 <meta property="og:image" content="http://armsword.com/img/2021/02/uncommon_trap.png">
 <meta property="og:image" content="http://armsword.com/img/2021/02/perf.png">
 <meta property="article:published_time" content="2021-02-07T02:24:48.000Z">
-<meta property="article:modified_time" content="2021-02-07T03:59:20.866Z">
+<meta property="article:modified_time" content="2021-02-07T07:48:54.098Z">
 <meta property="article:author" content="armsword">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://armsword.com/img/2021/02/jstack.png">
@@ -113,8 +113,8 @@
 <p>原理有点像是针对大对象，不要多work去偷任务，偷了也只能忙等。</p>
 <p>同时，我发现腾讯也应该遇到了类似问题，开源的Kona 8 JDK也解决了类似问题，如下面文档所示：</p>
 <p><a target="_blank" rel="noopener" href="https://github.com/tencentyun/qcloud-documents/blob/master/product/%E5%A4%A7%E6%95%B0%E6%8D%AE%E4%B8%8EAI/%E5%BC%B9%E6%80%A7MapReduce/EMR%20%E5%BC%80%E5%8F%91%E6%95%99%E7%A8%8B/EMR%E5%A4%A9%E7%A9%B9%E7%89%88%E6%9C%AC%E5%BC%80%E5%8F%91%E6%8C%87%E5%8D%97/EMR%E5%A4%A9%E7%A9%B9%E7%89%88%E6%9C%AC%E8%87%AA%E7%A0%94%20Kona%20JDK%E7%89%B9%E6%80%A7%E4%BB%8B%E7%BB%8D%E4%B8%8E%E4%BD%BF%E7%94%A8.md">https://github.com/tencentyun/qcloud-documents/blob/master/product/%E5%A4%A7%E6%95%B0%E6%8D%AE%E4%B8%8EAI/%E5%BC%B9%E6%80%A7MapReduce/EMR%20%E5%BC%80%E5%8F%91%E6%95%99%E7%A8%8B/EMR%E5%A4%A9%E7%A9%B9%E7%89%88%E6%9C%AC%E5%BC%80%E5%8F%91%E6%8C%87%E5%8D%97/EMR%E5%A4%A9%E7%A9%B9%E7%89%88%E6%9C%AC%E8%87%AA%E7%A0%94%20Kona%20JDK%E7%89%B9%E6%80%A7%E4%BB%8B%E7%BB%8D%E4%B8%8E%E4%BD%BF%E7%94%A8.md</a></p>
-<p>GC 并行线程通过 Work Stealing 进行负载均衡，减少 GC 停顿时间。原有 Work Stealing 算法中所有空闲 GC 线程都会频繁尝试 work stealing，造成 CPU 资源浪费，新算法采用一个 master 线程监控是否进行 work stealing 并在适当时机唤醒其它空闲 GC 线程，极大减少 CPU 资源浪费和进程间的 CPU 资源竞争。OWST 在 OpenJDK 社区版本12以后支持，大数据 Hibench 测试有最多30%的性能提升，平均提升8%。</p>
-<h3 id="解决方法-2"><a href="#解决方法-2" class="headerlink" title="解决方法"></a>解决方法</h3><p>总结下这个问题的解决方法，这个问题，目前社区还没有修复，可以试下阿里开源的dragonwell或腾讯的Kona，如果不行，需要升级到JDK 15，使用zgc再尝试下。</p>
+<p>GC 并行线程通过 Work Stealing 进行负载均衡，减少 GC 停顿时间。原有 Work Stealing 算法中所有空闲 GC 线程都会频繁尝试 work stealing，造成 CPU 资源浪费，新算法采用一个 master 线程监控是否进行 work stealing 并在适当时机唤醒其它空闲 GC 线程，极大减少 CPU 资源浪费和进程间的 CPU 资源竞争。OWST 在 OpenJDK 社区版本12以后支持，大数据 Hibench 测试有最多30%的性能提升，平均提升8%。但是我测试后，发现文中提到的参数是不存在的，并且现象依然复现。</p>
+<h3 id="解决方法-2"><a href="#解决方法-2" class="headerlink" title="解决方法"></a>解决方法</h3><p>总结下这个问题的解决方法，这个问题，目前社区还没有修复，可以试下阿里开源的dragonwell，如果不行，需要升级到JDK 15，使用zgc再尝试下。</p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在遇到性能问题，重要的是定位性能变慢的原因，是引擎问题还是JVM问题等等，如果是JVM问题，又需要定位哪个阶段导致的问题，遇到bug也尽量去openjdk社区看下是否已经修复了这个问题，同时建议多perf看下性能瓶颈点。这里只介绍了三个常见的会严重影响Presto性能的jvm bug，而新的PrestoSQL在使用过程中，还有一些公司会遇到codegen导致性能变慢的问题，我们目前还没有遇到。同时，由于Presto新版本一般会使用很多jvm新的特性，在编译Presto时候也会遇到很多jvm bug，我在从PrestoDB升级PrestoSQL时候，其中有一天遇到了5次JVM编译Bug，这里建议各位如果遇到jvm问题，尽量升级到最新jvm版本，避免踩坑。</p>
 
       
