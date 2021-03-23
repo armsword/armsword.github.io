@@ -53,6 +53,51 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-webbench-source-analyse" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/10/26/webbench-source-analyse/">Webbench源码剖析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/10/26/webbench-source-analyse/" class="article-date">
+  <time datetime="2014-10-25T16:48:01.000Z" itemprop="datePublished">2014-10-26</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C-C/">C/C++</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>我们知道知名的Web网站压力测试工具有Webbench、ab、http_load、siege等等，这种工具的源码都不是太长，所以，我用了一下午和晚上时间仔细了分析了Webbench的源码，并且写下这篇博客记录下。</p>
+<p>我们先看下一般Webbench是怎么做压力测试的吧，方法很简单，如下所示：</p>
+<figure class="highlight angelscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">#模拟<span class="number">200</span>次请求，持续时间<span class="number">5</span>秒的压力测试 -c 后为并发数， -t 后为持续时间</span><br><span class="line"><span class="string">[imlinuxer@imlinuxer webbench-1.5]</span># webbench -c <span class="number">200</span> -t <span class="number">5</span> http:<span class="comment">//localhost/index.php</span></span><br><span class="line">Webbench - Simple Web Benchmark <span class="number">1.5</span></span><br><span class="line">Copyright (c) Radim Kolar <span class="number">1997</span><span class="number">-2004</span>, GPL Open Source Software.</span><br><span class="line"></span><br><span class="line">Benchmarking: GET http:<span class="comment">//localhost/index.php</span></span><br><span class="line"><span class="number">200</span> clients, running <span class="number">5</span> sec.</span><br><span class="line"></span><br><span class="line">Speed=<span class="number">156804</span> pages/min, <span class="number">128496336</span> bytes/sec.</span><br><span class="line">Requests: <span class="number">13067</span> susceed, <span class="number">0</span> failed.</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+        
+          <p class="article-more-link">
+            <a href="/2014/10/26/webbench-source-analyse/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-redis-ae-analyse" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -345,52 +390,8 @@ Although the above answer is in lexicographical order, your answer could be in a
 
 
     
-      <article id="post-linux-io-multiplexing" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2014/03/07/linux-io-multiplexing/">Linux IO复用—select poll 和 epoll</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2014/03/07/linux-io-multiplexing/" class="article-date">
-  <time datetime="2014-03-07T09:33:18.000Z" itemprop="datePublished">2014-03-07</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Linux/">Linux</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>在Socket编程时，为了处理大量客户的连接请求，需要使用非阻塞I/O和端口复用，select、poll和epoll是Linux API提供的I/O复用方式。其实在*nix下的网络并发方法向来不缺，比如典型的Apache模型（Process Per Connection，简称PPC），TPC（Thread Per Connection）模型，这两种模型思想类似，就是利用了多进程、多线程概念，让进来的每一个连接去干别的事情去。但是连接多了以后，首先需要较大的内存，且进程/线程切换开销会非常大，因此这类模型能接受的最大连接数都不会太高。</p>
-<p>Linux 2.6中加入了epoll之后（据说Windows下使用的是IOCP，但是我没使用过），在高性能服务器领域中得到广泛的应用，主要原因就是高效。在讲epoll之前，我们先总结下select、poll，因为epoll其实也就是他们的增强版本，比如select是一个系统调用，而epoll是个模块，由三个系统调用组成，内核中由文件系统实现。</p>
-        
-          <p class="article-more-link">
-            <a href="/2014/03/07/linux-io-multiplexing/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
       <nav id="page-nav">
-        <a class="extend prev" rel="prev" href="/page/4/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/6/">下一页 &gt;&gt;</a>
+        <a class="extend prev" rel="prev" href="/page/4/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/6/">下一页 &gt;&gt;</a>
       </nav>
     </section>
     <footer id="footer">

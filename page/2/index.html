@@ -53,6 +53,62 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-the-difference-between-prestodb-and-prestosql" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/05/02/the-difference-between-prestodb-and-prestosql/">PrestoDB和PrestoSQL比较及选择</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2020/05/02/the-difference-between-prestodb-and-prestosql/" class="article-date">
+  <time datetime="2020-05-02T06:50:34.000Z" itemprop="datePublished">2020-05-02</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Presto 社区分家后搞了2个项目，分别为 PrestoDB 和 PrestoSQL，同时他们都成立了自己的基金会。而去年国庆时候，abei写了篇文章比对了2个分支的进展，链接见：<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/87621360">PrestoDB VS PrestoSQL发展比较</a>。 而现在已经分家17个月了，那我们简单梳理下这2个分支的主要核心功能：</p>
+<h3 id="PrestoDB："><a href="#PrestoDB：" class="headerlink" title="PrestoDB："></a>PrestoDB：</h3><ul>
+<li>Connector：ElasticSearch 及 Druid</li>
+<li>Master 和Worker 通信协议支持二进制</li>
+<li>Orc 及 Parquet读写性能优化</li>
+<li>Hive写数据支持指定压缩格式</li>
+<li>task通信协议可以指定 thrift</li>
+<li>spi pushdown</li>
+<li>MapReduce-style shuffle，支持部分 etl 任务及大查询</li>
+<li>fix bug 及 improve performace</li>
+</ul>
+<h3 id="PrestoSQL："><a href="#PrestoSQL：" class="headerlink" title="PrestoSQL："></a>PrestoSQL：</h3><ul>
+<li>Connector：ElasticSearch和MemSQL</li>
+<li>spi pushdown</li>
+<li>S3优化读取</li>
+<li>join 延时物化</li>
+<li>大量的 fix bug 及 improve performance</li>
+</ul>
+        
+          <p class="article-more-link">
+            <a href="/2020/05/02/the-difference-between-prestodb-and-prestosql/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-presto-scheduling-task" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -344,51 +400,8 @@
 
 
     
-      <article id="post-the-basic-concepts-of-presto" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2018/08/11/the-basic-concepts-of-presto/">Presto的一些基本概念</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2018/08/11/the-basic-concepts-of-presto/" class="article-date">
-  <time datetime="2018-08-11T14:42:32.000Z" itemprop="datePublished">2018-08-11</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="模型"><a href="#模型" class="headerlink" title="模型"></a>模型</h2><p>Presto 是 Facebook 开源的 MPP (Massive Parallel Processing) SQL 引擎，其理念来源于一个叫 Volcano 的并行数据库，该数据库提出了一个并行执行 SQL 的模型，核心思想就是 Operator Model 和 Iterator Model。</p>
-<ul>
-<li>Operator Model<br>即通过各种 Operator 组成一棵树，树的根节点负责结果输出，树的叶子节点是各种 TableScan。这棵树被称作 Plan（执行计划），数据库里又被细分为逻辑执行计划和物理执行计划。这棵树是由 SQL 经过词法、语法分析及语义分析后，生成一个 AST（Abstract Syntax Tree），一般经过 Visitor 模式遍历后生成。原始数据通过叶子节点 TableScan 读取数据，然后经过各个 Operator的计算，包括（TableScan、Project、Filter、Exchange、Agg、Join、TaskOutput等）产出结果。</li>
-<li>Iterator Model<br>顾名思义就是一个递归迭代过程，Plan 树的各节点有三个状态，Open、GetNext及Close。从根节点 Open 开始递归调用 GetNext 获取数据，即父节点递归调用子节点接口直到没有结果为止，然后Close。</li>
-</ul>
-        
-          <p class="article-more-link">
-            <a href="/2018/08/11/the-basic-concepts-of-presto/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
       <nav id="page-nav">
-        <a class="extend prev" rel="prev" href="/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/3/">下一页 &gt;&gt;</a>
+        <a class="extend prev" rel="prev" href="/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/3/">下一页 &gt;&gt;</a>
       </nav>
     </section>
     <footer id="footer">

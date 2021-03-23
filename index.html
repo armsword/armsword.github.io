@@ -53,6 +53,63 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-use-async-profiler-find-cpu-bottleneck" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2021/03/23/use-async-profiler-find-cpu-bottleneck/">使用火焰图定位 OLAP 引擎瓶颈</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2021/03/23/use-async-profiler-find-cpu-bottleneck/" class="article-date">
+  <time datetime="2021-03-23T12:24:35.000Z" itemprop="datePublished">2021-03-23</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>在维护 OLAP 引擎时，很多时候需要对引擎做系统的性能分析和优化，此时往往需要查看 CPU 耗时，了解主要耗时点及瓶颈在哪里。俗语有曰：兵欲善其事必先利其器，程序员定位性能问题也需要一件“利器”。性能调优工具（perf）能够显示系统的调用栈及时间分布，但是呈现内容上只能单一的列出调用栈或者非层次化的时间分布，不够直观。火焰图（flame graph）能够帮助大家更直观的发现问题。本文将以 Presto 为例，介绍火焰图的使用技巧。</p>
+<h2 id="初识火焰图"><a href="#初识火焰图" class="headerlink" title="初识火焰图"></a>初识火焰图</h2><p>Perf 的原理是这样子的：每隔一个固定的时间，就在 CPU 上（每个核上都有）产生一个中断，在中断上看看，当前是哪个 pid，哪个函数，然后给对应的 pid 和函数加一个统计值，这样，我们就知道 CPU 有百分几的时间在某个 pid，或者某个函数上了。而火焰图（Flame Graph）是由 Linux 性能优化大师 Brendan Gregg 发明的，和所有其他的 profiling 方法不同的是，火焰图以一个全局的视野来看待时间分布，它从底部往顶部，列出所有可能导致性能瓶颈的调用栈。</p>
+<img src="/img/2021/03/01.png" width = "90%" />
+
+<p>火焰图整个图形看起来就像一个跳动的火焰，这就是它名字的由来。火焰图有以下特征（这里以采样CPU 火焰图为例）：</p>
+<ul>
+<li>每一列代表一个调用栈，每一个格子代表一个函数。</li>
+<li>纵轴展示了栈的深度，按照调用关系从下到上排列。最顶上格子代表采样时，正在占用 CPU 的函数</li>
+<li>横轴的意义是指：火焰图将采集的多个调用栈信息，并行关系。横轴格子的宽度代表其在采样中出现频率，所以一个格子的宽度越大，说明它是瓶颈原因的可能性就越大。</li>
+<li>火焰图格子的颜色是随机的暖色调，方便区分各个调用信息。</li>
+<li>其他的采样方式也可以使用火焰图， 比如内存</li>
+</ul>
+<p>所以，火焰图就是看顶层的哪个函数占据的宽度最大。只要有”平顶”，就表示该函数可能存在性能问题，也是我们性能优化收益最大的地方。<br>Java生态常见的用于perf的工具有：allocation-instrumenter、YourKit Profiler、async-profiler、JProfiler、Arthas（基于 async-profiler ）。笔者推荐使用阿里巴巴出品的 Arthas 或 async-profiler，笔者喜欢使用 async-profiler 这个 perf 工具生成火焰图，主要原因是用法简单，足够满足日常排查性能问题了。</p>
+        
+          <p class="article-more-link">
+            <a href="/2021/03/23/use-async-profiler-find-cpu-bottleneck/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/perf/" rel="tag">perf</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-jvm-bug-causes-Presto-queries-to-slow-down" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -347,64 +404,8 @@
 
 
     
-      <article id="post-the-difference-between-prestodb-and-prestosql" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/05/02/the-difference-between-prestodb-and-prestosql/">PrestoDB和PrestoSQL比较及选择</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2020/05/02/the-difference-between-prestodb-and-prestosql/" class="article-date">
-  <time datetime="2020-05-02T06:50:34.000Z" itemprop="datePublished">2020-05-02</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>Presto 社区分家后搞了2个项目，分别为 PrestoDB 和 PrestoSQL，同时他们都成立了自己的基金会。而去年国庆时候，abei写了篇文章比对了2个分支的进展，链接见：<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/87621360">PrestoDB VS PrestoSQL发展比较</a>。 而现在已经分家17个月了，那我们简单梳理下这2个分支的主要核心功能：</p>
-<h3 id="PrestoDB："><a href="#PrestoDB：" class="headerlink" title="PrestoDB："></a>PrestoDB：</h3><ul>
-<li>Connector：ElasticSearch 及 Druid</li>
-<li>Master 和Worker 通信协议支持二进制</li>
-<li>Orc 及 Parquet读写性能优化</li>
-<li>Hive写数据支持指定压缩格式</li>
-<li>task通信协议可以指定 thrift</li>
-<li>spi pushdown</li>
-<li>MapReduce-style shuffle，支持部分 etl 任务及大查询</li>
-<li>fix bug 及 improve performace</li>
-</ul>
-<h3 id="PrestoSQL："><a href="#PrestoSQL：" class="headerlink" title="PrestoSQL："></a>PrestoSQL：</h3><ul>
-<li>Connector：ElasticSearch和MemSQL</li>
-<li>spi pushdown</li>
-<li>S3优化读取</li>
-<li>join 延时物化</li>
-<li>大量的 fix bug 及 improve performance</li>
-</ul>
-        
-          <p class="article-more-link">
-            <a href="/2020/05/02/the-difference-between-prestodb-and-prestosql/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
       <nav id="page-nav">
-        <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/2/">下一页 &gt;&gt;</a>
+        <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/2/">下一页 &gt;&gt;</a>
       </nav>
     </section>
     <footer id="footer">
