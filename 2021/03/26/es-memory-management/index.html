@@ -17,7 +17,7 @@
 <meta property="og:image" content="http://armsword.com/img/2021/03/heap.png">
 <meta property="og:image" content="http://armsword.com/img/2021/03/mat.png">
 <meta property="article:published_time" content="2021-03-26T09:55:27.000Z">
-<meta property="article:modified_time" content="2021-03-26T11:17:44.891Z">
+<meta property="article:modified_time" content="2021-03-26T11:20:18.201Z">
 <meta property="article:author" content="armsword">
 <meta property="article:tag" content="Elasticsearch">
 <meta name="twitter:card" content="summary">
@@ -94,6 +94,8 @@
 <img src="/img/2021/03/node.png" width = "100%" />
 
 <p>以红框里的node为例， 内存占用 = (8.6 gb)qcm + (1gb) rcm + (0.35gb) fm + (2.2 gb)sm，大约12 gb。 </p>
+<a id="more"></a>
+
 <p>内存占用有2种，一种是ES可以管理的 on-heap 内存，另一种是由Lucene管理的 off-heap 内存。</p>
 <h2 id="On-Heap"><a href="#On-Heap" class="headerlink" title="On Heap"></a>On Heap</h2><p>根据缓存占用的作用，可以分为以下五种缓存：节点查询缓存、分片请求缓存、Fielddata Cache、Segments FST Cache、Indexing Buffer（无参数可看占用的大小）。</p>
 <h3 id="节点查询缓存"><a href="#节点查询缓存" class="headerlink" title="节点查询缓存"></a>节点查询缓存</h3><p>Node Query Cache (node 级别的 filter 过滤器结果缓存)， 每个节点有一个，被所有 shard 共享，filter query 结果要么是 yes 要么是no，不涉及 scores 的计算。使用LRU淘汰策略，内存无法被GC。<br>集群中每个节点都要配置，indices.queries.cache.size: 10%，默认为 10%。index.queries.cache.enabled 用来控制具体索引是否启用缓存，默认是开启的。属于 index 级别配置，只用在索引创建时候或者关闭的索引上设置。 </p>
