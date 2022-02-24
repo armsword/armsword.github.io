@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>armsword的涅槃之地</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="搜索引擎,OLAP,阿里巴巴,美团,滴滴出行,Elasticsearch,Presto">
+<meta property="og:type" content="website">
+<meta property="og:title" content="armsword的涅槃之地">
+<meta property="og:url" content="http://armsword.com/page/5/index.html">
+<meta property="og:site_name" content="armsword的涅槃之地">
+<meta property="og:description" content="搜索引擎,OLAP,阿里巴巴,美团,滴滴出行,Elasticsearch,Presto">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 6.0.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/document">Document</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer">
+      <article id="post-baidu-lossless-music-downloader" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/01/31/baidu-lossless-music-downloader/">写了一个Chrome插件 - 百度无损音乐下载插件</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2015/01/31/baidu-lossless-music-downloader/" class="article-date">
+  <time datetime="2015-01-31T12:39:13.000Z" itemprop="datePublished">2015-01-31</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Web-Script/">Web/Script</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>1、之前是从<a target="_blank" rel="noopener" href="http://music.baidu.com/">http://music.baidu.com/</a> 入手的，现在发现从此处入手已经找不到方法了。由于我又不是太懂JS语法，于是用了几十分钟，没分析到地址放弃。</p>
+<p>2、灵光一闪，从<a target="_blank" rel="noopener" href="http://fm.baidu.com/">http://fm.baidu.com/</a> 入手，在Chrome下抓包，细心分析后，果然发现蜘丝马迹，如下图所示：</p>
+<p><img src="/img/2014/08/20140809213933.png"></p>
+<p>见左图那个灰色的链接，我们打开[链接](<a target="_blank" rel="noopener" href="http://music.baidu.com/data/music/fmlink?songIds=1181294,291890,620023,7329389,448152,7325038,2119209,309877">http://music.baidu.com/data/music/fmlink?songIds=1181294,291890,620023,7329389,448152,7325038,2119209,309877</a>,     7331713,2121730&amp;type&#x3D;mp3&amp;rate&#x3D;320&amp;callback&#x3D;jQuery1102037159983557648957_1407590773561&amp;_&#x3D;1407590773570                                  “百度无损音乐下载方法”)看下，嘿，发现了许多歌曲信息哦，如下图所示：</p>
+        
+          <p class="article-more-link">
+            <a href="/2015/01/31/baidu-lossless-music-downloader/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-jwsmtp-analyse" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/01/26/jwsmtp-analyse/">jwSMTP源码剖析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2015/01/26/jwsmtp-analyse/" class="article-date">
+  <time datetime="2015-01-26T05:50:48.000Z" itemprop="datePublished">2015-01-26</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C-C/">C/C++</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>前段时间事情太多了，忙着写毕业论文，考试，然后又被抽到了盲审，不过好在有惊无险，最后也在学院提交三月中旬申请答辩成功，如果盲审顺利的话，4月份就可以毕业了。不过这段时间总算可以看代码、看书了，感觉自己操作系统方面有些不扎实，索性买了本孙钟秀的《操作系统教程》看，之后顺便阅读和分析了jwSMTP源码，这里写篇文章记录下。本文不想对代码细节作太多分析，因为代码比较好读，并且文章末尾我会放出我注释过的源码链接，所以此文多介绍下原理吧。</p>
+<h2 id="jwSMTP"><a href="#jwSMTP" class="headerlink" title="jwSMTP"></a>jwSMTP</h2><p>jwSMTP是一个由C++编写的发送邮件的库，支持Linux、Windows平台。可使用HTML或纯文本方式发送邮件。也可添加附件，支持多个收件人。并且支持LOGIN和PLAIN两种服务器验证方式。</p>
+<h2 id="两种调用方式"><a href="#两种调用方式" class="headerlink" title="两种调用方式"></a>两种调用方式</h2><h3 id="第一种方式"><a href="#第一种方式" class="headerlink" title="第一种方式"></a>第一种方式</h3>
+        
+          <p class="article-more-link">
+            <a href="/2015/01/26/jwsmtp-analyse/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-tinyhttpd-code-analyse" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/10/29/tinyhttpd-code-analyse/">tinyhttpd源码剖析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/10/29/tinyhttpd-code-analyse/" class="article-date">
+  <time datetime="2014-10-28T16:46:18.000Z" itemprop="datePublished">2014-10-29</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C-C/">C/C++</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>喊了几天学习Web开发，为了毕业论文，今晚上计划也是看看CSS呢，但是实在是没忍住，读了下经典的tinyhttp的源代码，这款代码还是颇有名气的，网上这么评论的：</p>
+<blockquote>
+<p>tinyhttpd是一个超轻量型Http Server，使用C语言开发，全部代码只有500、600行，附带一个简单的Client，可以通过阅读这段代码理解一个Http Server的本质。</p>
+</blockquote>
+<p>其实，代码颇简单，适合刚学习Web Server的童鞋学习，因为我之前写过CGI Server，所以，我还是认为此代码写的一般，并且我在Ubuntu下编译遇到了不少错误，我都懒得写详细分析了，所以随便写下吧，后面的Github地址里有详细的分析。</p>
+<p>源码下载地址：<a target="_blank" rel="noopener" href="http://sourceforge.net/projects/tinyhttpd/" title="tinyhttpd源码分析">http://sourceforge.net/projects/tinyhttpd/</a></p>
+        
+          <p class="article-more-link">
+            <a href="/2014/10/29/tinyhttpd-code-analyse/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-webbench-source-analyse" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/10/26/webbench-source-analyse/">Webbench源码剖析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/10/26/webbench-source-analyse/" class="article-date">
+  <time datetime="2014-10-25T16:48:01.000Z" itemprop="datePublished">2014-10-26</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C-C/">C/C++</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>我们知道知名的Web网站压力测试工具有Webbench、ab、http_load、siege等等，这种工具的源码都不是太长，所以，我用了一下午和晚上时间仔细了分析了Webbench的源码，并且写下这篇博客记录下。</p>
+<p>我们先看下一般Webbench是怎么做压力测试的吧，方法很简单，如下所示：</p>
+<figure class="highlight avrasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#模拟200次请求，持续时间5秒的压力测试 -c 后为并发数， -t 后为持续时间</span></span><br><span class="line">[imlinuxer@imlinuxer webbench<span class="number">-1.5</span>]<span class="meta"># webbench -c 200 -t 5 http://localhost/index.php</span></span><br><span class="line">Webbench - Simple Web Benchmark <span class="number">1.5</span></span><br><span class="line">Copyright (c) Radim Kolar <span class="number">1997</span><span class="number">-2004</span>, GPL Open Source Software.</span><br><span class="line"></span><br><span class="line"><span class="symbol">Benchmarking:</span> GET http://localhost/index.php</span><br><span class="line"><span class="number">200</span> clients, running <span class="number">5</span> <span class="keyword">sec</span>.</span><br><span class="line"></span><br><span class="line">Speed=<span class="number">156804</span> pages/min, <span class="number">128496336</span> bytes/<span class="keyword">sec</span>.</span><br><span class="line"><span class="symbol">Requests:</span> <span class="number">13067</span> susceed, <span class="number">0</span> failed.</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+        
+          <p class="article-more-link">
+            <a href="/2014/10/26/webbench-source-analyse/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-redis-ae-analyse" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/09/04/redis-ae-analyse/">Redis AE事件库源码剖析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/09/04/redis-ae-analyse/" class="article-date">
+  <time datetime="2014-09-03T17:56:57.000Z" itemprop="datePublished">2014-09-04</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>很久之前就看过AE库了，不过这东西好久不看，也忘得差不多了，正好要找工作了，简历上写了之前的项目用过这个AE事件库，索性我就又把AE库看了一遍，本来表达能力就差，复习下吧。</p>
+<p>先上张图，下图左侧是ae.c文件里所有的函数，一目了然。</p>
+<p><img src="/img/2014/09/201409040835.png"></p>
+<p>AE事件库包含文件事件和时间事件，其包含2个源文件ae.c和ae.h，当然还有四个不同的多用复用封装的文件：ae_epoll.c、ae_select.c、ae_evport.c、ae_kqueue.c。一般常用的是ae_select.c（跨平台用），linux下多用ae_epoll.c。我们就以ae_epoll.c为例吧。</p>
+        
+          <p class="article-more-link">
+            <a href="/2014/09/04/redis-ae-analyse/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-consistent-hashing" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/07/21/consistent-hashing/">一致性哈希算法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/07/21/consistent-hashing/" class="article-date">
+  <time datetime="2014-07-21T14:04:29.000Z" itemprop="datePublished">2014-07-21</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">算法/数据结构</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>一致性hash算法在分布式系统里面使用比较广，我也只是听说过这个概念，今天看到一个<a target="_blank" rel="noopener" href="http://www.codeproject.com/Articles/56138/Consistent-hashing">一致性hash开源库</a>，随手写篇文章，记录下吧。</p>
+<p>假如我们使用普通的哈希方式来处理负载均衡，到目标机器的映射使用的算法为：</p>
+<p>hash(o) mod n (n表示机器的总数)</p>
+<p>如果需要增加或减少一台机器的时候，算法就变为 hash(o) mod (n + 1) &#x2F; hash(o) mod (n - 1)</p>
+<p>不仅需要重新编写代码，当服务器做了大量变更，大量的o会重定向不同的服务器而导致了缓冲不被命中，所以此时，就提出了一致性hash算法。</p>
+<h3 id="一致性哈希算法："><a href="#一致性哈希算法：" class="headerlink" title="一致性哈希算法："></a>一致性哈希算法：</h3><p>简单的说，哈希函数将o映射到 0 ~ 2^32 - 1的值区间，将这些数字头尾相连，然后将它们组织成一个闭合的圆环。如图一所示：<br><img src="/img/2014/07/2014721circle.jpg"></p>
+<p>要实现一致性哈希算法，思路就是下面2个步骤：</p>
+        
+          <p class="article-more-link">
+            <a href="/2014/07/21/consistent-hashing/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-light-cgi-server" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/05/18/light-cgi-server/">写了一个简单的CGI Server</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/05/18/light-cgi-server/" class="article-date">
+  <time datetime="2014-05-18T09:22:17.000Z" itemprop="datePublished">2014-05-18</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>之前看过一些开源程序的源码，也略微知道些Apache的CGI处理程序架构，于是用了一段时间，用C写了一个简单的CGI Server，代码算上头文件，一共1200行左右，难度中等偏上。麻雀虽小，五脏俱全。如果把程序里所涉及的HTTP协议，Linux下POSIX编程等等搞清楚，我想找工作中肯定是有足够的竞争力的，当然我也只是皮毛而已，不再班门弄斧了，下面简单的说下程序流程吧。</p>
+<p>再说程序流程之前，我先简单说下CGI吧，CGI这个东西比较老了，N年之前，没有PHP JSP等等动态脚本之前，这个是非常火的。只要能支持输入输出的程序，都可以编写CGI脚本，比如Apache就集成了CGI服务器功能，你可以使用Python编写简单的CGI脚本，可以参照前几天我发的文章，<a href="http://armsword.com/2014/05/07/let-apache-understand-python-cgi/">点击此处</a>，现在CGI 脚本基本上使用的比较少了，但是在一些对效率要求比较高的设计里还是可以看到一些身影，比如腾讯的QQ相册，QQ空间里就可以看到（你可以打开QQ空间，查看源码-查找CGI），他们的脚本应该是C&#x2F;C++编写的，效率，你懂的，如果你想更多的了解CGI脚本相关，可以<a target="_blank" rel="noopener" href="http://www.jdon.com/idea/cgi.htm">点击此处</a>，推荐了解一些，但是不值得深入学习，那个精力不如学习PHP&#x2F;Python了。。。</p>
+<p>其实说白了，CGI 扮演的就是在服务器和特定解释器之间输入输出协议的角色，每个来自用户的请求，Web服务器都会唤起特定语言解释器的命令行，执行CGI脚本。</p>
+<p>现在来介绍下此CGI Server，我不想长篇大论了，一幅图来描述其执行过程（字比较丑，凑合看吧），具体看代码吧：</p>
+<p><img src="/img/2014/05/20140518171043.jpg"></p>
+        
+          <p class="article-more-link">
+            <a href="/2014/05/18/light-cgi-server/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <nav id="page-nav">
+        <a class="extend prev" rel="prev" href="/page/4/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/6/">下一页 &gt;&gt;</a>
+      </nav>
+    </section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2022 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a target="_blank" rel="noopener" href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>
