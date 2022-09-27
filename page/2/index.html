@@ -52,6 +52,47 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-solve-presto-jvm-coredump" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/12/10/solve-presto-jvm-coredump/">Presto Master JVM Core问题调研</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2020/12/10/solve-presto-jvm-coredump/" class="article-date">
+  <time datetime="2020-12-10T11:24:42.000Z" itemprop="datePublished">2020-12-10</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>Presto master出现jvm coredump情况，排查问题，这里记录下排查过程。</p>
+<h2 id="排查过程"><a href="#排查过程" class="headerlink" title="排查过程"></a>排查过程</h2><p>先看下JVM Coredump日志：</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># There is insufficient memory for the Java Runtime Environment to continue.</span></span><br><span class="line"><span class="comment"># Native memory allocation (mmap) failed to map 12288 bytes for committing reserved memory.</span></span><br><span class="line"><span class="comment"># Possible reasons:</span></span><br><span class="line"><span class="comment">#   The system is out of physical RAM or swap space</span></span><br><span class="line"><span class="comment">#   In 32 bit mode, the process size limit was hit</span></span><br><span class="line"><span class="comment"># Possible solutions:</span></span><br><span class="line"><span class="comment">#   Reduce memory load on the system</span></span><br><span class="line"><span class="comment">#   Increase physical memory or swap space</span></span><br><span class="line"><span class="comment">#   Check if swap backing store is full</span></span><br><span class="line"><span class="comment">#   Use 64 bit Java on a 64 bit OS</span></span><br><span class="line"><span class="comment">#   Decrease Java heap size (-Xmx/-Xms)</span></span><br><span class="line"><span class="comment">#   Decrease number of Java threads</span></span><br><span class="line"><span class="comment">#   Decrease Java thread stack sizes (-Xss)</span></span><br><span class="line"><span class="comment">#   Set larger code cache with -XX:ReservedCodeCacheSize=</span></span><br><span class="line"><span class="comment"># This output file may be truncated or incomplete.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment">#  Out of Memory Error (os_linux.cpp:2640), pid=22120, tid=0x00007ef9d2ed3700</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># JRE version: Java(TM) SE Runtime Environment (8.0_144-b01) (build 1.8.0_144-b01)</span></span><br><span class="line"><span class="comment"># Java VM: Java HotSpot(TM) 64-Bit Server VM (25.144-b01 mixed mode linux-amd64 )</span></span><br><span class="line"><span class="comment"># Core dump written. Default location: /data1/cluster-data/core or core.22120 (max size 52428800 kB). To ensure a full core dump, try &quot;ulimit -c unlimited&quot; before starting Java again</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"></span><br><span class="line"> </span><br><span class="line">---------------  T H R E A D  ---------------</span><br><span class="line"> </span><br><span class="line">Current thread (0x00007eff5eaf5000):  JavaThread <span class="string">&quot;IPC Client (1499102350) connection to presto-host.nmg01/data-node:8020 from user&quot;</span> daemon [_thread_new, <span class="attribute">id</span>=28463, stack(0x00007ef9d2e93000,0x00007ef9d2ed4000)]</span><br><span class="line"> </span><br><span class="line">Stack: [0x00007ef9d2e93000,0x00007ef9d2ed4000],  <span class="attribute">sp</span>=0x00007ef9d2ed2760,  free <span class="attribute">space</span>=253k</span><br><span class="line">Native frames: (<span class="attribute">J</span>=compiled Java code, <span class="attribute">j</span>=interpreted, <span class="attribute">Vv</span>=VM code, <span class="attribute">C</span>=native code)</span><br><span class="line">V  [libjvm.so+0xacb18a]  VMError::report_and_die()+0x2ba</span><br><span class="line">V  [libjvm.so+0x4ff4db]  report_vm_out_of_memory(char const*, int, unsigned long, VMErrorType, char const*)+0x8b</span><br><span class="line">V  [libjvm.so+0x927d23]  os::Linux::commit_memory_impl(char*, unsigned long, bool)+0x103</span><br><span class="line">V  [libjvm.so+0x927dec]  os::pd_commit_memory(char*, unsigned long, bool)+0xc</span><br><span class="line">V  [libjvm.so+0x9217ba]  os::commit_memory(char*, unsigned long, bool)+0x2a</span><br><span class="line">V  [libjvm.so+0x9261df]  os::pd_create_stack_guard_pages(char*, unsigned long)+0x7f</span><br><span class="line">V  [libjvm.so+0xa6ffce]  JavaThread::create_stack_guard_pages()+0x5e</span><br><span class="line">V  [libjvm.so+0xa797b4]  JavaThread::<span class="built_in">run</span>()+0x34</span><br><span class="line">V  [libjvm.so+0x92a338]  java_start(Thread*)+0x108</span><br><span class="line">C  [libpthread.so.0+0x7dc5]  start_thread+0xc5</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+        
+          <p class="article-more-link">
+            <a href="/2020/12/10/solve-presto-jvm-coredump/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-presto-in-didichuxing" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -356,55 +397,6 @@
       <footer class="article-footer">
         
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Presto/" rel="tag">Presto</a></li></ul>
-
-      </footer>
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-the-configuration-settings-of-presto-memory-management" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/11/13/the-configuration-settings-of-presto-memory-management/">Presto内存管理相关参数设置</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2019/11/13/the-configuration-settings-of-presto-memory-management/" class="article-date">
-  <time datetime="2019-11-13T09:47:24.000Z" itemprop="datePublished">2019-11-13</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>之前介绍过Presto内存管理和分配策略，但是那个是0.192版本，详细见：<a href="http://armsword.com/2018/05/22/the-memory-management-and-tuning-experience-of-presto/">Presto内存管理原理和调优</a> ，0.201之后内存管理作了新的修改，所以重新简单分析下，然后给出一个配置模板，希望对使用Presto的同学有帮助。</p>
-<h2 id="两种内存"><a href="#两种内存" class="headerlink" title="两种内存"></a>两种内存</h2><p>Presto里面内存只有2种内存，一种是user memory，另一种是system memory。system memory用于input&#x2F;output&#x2F;exchange buffers等，user memory 用于hash join、agg这些。</p>
-<h2 id="内存池"><a href="#内存池" class="headerlink" title="内存池"></a>内存池</h2><p>0.201之前有3种内存POOL，分别是GENERAL_POOL、RESERVED_POOL及SYSTEM_POOL。但是0.201之后，默认SYSTEM_POOL是不开启的，以下参数控制，默认值为false</p>
-<figure class="highlight ceylon"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">deprecated</span>.legacy-system-pool-enabled</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>那SYSTEM_POOL不使用了，这块内存怎么控制呢，去代码里确认了下：</p>
-        
-          <p class="article-more-link">
-            <a href="/2019/11/13/the-configuration-settings-of-presto-memory-management/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
 
       </footer>
     

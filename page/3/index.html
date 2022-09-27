@@ -52,6 +52,55 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-the-configuration-settings-of-presto-memory-management" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/11/13/the-configuration-settings-of-presto-memory-management/">Presto内存管理相关参数设置</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2019/11/13/the-configuration-settings-of-presto-memory-management/" class="article-date">
+  <time datetime="2019-11-13T09:47:24.000Z" itemprop="datePublished">2019-11-13</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>之前介绍过Presto内存管理和分配策略，但是那个是0.192版本，详细见：<a href="http://armsword.com/2018/05/22/the-memory-management-and-tuning-experience-of-presto/">Presto内存管理原理和调优</a> ，0.201之后内存管理作了新的修改，所以重新简单分析下，然后给出一个配置模板，希望对使用Presto的同学有帮助。</p>
+<h2 id="两种内存"><a href="#两种内存" class="headerlink" title="两种内存"></a>两种内存</h2><p>Presto里面内存只有2种内存，一种是user memory，另一种是system memory。system memory用于input&#x2F;output&#x2F;exchange buffers等，user memory 用于hash join、agg这些。</p>
+<h2 id="内存池"><a href="#内存池" class="headerlink" title="内存池"></a>内存池</h2><p>0.201之前有3种内存POOL，分别是GENERAL_POOL、RESERVED_POOL及SYSTEM_POOL。但是0.201之后，默认SYSTEM_POOL是不开启的，以下参数控制，默认值为false</p>
+<figure class="highlight ceylon"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">deprecated</span>.legacy-system-pool-enabled</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>那SYSTEM_POOL不使用了，这块内存怎么控制呢，去代码里确认了下：</p>
+        
+          <p class="article-more-link">
+            <a href="/2019/11/13/the-configuration-settings-of-presto-memory-management/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-presto-orc-and-performance-optimization" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -349,60 +398,6 @@
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
 
       </footer>
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-distributed-solutions-for-search-engines" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2017/01/16/distributed-solutions-for-search-engines/">说说常见搜索引擎的分布式解决方法</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2017/01/16/distributed-solutions-for-search-engines/" class="article-date">
-  <time datetime="2017-01-16T08:36:49.000Z" itemprop="datePublished">2017-01-16</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/">搜索引擎</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>随着索引数据的增大以及请求的增多，分布式搜索是最好的一种解决方案，主要解决两个问题，其一是能让单台机器load所有索引数据到内存中，其二是请求延时大，解决请求latency问题。我之前为团队写了篇专利，内容是关于分布式搜索解决方案的，所以粗略的看了下大部分开源的搜索引擎是怎么实现分布式的，后面的文章我会简单说下常见的搜索引擎的分布式解决方案。</p>
-<p>首先我们先说下几个简单概念，分布式搜索都是M*N（横向切分数据，纵向切分流量）这个维度去解决问题的，虽然不同产品或场景概念不完全相同，读者可以简单认为一份完整的数据，被均分为M份，每一份被称为一个分配（Shard或者Partition），然后提供对每个Shard提供N份副本（Replica）。那么分布式的设计就围绕着以下问题：</p>
-<ul>
-<li>如何选择合适的分片(Shard)，副本(Replica)的数量</li>
-<li>如何做路由，即怎么在所有Shard里找到一份完整的数据（找到对应的机器列表）</li>
-<li>如何做负载均衡</li>
-<li>如果提高服务的可扩展性</li>
-<li>如何提高服务的服务能力（QPS），当索引和搜索并发量增大时，如何平滑解决</li>
-<li>如何更新索引，全量和增量索引的更新解决方法</li>
-<li>如果提高服务的稳定性，单台服务挂掉怎么不影响整体服务等等</li>
-</ul>
-<p>下面就说下常见的搜索引擎的分布式解决方案，因为开源的搜索产品基本上都没有在工作中用过，对代码细节并不是太了解，只是研究了下其原理，所以理解的会有些偏差，看官们如果发现错误直接指出即可。</p>
-        
-          <p class="article-more-link">
-            <a href="/2017/01/16/distributed-solutions-for-search-engines/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
     
   </div>
   
