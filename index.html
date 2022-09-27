@@ -223,13 +223,13 @@ number_of_pending_tasks：是指主节点创建索引并分配shards等任务，
 </tr>
 </tbody></table>
 <ul>
-<li><p>cluster.routing.allocation.node_concurrent_incoming_recoveries<br>一个节点上允许发生多少个并发的传入分片恢复。传入恢复是指在节点上分配目标分片（很可能是复制副本，除非分片正在重新定位）。默认为2</p>
+<li><p>cluster.routing.allocation.node_concurrent_incoming_recoveries , 一个节点上允许发生多少个并发的传入分片恢复。传入恢复是指在节点上分配目标分片（很可能是复制副本，除非分片正在重新定位）。默认为2</p>
 </li>
 <li><p>cluster.routing.allocation.node_concurrent_outgoing_recoveries（同上，传出）</p>
 </li>
-<li><p>cluster.routing.allocation.node_initial_primaries_recoveries（最大初始化主分片的个数）<br>虽然副本的恢复通过网络进行，但节点重新启动后未分配的主节点的恢复将使用本地磁盘中的数据。这些恢复应该很快，以便在同一个节点上并行进行更多的初始主恢复。默认为4。</p>
+<li><p>cluster.routing.allocation.node_initial_primaries_recoveries（最大初始化主分片的个数）,虽然副本的恢复通过网络进行，但节点重新启动后未分配的主节点的恢复将使用本地磁盘中的数据。这些恢复应该很快，以便在同一个节点上并行进行更多的初始主恢复。默认为4。</p>
 </li>
-<li><p>cluster.routing.allocation.same_shard.host<br>允许根据主机名和主机地址执行检查以防止在单个主机上分配同一个碎片的多个实例。默认值为false，表示默认情况下不执行任何检查。此设置仅适用于在同一台计算机上启动多个节点的情况。</p>
+<li><p>cluster.routing.allocation.same_shard.host ,允许根据主机名和主机地址执行检查以防止在单个主机上分配同一个碎片的多个实例。默认值为false，表示默认情况下不执行任何检查。此设置仅适用于在同一台计算机上启动多个节点的情况。</p>
 </li>
 </ul>
 <h3 id="shard均衡的设置"><a href="#shard均衡的设置" class="headerlink" title="shard均衡的设置"></a>shard均衡的设置</h3><ul>
@@ -288,27 +288,18 @@ number_of_pending_tasks：是指主节点创建索引并分配shards等任务，
 <ul>
 <li><p>cluster.routing.allocation.disk.threshold_enabled（是否打开磁盘分配决策器）</p>
 </li>
-<li><p>cluster.routing.allocation.disk.watermark.low(低水位线） 副本分片不在分配的界限</p>
+<li><p>cluster.routing.allocation.disk.watermark.low(低水位线） 副本分片不在分配的界限,控制磁盘使用的低水位线。默认值为85%，这意味着Elasticsearch不会将碎片分配给磁盘使用率超过85%的节点。也可以将其设置为绝对字节值（如500mb），以防止Elasticsearch在可用空间不足时分配分片。此设置不会影响新创建索引的主分片，但会阻止分配其副本。</p>
 </li>
-</ul>
-<p>控制磁盘使用的低水位线。默认值为85%，这意味着Elasticsearch不会将碎片分配给磁盘使用率超过85%的节点。也可以将其设置为绝对字节值（如500mb），以防止Elasticsearch在可用空间不足时分配分片。此设置不会影响新创建索引的主分片，但会阻止分配其副本。</p>
-<ul>
-<li>cluster.routing.allocation.disk.watermark.high（高水位线）重新定位的界限</li>
-</ul>
-<p>控制高水位线。默认为90%，这意味着弹性搜索将尝试将分片从磁盘使用率超过90%的节点重新定位。如果分片的可用空间小于指定的数量，也可以将其设置为绝对字节值（类似于低水印），以便将碎片重新定位到远离节点的位置。此设置影响所有碎片的分配，无论以前是否分配。</p>
-<ul>
-<li>cluster.routing.allocation.disk.watermark.flood_stage（洪水水位线）</li>
-</ul>
-<p>控制洪水水位线，默认为95%。Elasticsearch强制执行只读索引块(index.blocks.read_only_allow_delete)在节点上分配了一个或多个分片，并且至少有一个磁盘超过泛洪水位的每个索引。此设置是防止节点耗尽磁盘空间的最后手段。当磁盘利用率低于最高值时，索引块将自动释放</p>
-<ul>
+<li><p>cluster.routing.allocation.disk.watermark.high（高水位线）重新定位的界限,控制高水位线。默认为90%，这意味着弹性搜索将尝试将分片从磁盘使用率超过90%的节点重新定位。如果分片的可用空间小于指定的数量，也可以将其设置为绝对字节值（类似于低水印），以便将碎片重新定位到远离节点的位置。此设置影响所有碎片的分配，无论以前是否分配。</p>
+</li>
+<li><p>cluster.routing.allocation.disk.watermark.flood_stage（洪水水位线）,控制洪水水位线，默认为95%。Elasticsearch强制执行只读索引块(index.blocks.read_only_allow_delete)在节点上分配了一个或多个分片，并且至少有一个磁盘超过泛洪水位的每个索引。此设置是防止节点耗尽磁盘空间的最后手段。当磁盘利用率低于最高值时，索引块将自动释放</p>
+</li>
 <li><p>cluster.info.update.interval（检查磁盘使用率间隔，默认30s）</p>
 </li>
-<li><p>cluster.routing.allocation.disk.include_relocations</p>
+<li><p>cluster.routing.allocation.disk.include_relocations ,默认值为true，这意味着Elasticsearch将在计算节点的磁盘使用量时考虑当前正在重新定位到目标节点的碎片。但是，考虑到重定位碎片的大小可能意味着节点的磁盘使用量估计错误，因为重新定位可能完成90%，最近检索到的磁盘使用量将包括重新定位碎片的总大小以及正在运行的重定位已使用的空间。</p>
 </li>
-</ul>
-<p>默认值为true，这意味着Elasticsearch将在计算节点的磁盘使用量时考虑当前正在重新定位到目标节点的碎片。但是，考虑到重定位碎片的大小可能意味着节点的磁盘使用量估计错误，因为重新定位可能完成90%，最近检索到的磁盘使用量将包括重新定位碎片的总大小以及正在运行的重定位已使用的空间。</p>
-<ul>
-<li>index.routing.allocation.total_shards_per_node.   一个索引在各node最多分配数。可以帮助索引分布均衡。</li>
+<li><p>index.routing.allocation.total_shards_per_node.   一个索引在各node最多分配数。可以帮助索引分布均衡。</p>
+</li>
 </ul>
 
       
