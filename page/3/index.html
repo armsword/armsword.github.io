@@ -51,364 +51,88 @@
     </div>
   </div>
 </header>
-    <section id="main" class="outer">
-      <article id="post-the-configuration-settings-of-presto-memory-management" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/11/13/the-configuration-settings-of-presto-memory-management/">Presto内存管理相关参数设置</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2019/11/13/the-configuration-settings-of-presto-memory-management/" class="article-date">
-  <time datetime="2019-11-13T09:47:24.000Z" itemprop="datePublished">2019-11-13</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>之前介绍过Presto内存管理和分配策略，但是那个是0.192版本，详细见：<a href="http://armsword.com/2018/05/22/the-memory-management-and-tuning-experience-of-presto/">Presto内存管理原理和调优</a> ，0.201之后内存管理作了新的修改，所以重新简单分析下，然后给出一个配置模板，希望对使用Presto的同学有帮助。</p>
-<h2 id="两种内存"><a href="#两种内存" class="headerlink" title="两种内存"></a>两种内存</h2><p>Presto里面内存只有2种内存，一种是user memory，另一种是system memory。system memory用于input&#x2F;output&#x2F;exchange buffers等，user memory 用于hash join、agg这些。</p>
-<h2 id="内存池"><a href="#内存池" class="headerlink" title="内存池"></a>内存池</h2><p>0.201之前有3种内存POOL，分别是GENERAL_POOL、RESERVED_POOL及SYSTEM_POOL。但是0.201之后，默认SYSTEM_POOL是不开启的，以下参数控制，默认值为false</p>
-<figure class="highlight ceylon"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">deprecated</span>.legacy-system-pool-enabled</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>那SYSTEM_POOL不使用了，这块内存怎么控制呢，去代码里确认了下：</p>
-        
-          <p class="article-more-link">
-            <a href="/2019/11/13/the-configuration-settings-of-presto-memory-management/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
-
-      </footer>
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-presto-orc-and-performance-optimization" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/09/30/presto-orc-and-performance-optimization/">Presto ORC及其性能优化</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2019/09/30/presto-orc-and-performance-optimization/" class="article-date">
-  <time datetime="2019-09-30T07:06:04.000Z" itemprop="datePublished">2019-09-30</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>ORC的全称是(Optimized Row Columnar)，其是为了加速Hive查询以及节省Hadoop磁盘空间而生的，其使用列式存储，支持多种文件压缩方式。由于其被广泛应用在Hadoop系统中，Presto 0.77版本在Hive Connector里实现了ORC Reader。</p>
-<h2 id="ORC文件结构"><a href="#ORC文件结构" class="headerlink" title="ORC文件结构"></a>ORC文件结构</h2><img src="/img/2019/09/01.jpg" width="800" align=left />
-
-<p>上图（图1）来自网络，有很多文章通过这张图片介绍了ORC文件结构，我这里就不多啰嗦了，我们直接通过数据来看文件格式吧。</p>
-        
-          <p class="article-more-link">
-            <a href="/2019/09/30/presto-orc-and-performance-optimization/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
-
-      </footer>
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-solve-presto-system-load-too-high" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/09/18/solve-presto-system-load-too-high/">Presto System load过高问题调研</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2019/09/18/solve-presto-system-load-too-high/" class="article-date">
-  <time datetime="2019-09-18T11:04:09.000Z" itemprop="datePublished">2019-09-18</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="背景："><a href="#背景：" class="headerlink" title="背景："></a>背景：</h2><p>我们Presto有个集群，每6.5天会出现System load过高问题，这个集群有个特点，只服务于一个业务方，且SQL基本相似。如图所示：Sys load很高（20-40%），严重影响查询性能。<br><img src="/img/2019/09/01.png" width="800" align=left /></p>
-<p>业务SQL查询时间表现为：</p>
-<p>ScanFilterAndProjectOperator（Source Stage）阶段有机器有明显的长尾现象，比如20台机器，正常这个Operator执行时间只需要1S，但是有几台机器会耗时几分钟。而重启服务后，查询恢复正常。</p>
-        
-          <p class="article-more-link">
-            <a href="/2019/09/18/solve-presto-system-load-too-high/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
-
-      </footer>
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-presto-compatible-hive-syntax" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/03/31/presto-compatible-hive-syntax/">Presto兼容Hive SQL的一些改造工作</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2019/03/31/presto-compatible-hive-syntax/" class="article-date">
-  <time datetime="2019-03-31T08:23:32.000Z" itemprop="datePublished">2019-03-31</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Presto是一款优秀的分布式SQL查询引擎，适用于即席查询和报表分析等业务，其使用了ANSI SQL语法和语义，使用标准是SQL-92和SQL:2016。但是因为很多业务方一直使用Hive离线引擎来做SQL分析，而Hive使用类似SQL的语法（HQL）。为了使用户能平滑的将业务迁移到Presto上或者能让SQL同时跑到Presto及Hive引擎上，我们对Presto语法及一些算子等做了二次兼容开发，来最大限度降低用户迁移成本。接下来我们介绍下我们的主要兼容工作。</p>
-<h2 id="一、权限认证"><a href="#一、权限认证" class="headerlink" title="一、权限认证"></a>一、权限认证</h2><p>Presto默认如果使用Password，那么必须使用Kerberos协议。因为公司离线数据没有Kerberos协议，所以我们改进了权限认证机制，与离线复用一套权限机制，用户只需要去离线申请权限，指定用户名和密码，即可查询Presto引擎和访问离线数据，并且提供了以下几种方式访问公司Presto，且与公司离线权限体系打通，分别为JDBC、Cli、Go、Python、R、NodeJS。</p>
-<h2 id="二、行为修改"><a href="#二、行为修改" class="headerlink" title="二、行为修改"></a>二、行为修改</h2><h3 id="整数相除返回浮点数"><a href="#整数相除返回浮点数" class="headerlink" title="整数相除返回浮点数"></a>整数相除返回浮点数</h3><p>Presto整数相除沿用了Java整数相除的特性，我们需要修改函数算子行为，如IntegerOperators，将divide相关的函数修改为返回浮点数结果。比如：</p>
-        
-          <p class="article-more-link">
-            <a href="/2019/03/31/presto-compatible-hive-syntax/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
-
-      </footer>
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-the-basic-concepts-of-presto" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2018/08/11/the-basic-concepts-of-presto/">Presto的一些基本概念</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2018/08/11/the-basic-concepts-of-presto/" class="article-date">
-  <time datetime="2018-08-11T14:42:32.000Z" itemprop="datePublished">2018-08-11</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="模型"><a href="#模型" class="headerlink" title="模型"></a>模型</h2><p>Presto 是 Facebook 开源的 MPP (Massive Parallel Processing) SQL 引擎，其理念来源于一个叫 Volcano 的并行数据库，该数据库提出了一个并行执行 SQL 的模型，核心思想就是 Operator Model 和 Iterator Model。</p>
-<ul>
-<li>Operator Model<br>即通过各种 Operator 组成一棵树，树的根节点负责结果输出，树的叶子节点是各种 TableScan。这棵树被称作 Plan（执行计划），数据库里又被细分为逻辑执行计划和物理执行计划。这棵树是由 SQL 经过词法、语法分析及语义分析后，生成一个 AST（Abstract Syntax Tree），一般经过 Visitor 模式遍历后生成。原始数据通过叶子节点 TableScan 读取数据，然后经过各个 Operator的计算，包括（TableScan、Project、Filter、Exchange、Agg、Join、TaskOutput等）产出结果。</li>
-<li>Iterator Model<br>顾名思义就是一个递归迭代过程，Plan 树的各节点有三个状态，Open、GetNext及Close。从根节点 Open 开始递归调用 GetNext 获取数据，即父节点递归调用子节点接口直到没有结果为止，然后Close。</li>
-</ul>
-        
-          <p class="article-more-link">
-            <a href="/2018/08/11/the-basic-concepts-of-presto/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-the-memory-management-and-tuning-experience-of-presto" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2018/05/22/the-memory-management-and-tuning-experience-of-presto/">Presto内存管理原理和调优</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2018/05/22/the-memory-management-and-tuning-experience-of-presto/" class="article-date">
-  <time datetime="2018-05-22T10:32:44.000Z" itemprop="datePublished">2018-05-22</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="内存池"><a href="#内存池" class="headerlink" title="内存池"></a>内存池</h2><p>Presto有三种内存池，分别为GENERAL_POOL、RESERVED_POOL、SYSTEM_POOL。这三个内存池占用的内存大小是由下面算法进行分配的：</p>
-<figure class="highlight reasonml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">builder.put(RESERVED_POOL, <span class="keyword">new</span> <span class="constructor">MemoryPool(RESERVED_POOL, <span class="params">config</span>.<span class="params">getMaxQueryMemoryPerNode</span>()</span>));</span><br><span class="line"></span><br><span class="line">builder.put(SYSTEM_POOL, <span class="keyword">new</span> <span class="constructor">MemoryPool(SYSTEM_POOL, <span class="params">systemMemoryConfig</span>.<span class="params">getReservedSystemMemory</span>()</span>));</span><br><span class="line"></span><br><span class="line">long maxHeap = <span class="module-access"><span class="module"><span class="identifier">Runtime</span>.</span></span>get<span class="constructor">Runtime()</span>.max<span class="constructor">Memory()</span>;</span><br><span class="line">maxMemory = <span class="keyword">new</span> <span class="constructor">DataSize(<span class="params">maxHeap</span> - <span class="params">systemMemoryConfig</span>.<span class="params">getReservedSystemMemory</span>()</span>.<span class="keyword">to</span><span class="constructor">Bytes()</span>, BYTE);</span><br><span class="line">DataSize generalPoolSize = <span class="keyword">new</span> <span class="constructor">DataSize(Math.<span class="params">max</span>(0, <span class="params">maxMemory</span>.<span class="params">toBytes</span>()</span> - config.get<span class="constructor">MaxQueryMemoryPerNode()</span>.<span class="keyword">to</span><span class="constructor">Bytes()</span>), BYTE);</span><br><span class="line">builder.put(GENERAL_POOL, <span class="keyword">new</span> <span class="constructor">MemoryPool(GENERAL_POOL, <span class="params">generalPoolSize</span>)</span>);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>梳理这块代码对应的逻辑和配置文件，得出RESERVED_POOL大小由config.properties里的query.max-memory-per-node指定；SYSTEM_POOL由config.properties里的resources.reserved-system-memory指定，如果不指定，默认值为Runtime.getRuntime().maxMemory() * 0.4，即0.4 * Xmx值；而GENERAL_POOL值为 总内存（Xmx值）- 预留的（max-memory-per-node）- 系统的（0.4 * Xmx）。</p>
-<p>而这三种内存池分别用于不同的地方，分析代码和阅读Presto开发手册，大体可以定位出：</p>
-<ul>
-<li>GENERAL_POOL is the memory pool used by the physical operators in a query.</li>
-<li>SYSTEM_POOL is mostly used by the exchange buffers and readers&#x2F;writers.</li>
-<li>RESERVED_POOL is for running a large query when the general pool becomes full.</li>
-</ul>
-        
-          <p class="article-more-link">
-            <a href="/2018/05/22/the-memory-management-and-tuning-experience-of-presto/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
-
-      </footer>
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-presto" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2017/12/05/presto/">分布式SQL查询引擎Presto原理介绍</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2017/12/05/presto/" class="article-date">
-  <time datetime="2017-12-05T03:31:11.000Z" itemprop="datePublished">2017-12-05</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>我们实时引擎组新引入了一款分布式SQL查询引擎，名字叫Presto，目前已经调研和测试了2个月了，并且期间某平台也从impala平台迁入到了Presto平台，查询性能有了2-3倍的提升（各种原因导致），所以本文将结合作者这段时间的测试和调研研究，来揭开Presto的神秘面纱。</p>
-<h2 id="Presto是神马"><a href="#Presto是神马" class="headerlink" title="Presto是神马"></a>Presto是神马</h2><p>Presto是由Facebook开发的一个分布式SQL查询引擎， 它被设计为用来专门进行高速、实时的数据分析。它的产生是为了解决Hive的MapReduce模型太慢以及不能通过BI或Dashboards直接展现HDFS数据等问题。Presto是一个纯粹的计算引擎，它不存储数据，其通过Connector获取第三方Storage服务的数据。</p>
-<h2 id="历史"><a href="#历史" class="headerlink" title="历史"></a>历史</h2><ul>
-<li>2012年秋季，Facebook启动Presto项目</li>
-<li>2013年冬季，Presto开源</li>
-<li>2017年11月，11888 commits，203 releases，198 contributors</li>
-</ul>
-<h2 id="功能和优点"><a href="#功能和优点" class="headerlink" title="功能和优点"></a>功能和优点</h2><ul>
-<li>Ad-hoc，期望查询时间秒级或几分钟</li>
-<li>比Hive快10倍</li>
-<li>支持多数据源，如Hive、Kafka、MySQL、MonogoDB、Redis、JMX等，也可自己实现Connector</li>
-<li>Client Protocol: HTTP+JSON, support various languages(Python, Ruby, PHP, Node.js Java)</li>
-<li>支持JDBC&#x2F;ODBC连接</li>
-<li>ANSI SQL，支持窗口函数，join，聚合，复杂查询等</li>
-</ul>
-<h2 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h2><ul>
-<li>Master-Slave架构</li>
-<li>三个模块</li>
-<li>Coordinator、Discovery Service、Worker</li>
-<li>Connector</li>
-</ul>
-        
-          <p class="article-more-link">
-            <a href="/2017/12/05/presto/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
-
-      </footer>
-    
-  </div>
-  
-</article>
-
-
-    
+    <section id="main" class="outer"><% switch (type) {
+    case 'archive':
+    var last;
+    page.posts.each(function(post, i){
+    var year = post.date.year();
+    if (last != year){
+      if (last != null){ %>
+        </div></section>
+      <% }
+      last = year; %>
+      <section class="archives-wrap">
+        <div class="archive-year-wrap">
+          <a href="<%- url_for('archives/' + year) %>" class="archive-year"><%= year %></a>
+        </div>
+        <div class="archives">
+    <% } %>
+    <%- partial('archive-post', {post: post, archive: true}) %>
+  <% });
+    if (page.posts.length){ %>
+    </div></section>
+  <% }
+    if (page.total > 1){ %>
       <nav id="page-nav">
-        <a class="extend prev" rel="prev" href="/page/2/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/4/">下一页 &gt;&gt;</a>
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
       </nav>
-    </section>
+    <% }
+    break;
+  case 'category': %>
+    <section class="archives-wrap">
+    <div class="archive-category-wrap">
+      <span class="archive-category"><%= page.category %></span>
+    </div>
+    <div class="archives">
+    <% page.posts.each(function (post, i) { %>
+      <%- partial('archive-post', {post: post, archive: false}) %>
+    <% }); %>
+    </div></section>
+    <% if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+  case 'tag': %>
+    <section class="archives-wrap">
+    <div class="archive-tag-wrap">
+      <span class="archive-tag">#<%= page.tag %></span>
+    </div>
+    <div class="archives">
+    <% page.posts.each(function (post, i) { %>
+      <%- partial('archive-post', {post: post, archive: false}) %>
+    <% }); %>
+    </div></section>
+    <% if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+  default:
+    page.posts.each(function(post){ %>
+      <%- partial('article', {post: post, index: true}) %>
+    <% })
+    if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+} %></section>
     <footer id="footer">
   
   <div class="outer">

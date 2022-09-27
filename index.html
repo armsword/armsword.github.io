@@ -51,611 +51,88 @@
     </div>
   </div>
 </header>
-    <section id="main" class="outer">
-      <article id="post-the-most-frequently-used-commands-of-elasticsearch" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2022/09/27/the-most-frequently-used-commands-of-elasticsearch/">Elasticsearch常用的命令</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2022/09/27/the-most-frequently-used-commands-of-elasticsearch/" class="article-date">
-  <time datetime="2022-09-27T07:10:23.000Z" itemprop="datePublished">2022-09-27</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <ul>
-<li><a href="#%E9%9B%86%E7%BE%A4%E5%81%A5%E5%BA%B7%E7%8A%B6%E6%80%81%E7%9B%B8%E5%85%B3">集群健康状态相关</a><ul>
-<li><a href="#%E6%9F%A5%E7%9C%8B%E9%9B%86%E7%BE%A4%E5%81%A5%E5%BA%B7%E7%8A%B6%E6%80%81">查看集群健康状态</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8B%E6%9C%AA%E5%88%86%E9%85%8D%E5%8E%9F%E5%9B%A0">查看未分配原因</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8B%E5%85%B7%E4%BD%93%E7%B4%A2%E5%BC%95%E6%9C%AA%E5%88%86%E9%85%8D%E6%88%96%E4%B8%8D%E6%90%AC%E8%BF%81%E7%9A%84%E5%8E%9F%E5%9B%A0">查看具体索引未分配或不搬迁的原因</a></li>
-<li><a href="#%E8%A7%A3%E9%87%8A%E4%B8%80%E4%B8%AA%E7%B4%A2%E5%BC%95%E4%B8%BA%E4%BB%80%E4%B9%88%E5%88%86%E9%85%8D%E5%88%B0%E8%AF%A5%E8%8A%82%E7%82%B9">解释一个索引为什么分配到该节点</a></li>
-<li><a href="#%E9%87%8D%E6%96%B0%E5%B0%9D%E8%AF%95%E5%88%86%E9%85%8D%E5%A4%B1%E8%B4%A5%E7%9A%84shard">重新尝试分配失败的shard</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8B%E7%AD%89%E5%BE%85%E4%B8%AD%E7%9A%84%E4%BB%BB%E5%8A%A1">查看等待中的任务</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8Bnodes">查看nodes</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8Bactive-master">查看active master</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8B%E9%9B%86%E7%BE%A4%E5%86%85%E6%AD%A3%E5%9C%A8%E6%90%AC%E8%BF%81%E7%9A%84%E7%B4%A2%E5%BC%95">查看集群内正在搬迁的索引</a></li>
-</ul>
-</li>
-<li><a href="#%E7%B4%A2%E5%BC%95%E7%9B%B8%E5%85%B3">索引相关</a><ul>
-<li><a href="#%E6%9F%A5%E7%9C%8Bindex%E9%85%8D%E7%BD%AE%E4%BF%A1%E6%81%AF">查看index配置信息</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8Bindex%E7%9A%84mapping%E4%BF%A1%E6%81%AF">查看index的mapping信息</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8Bindex%E7%9A%84%E6%A8%A1%E6%9D%BF">查看index的模板</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8Bindex%E7%9A%84shard%E4%BF%A1%E6%81%AF">查看index的shard信息</a></li>
-<li><a href="#%E4%BF%AE%E6%94%B9%E7%B4%A2%E5%BC%95%E9%BB%98%E8%AE%A4%E5%BB%B6%E6%97%B6">修改索引默认延时</a></li>
-<li><a href="#%E7%B4%A2%E5%BC%95%E6%90%AC%E8%BF%81">索引搬迁</a></li>
-<li><a href="#%E5%8F%96%E6%B6%88%E7%B4%A2%E5%BC%95%E6%90%AC%E8%BF%81">取消索引搬迁</a></li>
-<li><a href="#%E7%B4%A2%E5%BC%95shard%E9%87%8D%E5%AE%9A%E5%90%91%E4%B8%A2%E5%BC%83shard">索引shard重定向（丢弃shard）</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8B%E7%B4%A2%E5%BC%95checkpoint%E4%BF%A1%E6%81%AF">查看索引checkpoint信息</a></li>
-<li><a href="#%E7%B4%A2%E5%BC%95reindex">索引reindex</a></li>
-<li><a href="#%E8%BF%81%E7%A7%BBshard%E5%88%B0%E5%88%AB%E7%9A%84%E8%8A%82%E7%82%B9">迁移shard到别的节点</a></li>
-</ul>
-</li>
-<li><a href="#%E9%9B%86%E7%BE%A4%E7%9B%B8%E5%85%B3%E7%9A%84%E8%AE%BE%E7%BD%AE">集群相关的设置</a><ul>
-<li><a href="#%E6%9F%A5%E7%9C%8B%E8%8A%82%E7%82%B9%E9%85%8D%E7%BD%AE%E7%9A%84%E7%BA%BF%E7%A8%8B%E6%B1%A0%E5%A4%A7%E5%B0%8F">查看节点配置的线程池大小</a></li>
-<li><a href="#%E4%B8%B4%E6%97%B6%E5%85%B3%E9%97%AD%E7%A3%81%E7%9B%98%E6%A3%80%E6%B5%8B%E5%8A%A0%E5%BF%ABmaster%E5%A4%84%E7%90%86%E9%80%9F%E5%BA%A6">临时关闭磁盘检测加快master处理速度</a></li>
-<li><a href="#%E9%9B%86%E7%BE%A4%E7%BA%A7%E5%88%AB%E6%8E%92%E9%99%A4%E6%9F%90%E5%8F%B0%E6%9C%BA%E5%99%A8">集群级别排除某台机器</a></li>
-<li><a href="#%E6%97%A5%E5%BF%97%E7%BA%A7%E5%88%AB%E8%AE%BE%E7%BD%AE">日志级别设置</a></li>
-<li><a href="#%E9%9B%86%E7%BE%A4%E7%9A%84%E8%BF%81%E7%A7%BB%E5%8F%82%E6%95%B0">集群的迁移参数</a></li>
-<li><a href="#shard%E5%9D%87%E8%A1%A1%E7%9A%84%E8%AE%BE%E7%BD%AE">shard均衡的设置</a></li>
-<li><a href="#%E5%9F%BA%E4%BA%8E%E7%A3%81%E7%9B%98%E7%9A%84%E5%88%86%E7%89%87%E5%88%86%E9%85%8D%E8%AE%BE%E7%BD%AE">基于磁盘的分片分配设置</a></li>
-</ul>
-</li>
-</ul>
-<h2 id="集群健康状态相关"><a href="#集群健康状态相关" class="headerlink" title="集群健康状态相关"></a>集群健康状态相关</h2><h3 id="查看集群健康状态"><a href="#查看集群健康状态" class="headerlink" title="查看集群健康状态"></a>查看集群健康状态</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cluster/health</span><br></pre></td></tr></table></figure>
-<img src="/img/2022/09/cluster_name.png" width = "100%" />
-number_of_pending_tasks：是指主节点创建索引并分配shards等任务，如果该指标数值一直未减小代表集群存在不稳定因素 。
-
-<h3 id="查看未分配原因"><a href="#查看未分配原因" class="headerlink" title="查看未分配原因"></a>查看未分配原因</h3><figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET _cluster<span class="regexp">/allocation/</span>explain</span><br></pre></td></tr></table></figure>
-
-<p>有以下几种可能</p>
-<ul>
-<li>INDEX_CREATED : Unassigned as a result of an API creation of an index.    索引创建 : 由于API创建索引而未分配的</li>
-<li>CLUSTER_RECOVERED : Unassigned as a result of a full cluster recovery.   集群恢复 : 由于整个集群恢复而未分配</li>
-<li>INDEX_REOPENED : Unassigned as a result of opening a closed index.        索引重新打开</li>
-<li>DANGLING_INDEX_IMPORTED : Unassigned as a result of importing a dangling index.   导入危险的索引</li>
-<li>NEW_INDEX_RESTORED : Unassigned as a result of restoring into a new index.   重新恢复一个新索引</li>
-<li>EXISTING_INDEX_RESTORED : Unassigned as a result of restoring into a closed index.  重新恢复一个已关闭的索引</li>
-<li>REPLICA_ADDED : Unassigned as a result of explicit addition of a replica.      添加副本</li>
-<li>ALLOCATION_FAILED : Unassigned as a result of a failed allocation of the shard.    分配分片失败</li>
-<li>NODE_LEFT : Unassigned as a result of the node hosting it leaving the cluster.  集群中节点丢失</li>
-<li>REROUTE_CANCELLED : Unassigned as a result of explicit cancel reroute command.   reroute命令取消</li>
-<li>REINITIALIZED :  When a shard moves from started back to initializing, for example, with shadow replicas.   重新初始化</li>
-<li>REALLOCATED_REPLICA :  A better replica location is identified and causes the existing replica allocation to be cancelled.   重新分配副本</li>
-</ul>
-<h3 id="查看具体索引未分配或不搬迁的原因"><a href="#查看具体索引未分配或不搬迁的原因" class="headerlink" title="查看具体索引未分配或不搬迁的原因"></a>查看具体索引未分配或不搬迁的原因</h3><figure class="highlight gradle"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">GET _cluster<span class="regexp">/allocation/</span>explain</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;index&quot;</span>:<span class="string">&quot;index_name&quot;</span>,</span><br><span class="line">  <span class="string">&quot;shard&quot;</span>:<span class="number">0</span>,</span><br><span class="line">  <span class="string">&quot;primary&quot;</span>:<span class="keyword">true</span> </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>返回结果：<br><img src="/img/2022/09/index.png" width = "100%" /></p>
-<ol>
-<li>The current state of the shard.</li>
-<li>The reason for the shard originally becoming unassigned.</li>
-<li>Whether to allocate the shard.</li>
-<li>Whether to allocate the shard to the particular node.</li>
-<li>The decider which led to the no decision for the node.导致该节点没有决策的决策器。</li>
-<li>An explanation as to why the decider returned a no decision, with a helpful hint pointing to the setting that led to the decision.              解释为什么决策器返回“否”决策，并提供一个有用的提示，指出导致该决策的设置。</li>
-</ol>
-<h3 id="解释一个索引为什么分配到该节点"><a href="#解释一个索引为什么分配到该节点" class="headerlink" title="解释一个索引为什么分配到该节点"></a>解释一个索引为什么分配到该节点</h3><figure class="highlight gradle"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">GET _cluster<span class="regexp">/allocation/</span>explain</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;index&quot;</span>: <span class="string">&quot;my-index-000001&quot;</span>,</span><br><span class="line">  <span class="string">&quot;shard&quot;</span>: <span class="number">0</span>,</span><br><span class="line">  <span class="string">&quot;primary&quot;</span>: <span class="keyword">false</span>,</span><br><span class="line">  <span class="string">&quot;current_node&quot;</span>: <span class="string">&quot;my-node&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="重新尝试分配失败的shard"><a href="#重新尝试分配失败的shard" class="headerlink" title="重新尝试分配失败的shard"></a>重新尝试分配失败的shard</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">POST _cluster/reroute?retry_failed=<span class="literal">true</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="查看等待中的任务"><a href="#查看等待中的任务" class="headerlink" title="查看等待中的任务"></a>查看等待中的任务</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cat/pending_tasks</span><br></pre></td></tr></table></figure>
-<p>可以看到任务都被指派了优先级（ 比如说 URGENT 要比 HIGH 更早的处理 ）<br><img src="/img/2022/09/tasks.png" width = "100%" /></p>
-<h3 id="查看nodes"><a href="#查看nodes" class="headerlink" title="查看nodes"></a>查看nodes</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cat/nodes</span><br></pre></td></tr></table></figure>
-
-<h3 id="查看active-master"><a href="#查看active-master" class="headerlink" title="查看active master"></a>查看active master</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cat/master</span><br></pre></td></tr></table></figure>
-
-<h3 id="查看集群内正在搬迁的索引"><a href="#查看集群内正在搬迁的索引" class="headerlink" title="查看集群内正在搬迁的索引"></a>查看集群内正在搬迁的索引</h3><figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GET</span> _cat/recovery?v&amp;h=<span class="keyword">index</span>,shard,<span class="type">time</span>,<span class="keyword">type</span>,stage,source_node,target_node,files_percent,bytes_percent,translog_ops_percent&amp;s=<span class="keyword">type</span>:<span class="keyword">desc</span>,stage,shard&amp;active_only</span><br></pre></td></tr></table></figure>
-
-<h2 id="索引相关"><a href="#索引相关" class="headerlink" title="索引相关"></a>索引相关</h2><h3 id="查看index配置信息"><a href="#查看index配置信息" class="headerlink" title="查看index配置信息"></a>查看index配置信息</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> index_name/_settings?flat_settings</span><br></pre></td></tr></table></figure>
-<p>查看默认配置</p>
-<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> index_name/_settings?flat_settings&amp;include_defaults</span><br></pre></td></tr></table></figure>
-
-<h3 id="查看index的mapping信息"><a href="#查看index的mapping信息" class="headerlink" title="查看index的mapping信息"></a>查看index的mapping信息</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> index_name/_mapping</span><br></pre></td></tr></table></figure>
-
-<h3 id="查看index的模板"><a href="#查看index的模板" class="headerlink" title="查看index的模板"></a>查看index的模板</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _template/us01_rlib_dbroker.d-engine.sailing</span><br></pre></td></tr></table></figure>
-
-<h3 id="查看index的shard信息"><a href="#查看index的shard信息" class="headerlink" title="查看index的shard信息"></a>查看index的shard信息</h3><figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET _cat<span class="regexp">/shards/i</span>ndex_name</span><br></pre></td></tr></table></figure>
-
-<h3 id="修改索引默认延时"><a href="#修改索引默认延时" class="headerlink" title="修改索引默认延时"></a>修改索引默认延时</h3><p>默认情况，集群会等待一分钟来查看节点是否会重新加入，如果这个节点在此期间重新加入，重新加入的节点会保持其现有的分片数据，不会触发新的分片分配。</p>
-<p>通过修改参数 delayed_timeout ，默认等待时间可以全局设置也可以在索引级别进行修改:</p>
-<figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">PUT <span class="regexp">/_all/</span>_settings</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;settings&quot;</span>: &#123;</span><br><span class="line">    <span class="string">&quot;index.unassigned.node_left.delayed_timeout&quot;</span>: <span class="string">&quot;5m&quot;</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>通过使用 <code>_all</code> 索引名，我们可以为集群里面的所有的索引使用这个参数。默认时间被修改成了 5 分钟。<br>这个配置是动态的，可以在运行时进行修改。如果你希望分片立即分配而不想等待，你可以设置参数： delayed_timeout: 0.<br>延迟分配不会阻止副本被提拔为主分片。集群还是会进行必要的提拔来让集群回到 yellow 状态。缺失副本的重建是唯一被延迟的过程。</p>
-<h3 id="索引搬迁"><a href="#索引搬迁" class="headerlink" title="索引搬迁"></a>索引搬迁</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">POST _cluster/reroute</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;commands&quot;</span>: [ &#123;</span><br><span class="line">    <span class="string">&quot;move&quot;</span>: &#123;</span><br><span class="line">      <span class="string">&quot;index&quot;</span>: <span class="string">&quot;index_name&quot;</span>,</span><br><span class="line">      <span class="string">&quot;shard&quot;</span>: 01,</span><br><span class="line">      <span class="string">&quot;from_node&quot;</span>: <span class="string">&quot;ebSuUo1ZRDS812E4Yj30RQ&quot;</span>, <span class="comment">#(datanode)</span></span><br><span class="line">      <span class="string">&quot;to_node&quot;</span>: <span class="string">&quot;dZYvpuDMRx-gQALljBPjzQ&quot;</span>  <span class="comment">#(datanode)</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125; ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="取消索引搬迁"><a href="#取消索引搬迁" class="headerlink" title="取消索引搬迁"></a>取消索引搬迁</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">POST _cluster/reroute</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;commands&quot;</span>: [</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="string">&quot;cancel&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;index&quot;</span>: <span class="string">&quot;index_name&quot;</span>,</span><br><span class="line">        <span class="string">&quot;shard&quot;</span>: 0,</span><br><span class="line">        <span class="string">&quot;node&quot;</span>: <span class="string">&quot;ZBQ63g9NR7-LnVHHR7VdDw&quot;</span>,   <span class="comment">#目标节点datanode，取消不影响主分片</span></span><br><span class="line">        <span class="string">&quot;allow_primary&quot;</span>:  <span class="literal">true</span></span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="索引shard重定向（丢弃shard）"><a href="#索引shard重定向（丢弃shard）" class="headerlink" title="索引shard重定向（丢弃shard）"></a>索引shard重定向（丢弃shard）</h3><figure class="highlight gradle"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">POST <span class="regexp">/_cluster/</span>reroute</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;commands&quot;</span> : [</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="string">&quot;allocate_empty_primary&quot;</span> : &#123;</span><br><span class="line">        <span class="string">&quot;index&quot;</span> : <span class="string">&quot;index_name&quot;</span>,</span><br><span class="line">        <span class="string">&quot;shard&quot;</span> : <span class="number">1</span>,</span><br><span class="line">        <span class="string">&quot;node&quot;</span> : <span class="string">&quot;3NaCOaAPQMqVvATY0hB_3A&quot;</span>,</span><br><span class="line">        <span class="string">&quot;accept_data_loss&quot;</span> : <span class="keyword">true</span></span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="查看索引checkpoint信息"><a href="#查看索引checkpoint信息" class="headerlink" title="查看索引checkpoint信息"></a>查看索引checkpoint信息</h3><figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET <span class="regexp">/index_name/</span>_stats?level=shards  <span class="regexp">//i</span>ndex_name表示对应的索引</span><br></pre></td></tr></table></figure>
-<img src="/img/2022/09/checkpoint.png" width = "100%" />
-
-<h3 id="索引reindex"><a href="#索引reindex" class="headerlink" title="索引reindex"></a>索引reindex</h3><figure class="highlight dts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">POST <span class="title class_">_reindex</span></span><br><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="string">&quot;source&quot;</span>: <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="string">&quot;index&quot;</span>: <span class="string">&quot;old_index&quot;</span> </span><br><span class="line">  <span class="punctuation">&#125;</span>,</span><br><span class="line">  <span class="string">&quot;dest&quot;</span>: <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="string">&quot;index&quot;</span>: <span class="string">&quot;new_index&quot;</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="迁移shard到别的节点"><a href="#迁移shard到别的节点" class="headerlink" title="迁移shard到别的节点"></a>迁移shard到别的节点</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">POST _cluster/reroute</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;commands&quot;</span>: [</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="string">&quot;move&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;index&quot;</span>: <span class="string">&quot;index_name&quot;</span>,</span><br><span class="line">        <span class="string">&quot;shard&quot;</span>: 0,</span><br><span class="line">        <span class="string">&quot;from_node&quot;</span>: <span class="string">&quot;hostname-a&quot;</span>,</span><br><span class="line">        <span class="string">&quot;to_node&quot;</span>: <span class="string">&quot;hostname-b&quot;</span></span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="集群相关的设置"><a href="#集群相关的设置" class="headerlink" title="集群相关的设置"></a>集群相关的设置</h2><h3 id="查看节点配置的线程池大小"><a href="#查看节点配置的线程池大小" class="headerlink" title="查看节点配置的线程池大小"></a>查看节点配置的线程池大小</h3><figure class="highlight gradle"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET _cat<span class="regexp">/thread_pool/</span><span class="keyword">write</span>?v&amp;h=node_name,<span class="keyword">size</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="临时关闭磁盘检测加快master处理速度"><a href="#临时关闭磁盘检测加快master处理速度" class="headerlink" title="临时关闭磁盘检测加快master处理速度"></a>临时关闭磁盘检测加快master处理速度</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">PUT _cluster/settings?<span class="attribute">master_timeout</span>=360s</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;transient&quot;</span>: &#123;</span><br><span class="line">    <span class="string">&quot;cluster.routing.allocation.disk.threshold_enabled&quot;</span> : <span class="string">&quot;false&quot;</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="集群级别排除某台机器"><a href="#集群级别排除某台机器" class="headerlink" title="集群级别排除某台机器"></a>集群级别排除某台机器</h3><figure class="highlight ada"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">PUT _cluster/settings?flat_settings</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;transient&quot;</span> : &#123;</span><br><span class="line">    <span class="string">&quot;cluster.routing.allocation.exclude._name&quot;</span> : &quot;<span class="type">hostname</span>-a<span class="string">&quot;</span></span><br><span class="line"><span class="string">  &#125;</span></span><br><span class="line"><span class="string">&#125;</span></span><br></pre></td></tr></table></figure>
-
-<p>也可索引级别排除某台机器</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">PUT router_access_20210401/_settings</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;index.routing.allocation.exclude._name&quot;</span> : <span class="string">&quot;hostname-a&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="日志级别设置"><a href="#日志级别设置" class="headerlink" title="日志级别设置"></a>日志级别设置</h3><p>所有日志（全局不建议开启，容易导致线上故障）</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">PUT _cluster/settings</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;transient&quot;</span>: &#123;</span><br><span class="line">    <span class="string">&quot;logger._root&quot;</span>:<span class="string">&quot;DEBUG&quot;</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>单个类或者模块</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">PUT _cluster/settings</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;transient&quot;</span>: &#123;</span><br><span class="line">    <span class="string">&quot;logger.org.elasticsearch.action.bulk&quot;</span>: <span class="string">&quot;DEBUG&quot;</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="集群的迁移参数"><a href="#集群的迁移参数" class="headerlink" title="集群的迁移参数"></a>集群的迁移参数</h3><ul>
-<li>cluster.routing.allocation.enable</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th>参数</th>
-<th>含义</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>all</td>
-<td>允许所有类型shard进行shard分配</td>
-</tr>
-<tr>
-<td>primaries</td>
-<td>允许主分片进行shard分配</td>
-</tr>
-<tr>
-<td>new_primaries</td>
-<td>允许新索引的主分片分配</td>
-</tr>
-<tr>
-<td>none</td>
-<td>所有类型的分片都不可分配</td>
-</tr>
-</tbody></table>
-<ul>
-<li><p>cluster.routing.allocation.node_concurrent_incoming_recoveries<br>一个节点上允许发生多少个并发的传入分片恢复。传入恢复是指在节点上分配目标分片（很可能是复制副本，除非分片正在重新定位）。默认为2</p>
-</li>
-<li><p>cluster.routing.allocation.node_concurrent_outgoing_recoveries（同上，传出）</p>
-</li>
-<li><p>cluster.routing.allocation.node_initial_primaries_recoveries（最大初始化主分片的个数）<br>虽然副本的恢复通过网络进行，但节点重新启动后未分配的主节点的恢复将使用本地磁盘中的数据。这些恢复应该很快，以便在同一个节点上并行进行更多的初始主恢复。默认为4。</p>
-</li>
-<li><p>cluster.routing.allocation.same_shard.host<br>允许根据主机名和主机地址执行检查以防止在单个主机上分配同一个碎片的多个实例。默认值为false，表示默认情况下不执行任何检查。此设置仅适用于在同一台计算机上启动多个节点的情况。</p>
-</li>
-</ul>
-<h3 id="shard均衡的设置"><a href="#shard均衡的设置" class="headerlink" title="shard均衡的设置"></a>shard均衡的设置</h3><ul>
-<li><p>cluster.routing.rebalance.enable</p>
-<table>
-<thead>
-<tr>
-<th>参数</th>
-<th>含义</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>all</td>
-<td>允许对所有分片进行均衡</td>
-</tr>
-<tr>
-<td>primaries</td>
-<td>只对主分片进行均衡</td>
-</tr>
-<tr>
-<td>replicas</td>
-<td>只对副本分片进行均衡</td>
-</tr>
-<tr>
-<td>none</td>
-<td>对所有分片都不进行均衡</td>
-</tr>
-</tbody></table>
-</li>
-<li><p>cluster.routing.allocation.allow_rebalance</p>
-<table>
-<thead>
-<tr>
-<th>参数</th>
-<th>含义</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>always</td>
-<td>始终允许重新均衡</td>
-</tr>
-<tr>
-<td>indices_primaries_active</td>
-<td>只有当群集中的所有主分片都被分配时。</td>
-</tr>
-<tr>
-<td>indices_all_active</td>
-<td>只有当群集中的所有分片都被分配时。(默认)</td>
-</tr>
-</tbody></table>
-</li>
-<li><p>cluster.routing.allocation.cluster_concurrent_rebalance(控制均衡，不控制迁移）<br>允许控制集群范围内允许多少并发分片重新平衡。默认为2。请注意，此设置仅控制由于集群中的不平衡而同时重新定位分片的数量。此设置不限制由于分配筛选或强制感知而导致的分片重新定位。</p>
-</li>
-</ul>
-<h3 id="基于磁盘的分片分配设置"><a href="#基于磁盘的分片分配设置" class="headerlink" title="基于磁盘的分片分配设置"></a>基于磁盘的分片分配设置</h3><p>不能在这些设置中混合使用百分比值和字节值。要么所有值都设置为百分比值，要么全部设置为字节值。这种强制执行使得Elasticsearch可以验证设置是否内部一致，确保低磁盘阈值小于高磁盘阈值，高磁盘阈值小于泛洪水位阈值。</p>
-<ul>
-<li><p>cluster.routing.allocation.disk.threshold_enabled（是否打开磁盘分配决策器）</p>
-</li>
-<li><p>cluster.routing.allocation.disk.watermark.low(低水位线） 副本分片不在分配的界限</p>
-</li>
-</ul>
-<p>控制磁盘使用的低水位线。默认值为85%，这意味着Elasticsearch不会将碎片分配给磁盘使用率超过85%的节点。也可以将其设置为绝对字节值（如500mb），以防止Elasticsearch在可用空间不足时分配分片。此设置不会影响新创建索引的主分片，但会阻止分配其副本。</p>
-<ul>
-<li>cluster.routing.allocation.disk.watermark.high（高水位线）重新定位的界限</li>
-</ul>
-<p>控制高水位线。默认为90%，这意味着弹性搜索将尝试将分片从磁盘使用率超过90%的节点重新定位。如果分片的可用空间小于指定的数量，也可以将其设置为绝对字节值（类似于低水印），以便将碎片重新定位到远离节点的位置。此设置影响所有碎片的分配，无论以前是否分配。</p>
-<ul>
-<li>cluster.routing.allocation.disk.watermark.flood_stage（洪水水位线）</li>
-</ul>
-<p>控制洪水水位线，默认为95%。Elasticsearch强制执行只读索引块(index.blocks.read_only_allow_delete)在节点上分配了一个或多个分片，并且至少有一个磁盘超过泛洪水位的每个索引。此设置是防止节点耗尽磁盘空间的最后手段。当磁盘利用率低于最高值时，索引块将自动释放</p>
-<ul>
-<li><p>cluster.info.update.interval（检查磁盘使用率间隔，默认30s）</p>
-</li>
-<li><p>cluster.routing.allocation.disk.include_relocations</p>
-</li>
-</ul>
-<p>默认值为true，这意味着Elasticsearch将在计算节点的磁盘使用量时考虑当前正在重新定位到目标节点的碎片。但是，考虑到重定位碎片的大小可能意味着节点的磁盘使用量估计错误，因为重新定位可能完成90%，最近检索到的磁盘使用量将包括重新定位碎片的总大小以及正在运行的重定位已使用的空间。</p>
-<ul>
-<li>index.routing.allocation.total_shards_per_node.   一个索引在各node最多分配数。可以帮助索引分布均衡。</li>
-</ul>
-
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/elasticsearch/" rel="tag">elasticsearch</a></li></ul>
-
-      </footer>
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-common-compression-algorithms-in-search-engines" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2022/01/18/common-compression-algorithms-in-search-engines/">科普下搜索索引里常用的压缩算法</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2022/01/18/common-compression-algorithms-in-search-engines/" class="article-date">
-  <time datetime="2022-01-18T09:43:14.000Z" itemprop="datePublished">2022-01-18</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>数据压缩是存储领域常用的优化手段，压缩算法可以减少数据的大小减少存储成本、减少磁盘的寻道时间提高I&#x2F;O的性能、减少数据的传输时间并提高缓冲区的命中率，节省的I&#x2F;O时间可以轻易补偿它带来的CPU额外开销。目前在用的主流压缩算法包括zlib、snappy和lz4等。压缩算法并不是压缩比越高越好，压缩比越高，其解压缩速度可能越慢，CPU消耗就会越大，这需要根据硬件配置和业务场景做Trade off。本文主要介绍了如下几种搜索索引里常见的压缩算法，大部分压缩算法也适用于OLAP领域，同时有些场景可能需要结合多种场景实现，比如倒排索引的posting list压缩就需要结合PForDelta及Simple算法才能获得更好的压缩比。同时在选择压缩算法时，也会考虑该压缩算法是否支持流式压缩等。</p>
-<ul>
-<li>Fixed length</li>
-<li>Variable Byte</li>
-<li>Improved Variable Byte</li>
-<li>Group Varint</li>
-<li>Run Length Encoding</li>
-<li>Dictionary Coding</li>
-<li>Simple 9</li>
-<li>Simple 16</li>
-<li>PForDelta</li>
-<li>Huffman Coding</li>
-<li>LZ77</li>
-<li>Elasticsearch 行存压缩算法</li>
-</ul>
-<h2 id="Fixed-length"><a href="#Fixed-length" class="headerlink" title="Fixed length"></a>Fixed length</h2><h3 id="压缩方法"><a href="#压缩方法" class="headerlink" title="压缩方法"></a>压缩方法</h3><p>找到一组数据的最大值，之后计算出最大位宽N：</p>
-<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">10</span>,<span class="number">35</span>,<span class="number">100</span>,<span class="number">170</span>,<span class="number">370</span>,<span class="number">29000</span>,<span class="number">30000</span>,<span class="number">30010</span></span><br></pre></td></tr></table></figure>
-
-<p>2^15 &#x3D; 32768  &gt; 30010，则位宽为15，即每个32bit的数据可以用15bit表示</p>
-        
-          <p class="article-more-link">
-            <a href="/2022/01/18/common-compression-algorithms-in-search-engines/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/" rel="tag">搜索引擎</a></li></ul>
-
-      </footer>
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-elasticsearch-performance-optimizing-in-online-poi-service" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2021/09/09/elasticsearch-performance-optimizing-in-online-poi-service/">Elasticsearch性能调优之毫秒级搜索POI业务</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2021/09/09/elasticsearch-performance-optimizing-in-online-poi-service/" class="article-date">
-  <time datetime="2021-09-09T12:35:34.000Z" itemprop="datePublished">2021-09-09</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>地图POI搜索业务使用的Elasticsearch集群是自建的2.3版本，维护ES需要耗费很多精力和人力。而目前公司有专门的ES搜索团队，且ES版本已经升级到7.6版本。ES 7.6版本有很多新的特性，如IndexSorting，查询加速，索引off-heap，全新的熔断器等等。6月份，ES搜索团队决定与地图POI合作共建，将ES升级到公司里的ES 7.6，专业的人做专业的事，ES团队维护集群稳定性、提升性能等，这样地图POI团队可以更好的聚焦到业务架构和推荐系统中台化上。</p>
-<p>地图POI分为国内POI和国际化POI，其面向在线搜索业务，对搜索耗时要求比较高，国内POI要求TP50耗时小于5ms，TP99 耗时小于20ms，国际化POI要求TP50耗时小于5ms，TP99耗时小于60ms。且两个业务方的索引查询超时时间都为180ms。由于其业务特点，所以在迁移ES 7.6时，并非一帆风顺，遇到很多性能和稳定性问题，这篇文章会介绍下遇到的性能问题和解决方法。由于篇幅有限，本文只介绍了影响性能最大的三个问题及优化手段和排查问题过程，分别为：</p>
-<ul>
-<li>前缀查询优化</li>
-<li>查询截断</li>
-<li>查询超时毛刺</li>
-</ul>
-<h2 id="前缀查询优化"><a href="#前缀查询优化" class="headerlink" title="前缀查询优化"></a>前缀查询优化</h2><p>调好合适的分片数，之后将索引从Hive离线导入到ES，做一轮压测，耗时曲线图如下图所示，耗时都接近800ms了，并且超过180ms就认为是超时，这与期望的性能有比较大的差距：</p>
-<img src="/img/2021/09/curve.png" width = "100%" />
-
-<p>通过gateway里面的审计日志，计算出国际化POI TP50、TP90、TP99时间，如下图所示：</p>
-<img src="/img/2021/09/TP99.png" width = "100%" />
-
-<p>可以看到TP99时间到了619ms，这与预期的性能有很大差距。所以我们需要看下为什么查询性能这么慢，我们将审计日志里面的压测DSL全部拿到，之后根据查询耗时降序排序，然后将DSL模板归类，发现耗时最久的是类似下面这种DSL：</p>
-        
-          <p class="article-more-link">
-            <a href="/2021/09/09/elasticsearch-performance-optimizing-in-online-poi-service/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-es-memory-management" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2021/03/26/es-memory-management/">ES 内存管理分析</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2021/03/26/es-memory-management/" class="article-date">
-  <time datetime="2021-03-26T09:55:27.000Z" itemprop="datePublished">2021-03-26</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>刚接触ES，研究了下ES内存管理，参考了一些文章，整理了一篇文章，方便自己记忆。</p>
-<p>命令 GET _cat&#x2F;nodes?help 列出所有node, 并展示node所在机器的运行状态信息，help可显示帮助信息</p>
-<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cat/nodes?<span class="attribute">h</span>=name,hp,hm,rp,rm,qcm,rcm,fm,sm&amp;v</span><br></pre></td></tr></table></figure>
-
-<p>解析下上面参数的意义 </p>
-<img src="/img/2021/03/cat.png" width = "100%" />
-
-<p>信息如下：</p>
-<img src="/img/2021/03/node.png" width = "100%" />
-
-<p>以红框里的node为例， 内存占用 &#x3D; (8.6 gb)qcm + (1gb) rcm + (0.35gb) fm + (2.2 gb)sm，大约12 gb。 </p>
-        
-          <p class="article-more-link">
-            <a href="/2021/03/26/es-memory-management/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Elasticsearch/" rel="tag">Elasticsearch</a></li></ul>
-
-      </footer>
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-use-async-profiler-find-cpu-bottleneck" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2021/03/23/use-async-profiler-find-cpu-bottleneck/">使用火焰图定位 OLAP 引擎瓶颈</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2021/03/23/use-async-profiler-find-cpu-bottleneck/" class="article-date">
-  <time datetime="2021-03-23T12:24:35.000Z" itemprop="datePublished">2021-03-23</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>在维护 OLAP 引擎时，很多时候需要对引擎做系统的性能分析和优化，此时往往需要查看 CPU 耗时，了解主要耗时点及瓶颈在哪里。俗语有曰：兵欲善其事必先利其器，程序员定位性能问题也需要一件“利器”。性能调优工具（perf）能够显示系统的调用栈及时间分布，但是呈现内容上只能单一的列出调用栈或者非层次化的时间分布，不够直观。火焰图（flame graph）能够帮助大家更直观的发现问题。本文将以 Presto 为例，介绍火焰图的使用技巧。</p>
-<h2 id="初识火焰图"><a href="#初识火焰图" class="headerlink" title="初识火焰图"></a>初识火焰图</h2><p>Perf 的原理是这样子的：每隔一个固定的时间，就在 CPU 上（每个核上都有）产生一个中断，在中断上看看，当前是哪个 pid，哪个函数，然后给对应的 pid 和函数加一个统计值，这样，我们就知道 CPU 有百分几的时间在某个 pid，或者某个函数上了。而火焰图（Flame Graph）是由 Linux 性能优化大师 Brendan Gregg 发明的，和所有其他的 profiling 方法不同的是，火焰图以一个全局的视野来看待时间分布，它从底部往顶部，列出所有可能导致性能瓶颈的调用栈。</p>
-<img src="/img/2021/03/01.png" width = "90%" />
-
-<p>火焰图整个图形看起来就像一个跳动的火焰，这就是它名字的由来。火焰图有以下特征（这里以采样CPU 火焰图为例）：</p>
-<ul>
-<li>每一列代表一个调用栈，每一个格子代表一个函数。</li>
-<li>纵轴展示了栈的深度，按照调用关系从下到上排列。最顶上格子代表采样时，正在占用 CPU 的函数</li>
-<li>横轴的意义是指：火焰图将采集的多个调用栈信息，并行关系。横轴格子的宽度代表其在采样中出现频率，所以一个格子的宽度越大，说明它是瓶颈原因的可能性就越大。</li>
-<li>火焰图格子的颜色是随机的暖色调，方便区分各个调用信息。</li>
-<li>其他的采样方式也可以使用火焰图， 比如内存</li>
-</ul>
-<p>所以，火焰图就是看顶层的哪个函数占据的宽度最大。只要有”平顶”，就表示该函数可能存在性能问题，也是我们性能优化收益最大的地方。<br>Java生态常见的用于perf的工具有：allocation-instrumenter、YourKit Profiler、async-profiler、JProfiler、Arthas（基于 async-profiler ）。笔者推荐使用阿里巴巴出品的 Arthas 或 async-profiler，笔者喜欢使用 async-profiler 这个 perf 工具生成火焰图，主要原因是用法简单，足够满足日常排查性能问题了。</p>
-        
-          <p class="article-more-link">
-            <a href="/2021/03/23/use-async-profiler-find-cpu-bottleneck/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/perf/" rel="tag">perf</a></li></ul>
-
-      </footer>
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-jvm-bug-causes-Presto-queries-to-slow-down" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2021/02/07/jvm-bug-causes-Presto-queries-to-slow-down/">说下那些导致Presto查询变慢的JVM Bug和解决方法</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2021/02/07/jvm-bug-causes-Presto-queries-to-slow-down/" class="article-date">
-  <time datetime="2021-02-07T02:24:48.000Z" itemprop="datePublished">2021-02-07</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>维护Presto集群，遇到了一些JVM Bug会严重导致Presto查询变慢，这里分享下Bugs表现及解决方法。</p>
-<h2 id="Ref-Proc-耗时太久"><a href="#Ref-Proc-耗时太久" class="headerlink" title="Ref Proc 耗时太久"></a>Ref Proc 耗时太久</h2><p>线上Presto运行一段时间后，查询会越来越慢，打了下火焰图，发现30%的CPU都浪费在young gc上了，看了下gc log，如下：</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="number">2020-12-21T20:50:15.009</span><span class="string">+0800:</span> <span class="attr">4753827.928:</span> [<span class="string">GC</span> <span class="string">pause</span> <span class="string">(GCLocker</span> <span class="string">Initiated</span> <span class="string">GC)</span> <span class="string">(young)</span> <span class="string">(initial-mark)</span>, <span class="number">0.5723063</span> <span class="string">secs</span>]</span><br><span class="line">   [<span class="attr">Parallel Time:</span> <span class="number">66.9</span> <span class="string">ms</span>, <span class="attr">GC Workers:</span> <span class="number">33</span>]</span><br><span class="line">      [<span class="string">GC</span> <span class="string">Worker</span> <span class="string">Start</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">4753827940.4</span>, <span class="attr">Avg:</span> <span class="number">4753827940.5</span>, <span class="attr">Max:</span> <span class="number">4753827940.7</span>, <span class="attr">Diff:</span> <span class="number">0.4</span>]</span><br><span class="line">      [<span class="string">Ext</span> <span class="string">Root</span> <span class="string">Scanning</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">26.2</span>, <span class="attr">Avg:</span> <span class="number">27.3</span>, <span class="attr">Max:</span> <span class="number">54.9</span>, <span class="attr">Diff:</span> <span class="number">28.7</span>, <span class="attr">Sum:</span> <span class="number">899.6</span>]</span><br><span class="line">      [<span class="string">Update</span> <span class="string">RS</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">9.2</span>, <span class="attr">Max:</span> <span class="number">9.8</span>, <span class="attr">Diff:</span> <span class="number">9.8</span>, <span class="attr">Sum:</span> <span class="number">304.3</span>]</span><br><span class="line">         [<span class="attr">Processed Buffers: Min:</span> <span class="number">0</span>, <span class="attr">Avg:</span> <span class="number">19.9</span>, <span class="attr">Max:</span> <span class="number">35</span>, <span class="attr">Diff:</span> <span class="number">35</span>, <span class="attr">Sum:</span> <span class="number">657</span>]</span><br><span class="line">      [<span class="string">Scan</span> <span class="string">RS</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">0.0</span>, <span class="attr">Max:</span> <span class="number">0.0</span>, <span class="attr">Diff:</span> <span class="number">0.0</span>, <span class="attr">Sum:</span> <span class="number">0.1</span>]</span><br><span class="line">      [<span class="string">Code</span> <span class="string">Root</span> <span class="string">Scanning</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">0.0</span>, <span class="attr">Max:</span> <span class="number">0.0</span>, <span class="attr">Diff:</span> <span class="number">0.0</span>, <span class="attr">Sum:</span> <span class="number">0.0</span>]</span><br><span class="line">      [<span class="string">Object</span> <span class="string">Copy</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">0.5</span>, <span class="attr">Avg:</span> <span class="number">11.2</span>, <span class="attr">Max:</span> <span class="number">13.8</span>, <span class="attr">Diff:</span> <span class="number">13.3</span>, <span class="attr">Sum:</span> <span class="number">369.9</span>]</span><br><span class="line">      [<span class="string">Termination</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">7.8</span>, <span class="attr">Max:</span> <span class="number">8.4</span>, <span class="attr">Diff:</span> <span class="number">8.4</span>, <span class="attr">Sum:</span> <span class="number">256.8</span>]</span><br><span class="line">         [<span class="attr">Termination Attempts: Min:</span> <span class="number">1</span>, <span class="attr">Avg:</span> <span class="number">1.5</span>, <span class="attr">Max:</span> <span class="number">4</span>, <span class="attr">Diff:</span> <span class="number">3</span>, <span class="attr">Sum:</span> <span class="number">51</span>]</span><br><span class="line">      [<span class="string">GC</span> <span class="string">Worker</span> <span class="string">Other</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">0.0</span>, <span class="attr">Max:</span> <span class="number">0.0</span>, <span class="attr">Diff:</span> <span class="number">0.0</span>, <span class="attr">Sum:</span> <span class="number">0.5</span>]</span><br><span class="line">      [<span class="string">GC</span> <span class="string">Worker</span> <span class="string">Total</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">55.3</span>, <span class="attr">Avg:</span> <span class="number">55.5</span>, <span class="attr">Max:</span> <span class="number">55.7</span>, <span class="attr">Diff:</span> <span class="number">0.5</span>, <span class="attr">Sum:</span> <span class="number">1831.3</span>]</span><br><span class="line">      [<span class="string">GC</span> <span class="string">Worker</span> <span class="string">End</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">4753827996.0</span>, <span class="attr">Avg:</span> <span class="number">4753827996.0</span>, <span class="attr">Max:</span> <span class="number">4753827996.1</span>, <span class="attr">Diff:</span> <span class="number">0.1</span>]</span><br><span class="line">   [<span class="attr">Code Root Fixup:</span> <span class="number">0.4</span> <span class="string">ms</span>]</span><br><span class="line">   [<span class="attr">Code Root Purge:</span> <span class="number">0.0</span> <span class="string">ms</span>]</span><br><span class="line">   [<span class="attr">Clear CT:</span> <span class="number">0.6</span> <span class="string">ms</span>]</span><br><span class="line">   [<span class="attr">Other:</span> <span class="number">504.4</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Choose CSet:</span> <span class="number">0.0</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Ref Proc:</span> <span class="number">501.3</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Ref Enq:</span> <span class="number">0.0</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Redirty Cards:</span> <span class="number">0.5</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Humongous Register:</span> <span class="number">0.2</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Humongous Reclaim:</span> <span class="number">0.0</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Free CSet:</span> <span class="number">0.2</span> <span class="string">ms</span>]</span><br><span class="line">   [<span class="attr">Eden:</span> <span class="number">320.</span><span class="string">0M(3264.0M)-&gt;0.0B(3392.0M)</span> <span class="attr">Survivors:</span> <span class="number">416.</span><span class="string">0M-&gt;288.0M</span> <span class="attr">Heap:</span> <span class="number">9068.</span><span class="string">7M(72.0G)-&gt;8759.2M(72.0G)</span>]</span><br><span class="line"> [<span class="attr">Times:</span> <span class="string">user=1.70</span> <span class="string">sys=0.39</span>, <span class="string">real=0.57</span> <span class="string">secs</span>]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>从上面我们可以看到 Ref Proc: 501.3 ms，总共young gc耗时0.57s，而Ref Proc耗时就达到了0.5s。我们需要看下Ref Proc耗时主要在哪个地方。<br>我们通过配置gc参数<code>-XX:+PrintReferenceGC</code>，可以看到详细的Reference GC时间，并且如下图Case，JNI Weak Reference是主要瓶颈点。</p>
-        
-          <p class="article-more-link">
-            <a href="/2021/02/07/jvm-bug-causes-Presto-queries-to-slow-down/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-slove-jit-deoptimization-and-es-insert-performance-improvement" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/12/30/slove-jit-deoptimization-and-es-insert-performance-improvement/">解决JIT Deoptimization，ES插入性能提升7倍</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2020/12/30/slove-jit-deoptimization-and-es-insert-performance-improvement/" class="article-date">
-  <time datetime="2020-12-30T12:47:51.000Z" itemprop="datePublished">2020-12-30</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="背景描述"><a href="#背景描述" class="headerlink" title="背景描述"></a>背景描述</h2><p>ES节点写入到5.7K，会产生比较多的reject，CPU利用率才30%，部分索引延迟在增加。如图所示：</p>
-<img src="/img/2020/12/arius.jpg" width = "90%" />
-
-<p>CPU使用率在30%，但是Rejected记录达到8W行</p>
-<h2 id="原因分析"><a href="#原因分析" class="headerlink" title="原因分析"></a>原因分析</h2><p>写入场景，CPU打不满且出现异常，根据之前Presto的经验，大概率是JVM问题。打下火焰图看下：</p>
-<img src="/img/2020/12/perf.png" width = "90%" />
-
-<p>可以看到接近35%的CPU在做JIT Deoptimization。</p>
-<h3 id="JIT"><a href="#JIT" class="headerlink" title="JIT"></a>JIT</h3><p>为了提高热点代码（Hot Spot Code）的执行效率，在运行时，虚拟机将会把这些代码编译成与本地平台相关的机器码，并进行各种层次的优化，完成这个任务的编译器称为即时编译器（JIT）。</p>
-        
-          <p class="article-more-link">
-            <a href="/2020/12/30/slove-jit-deoptimization-and-es-insert-performance-improvement/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Elasticsearch/" rel="tag">Elasticsearch</a></li></ul>
-
-      </footer>
-    
-  </div>
-  
-</article>
-
-
-    
+    <section id="main" class="outer"><% switch (type) {
+    case 'archive':
+    var last;
+    page.posts.each(function(post, i){
+    var year = post.date.year();
+    if (last != year){
+      if (last != null){ %>
+        </div></section>
+      <% }
+      last = year; %>
+      <section class="archives-wrap">
+        <div class="archive-year-wrap">
+          <a href="<%- url_for('archives/' + year) %>" class="archive-year"><%= year %></a>
+        </div>
+        <div class="archives">
+    <% } %>
+    <%- partial('archive-post', {post: post, archive: true}) %>
+  <% });
+    if (page.posts.length){ %>
+    </div></section>
+  <% }
+    if (page.total > 1){ %>
       <nav id="page-nav">
-        <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/2/">下一页 &gt;&gt;</a>
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
       </nav>
-    </section>
+    <% }
+    break;
+  case 'category': %>
+    <section class="archives-wrap">
+    <div class="archive-category-wrap">
+      <span class="archive-category"><%= page.category %></span>
+    </div>
+    <div class="archives">
+    <% page.posts.each(function (post, i) { %>
+      <%- partial('archive-post', {post: post, archive: false}) %>
+    <% }); %>
+    </div></section>
+    <% if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+  case 'tag': %>
+    <section class="archives-wrap">
+    <div class="archive-tag-wrap">
+      <span class="archive-tag">#<%= page.tag %></span>
+    </div>
+    <div class="archives">
+    <% page.posts.each(function (post, i) { %>
+      <%- partial('archive-post', {post: post, archive: false}) %>
+    <% }); %>
+    </div></section>
+    <% if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+  default:
+    page.posts.each(function(post){ %>
+      <%- partial('article', {post: post, index: true}) %>
+    <% })
+    if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+} %></section>
     <footer id="footer">
   
   <div class="outer">

@@ -17,7 +17,7 @@
 <meta property="og:image" content="http://armsword.com/img/2022/09/tasks.png">
 <meta property="og:image" content="http://armsword.com/img/2022/09/checkpoint.png">
 <meta property="article:published_time" content="2022-09-27T07:10:23.000Z">
-<meta property="article:modified_time" content="2022-09-27T08:48:21.522Z">
+<meta property="article:modified_time" content="2022-09-27T08:58:22.521Z">
 <meta property="article:author" content="armsword">
 <meta property="article:tag" content="elasticsearch">
 <meta name="twitter:card" content="summary">
@@ -125,7 +125,6 @@
 number_of_pending_tasks：是指主节点创建索引并分配shards等任务，如果该指标数值一直未减小代表集群存在不稳定因素 。
 
 <h3 id="查看未分配原因"><a href="#查看未分配原因" class="headerlink" title="查看未分配原因"></a>查看未分配原因</h3><figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET _cluster<span class="regexp">/allocation/</span>explain</span><br></pre></td></tr></table></figure>
-
 <p>有以下几种可能</p>
 <ul>
 <li>INDEX_CREATED : Unassigned as a result of an API creation of an index.    索引创建 : 由于API创建索引而未分配的</li>
