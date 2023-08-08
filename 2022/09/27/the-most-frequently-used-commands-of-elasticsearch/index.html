@@ -17,7 +17,7 @@
 <meta property="og:image" content="http://armsword.com/img/2022/09/tasks.png">
 <meta property="og:image" content="http://armsword.com/img/2022/09/checkpoint.png">
 <meta property="article:published_time" content="2022-09-27T07:10:23.000Z">
-<meta property="article:modified_time" content="2022-09-27T12:23:39.066Z">
+<meta property="article:modified_time" content="2023-08-08T02:12:16.118Z">
 <meta property="article:author" content="armsword">
 <meta property="article:tag" content="elasticsearch">
 <meta name="twitter:card" content="summary">
@@ -158,6 +158,7 @@ number_of_pending_tasks：是指主节点创建索引并分配shards等任务，
 <h3 id="查看等待中的任务"><a href="#查看等待中的任务" class="headerlink" title="查看等待中的任务"></a>查看等待中的任务</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cat/pending_tasks</span><br></pre></td></tr></table></figure>
 <p>可以看到任务都被指派了优先级（ 比如说 URGENT 要比 HIGH 更早的处理 ）<br><img src="/img/2022/09/tasks.png" width = "100%" /></p>
 <h3 id="查看nodes"><a href="#查看nodes" class="headerlink" title="查看nodes"></a>查看nodes</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cat/nodes</span><br></pre></td></tr></table></figure>
+<span id="more"></span>
 
 <h3 id="查看active-master"><a href="#查看active-master" class="headerlink" title="查看active master"></a>查看active master</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cat/master</span><br></pre></td></tr></table></figure>
 
@@ -323,6 +324,14 @@ number_of_pending_tasks：是指主节点创建索引并分配shards等任务，
   
     
 <nav id="article-nav">
+  
+    <a href="/2023/08/08/didi-es-high-availability-solution/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          探索ES高可用：滴滴自研跨数据中心复制技术详解
+        
+      </div>
+    </a>
   
   
     <a href="/2022/01/18/common-compression-algorithms-in-search-engines/" id="article-nav-older" class="article-nav-link-wrap">
