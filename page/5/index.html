@@ -52,6 +52,55 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-find-socket-bug-in-proxy" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/08/10/find-socket-bug-in-proxy/">记一次线上Bug的查找过程和思路</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2016/08/10/find-socket-bug-in-proxy/" class="article-date">
+  <time datetime="2016-08-10T13:33:40.000Z" itemprop="datePublished">2016-08-10</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>简单说下问题情况，Proxy即作为客户端又有服务端功能，其接受QS（Query Server）的请求，之后向BS（索引服务）发送请求，然后根据BS的返回结果Merge后返回给QS。不能泄露太多东西，所以本文主要是整理一些知识点和问题查找思路。</p>
+<h2 id="问题和现象："><a href="#问题和现象：" class="headerlink" title="问题和现象："></a>问题和现象：</h2><ul>
+<li>Proxy机器上出现大量的CLOSE_WAIT。</li>
+<li>Proxy失去服务能力，内存使用不为0，CPU使用率为0。</li>
+<li>机器报警，TcpListenOverFlows。</li>
+</ul>
+<figure class="highlight cos"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">命令查看：</span><br><span class="line">netstat -n | awk &#x27;/<span class="symbol">^tcp</span>/ &#123;++<span class="keyword">S</span>[<span class="built_in">$NF</span>]&#125; END &#123;<span class="keyword">for</span>(a in <span class="keyword">S</span>) <span class="keyword">print</span> a, <span class="keyword">S</span>[a]&#125;&#x27;</span><br><span class="line"> </span><br><span class="line"> </span><br><span class="line">结果：</span><br><span class="line">TIME_WAIT <span class="number">31927</span></span><br><span class="line">CLOSE_WAIT <span class="number">1570</span></span><br><span class="line">ESTABLISHED <span class="number">40</span></span><br><span class="line"> </span><br><span class="line">TIME_WAIT：表示主动关闭，通过优化系统内核参数可容易解决。</span><br><span class="line">CLOSE_WAIT：表示被动关闭，需要从程序本身出发。</span><br><span class="line">ESTABLISHED：表示正在通信</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">注：以上数据非真实线上情况，只为举例</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+        
+          <p class="article-more-link">
+            <a href="/2016/08/10/find-socket-bug-in-proxy/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-linux-max-locked-memory-ulimit" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -316,52 +365,6 @@
         
           <p class="article-more-link">
             <a href="/2014/10/26/webbench-source-analyse/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-redis-ae-analyse" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2014/09/04/redis-ae-analyse/">Redis AE事件库源码剖析</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2014/09/04/redis-ae-analyse/" class="article-date">
-  <time datetime="2014-09-03T17:56:57.000Z" itemprop="datePublished">2014-09-04</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Linux/">Linux</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>很久之前就看过AE库了，不过这东西好久不看，也忘得差不多了，正好要找工作了，简历上写了之前的项目用过这个AE事件库，索性我就又把AE库看了一遍，本来表达能力就差，复习下吧。</p>
-<p>先上张图，下图左侧是ae.c文件里所有的函数，一目了然。</p>
-<p><img src="/img/2014/09/201409040835.png"></p>
-<p>AE事件库包含文件事件和时间事件，其包含2个源文件ae.c和ae.h，当然还有四个不同的多用复用封装的文件：ae_epoll.c、ae_select.c、ae_evport.c、ae_kqueue.c。一般常用的是ae_select.c（跨平台用），linux下多用ae_epoll.c。我们就以ae_epoll.c为例吧。</p>
-        
-          <p class="article-more-link">
-            <a href="/2014/09/04/redis-ae-analyse/#more">Read More</a>
           </p>
         
       
