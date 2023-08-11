@@ -52,6 +52,49 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-the-basic-concepts-of-presto" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2018/08/11/the-basic-concepts-of-presto/">Presto的一些基本概念</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2018/08/11/the-basic-concepts-of-presto/" class="article-date">
+  <time datetime="2018-08-11T14:42:32.000Z" itemprop="datePublished">2018-08-11</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="模型"><a href="#模型" class="headerlink" title="模型"></a>模型</h2><p>Presto 是 Facebook 开源的 MPP (Massive Parallel Processing) SQL 引擎，其理念来源于一个叫 Volcano 的并行数据库，该数据库提出了一个并行执行 SQL 的模型，核心思想就是 Operator Model 和 Iterator Model。</p>
+<ul>
+<li>Operator Model<br>即通过各种 Operator 组成一棵树，树的根节点负责结果输出，树的叶子节点是各种 TableScan。这棵树被称作 Plan（执行计划），数据库里又被细分为逻辑执行计划和物理执行计划。这棵树是由 SQL 经过词法、语法分析及语义分析后，生成一个 AST（Abstract Syntax Tree），一般经过 Visitor 模式遍历后生成。原始数据通过叶子节点 TableScan 读取数据，然后经过各个 Operator的计算，包括（TableScan、Project、Filter、Exchange、Agg、Join、TaskOutput等）产出结果。</li>
+<li>Iterator Model<br>顾名思义就是一个递归迭代过程，Plan 树的各节点有三个状态，Open、GetNext及Close。从根节点 Open 开始递归调用 GetNext 获取数据，即父节点递归调用子节点接口直到没有结果为止，然后Close。</li>
+</ul>
+        
+          <p class="article-more-link">
+            <a href="/2018/08/11/the-basic-concepts-of-presto/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-the-memory-management-and-tuning-experience-of-presto" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -365,63 +408,8 @@
 
 
     
-      <article id="post-earlybird" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/08/17/earlybird/">Earlybird:Twitter实时搜索引擎</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2016/08/17/earlybird/" class="article-date">
-  <time datetime="2016-08-16T16:49:46.000Z" itemprop="datePublished">2016-08-17</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/">搜索引擎</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>简单说下，2011年左右的Paper，Paper里说Twitter的实时索引和检索系统叫做Earlybird，Paper中主要讲了2件事，第一个就是支持Twitter的实时索引的倒排索引结构是怎么样的，第二个就是利用Java并发模型，处理并发读写。</p>
-<h4 id="该引擎功能："><a href="#该引擎功能：" class="headerlink" title="该引擎功能："></a>该引擎功能：</h4><ul>
-<li>低延时、高吞吐能力；</li>
-<li>能处理突发峰值（Weibo的特性）；</li>
-<li>突出时效性，时间越近，排名应该越靠前；</li>
-<li>该实时引擎支持AND、OR、NOT以及短语查询，实时性大约10S，查询latency 50ms；</li>
-</ul>
-<h4 id="该实时引擎，基于Lucene，使用Java开发，理由是："><a href="#该实时引擎，基于Lucene，使用Java开发，理由是：" class="headerlink" title="该实时引擎，基于Lucene，使用Java开发，理由是："></a>该实时引擎，基于Lucene，使用Java开发，理由是：</h4><ul>
-<li>利用已存在的Lucene代码，并用来做全量索引；</li>
-<li>适用于Twitter以JVM为中心的开发环境；</li>
-<li>利用Java和JVM提供容易理解的并发模型；</li>
-</ul>
-<p>其实上面几条理由与阿里很多开发项目类似，但是阿里的搜索引擎是C++编写的，质量也是非常不错的，叫问天(HA3)。</p>
-        
-          <p class="article-more-link">
-            <a href="/2016/08/17/earlybird/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
       <nav id="page-nav">
-        <a class="extend prev" rel="prev" href="/page/3/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/5/">下一页 &gt;&gt;</a>
+        <a class="extend prev" rel="prev" href="/page/3/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><span class="space">&hellip;</span><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/5/">下一页 &gt;&gt;</a>
       </nav>
     </section>
     <footer id="footer">

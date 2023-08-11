@@ -52,6 +52,50 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-linux-io-multiplexing" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/03/07/linux-io-multiplexing/">Linux IO复用—select poll 和 epoll</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/03/07/linux-io-multiplexing/" class="article-date">
+  <time datetime="2014-03-07T09:33:18.000Z" itemprop="datePublished">2014-03-07</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>在Socket编程时，为了处理大量客户的连接请求，需要使用非阻塞I&#x2F;O和端口复用，select、poll和epoll是Linux API提供的I&#x2F;O复用方式。其实在*nix下的网络并发方法向来不缺，比如典型的Apache模型（Process Per Connection，简称PPC），TPC（Thread Per Connection）模型，这两种模型思想类似，就是利用了多进程、多线程概念，让进来的每一个连接去干别的事情去。但是连接多了以后，首先需要较大的内存，且进程&#x2F;线程切换开销会非常大，因此这类模型能接受的最大连接数都不会太高。</p>
+<p>Linux 2.6中加入了epoll之后（据说Windows下使用的是IOCP，但是我没使用过），在高性能服务器领域中得到广泛的应用，主要原因就是高效。在讲epoll之前，我们先总结下select、poll，因为epoll其实也就是他们的增强版本，比如select是一个系统调用，而epoll是个模块，由三个系统调用组成，内核中由文件系统实现。</p>
+        
+          <p class="article-more-link">
+            <a href="/2014/03/07/linux-io-multiplexing/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-tcp-and-udp-note" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -339,48 +383,8 @@
 
 
     
-      <article id="post-hello-world" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2012/08/01/hello-world/"> 人生大病，只是一“傲”字</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2012/08/01/hello-world/" class="article-date">
-  <time datetime="2012-08-01T05:50:43.000Z" itemprop="datePublished">2012-08-01</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%88%91%E7%9A%84%E7%94%9F%E6%B4%BB/">我的生活</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>先生曰：“人生大病，只是一傲字。为子而傲必不孝，为臣而傲必不忠，为父而傲必不慈，为友而傲必不信。故象与丹朱俱不肖，亦只一傲字，便结果了此生。诸君常要体此人心本是天然之理，精精明明，无致介染着，只是一无我而已：胸中切不可有，有即傲也。古先圣人许多好处，也只是无我而已，无我自能谦。谦者众善之基，傲者众恶之魁。”</p>
-<p>引用王阳明先生的这段话来表示下我今后的学习和生活态度，与君共勉。</p>
-
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
       <nav id="page-nav">
-        <a class="extend prev" rel="prev" href="/page/6/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><span class="page-number current">7</span>
+        <a class="extend prev" rel="prev" href="/page/6/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><span class="page-number current">7</span><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/8/">下一页 &gt;&gt;</a>
       </nav>
     </section>
     <footer id="footer">
