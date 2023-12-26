@@ -5,15 +5,15 @@
   
   <title>Presto集群内存不足时保护机制 - armsword&#39;blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="为了防止集群里节点OOM，Presto有个循环线程来获取当前集群节点和集群整体内存占用情况。通过这篇文章：Presto内存管理相关参数设置  我们知道Presto里分为RESERVED_POOL和GENERAL_POOL。 判断节点是否阻塞（内存不足）：如果使用RESERVED_POOL（意思是说最大SQL使用这个POOL），那判断集群内存超出内存的方法就是： 1、RESERVED_POOL内存被">
+  <meta name="description" content="为了防止集群里节点OOM，Presto有个循环线程来获取当前集群节点和集群整体内存占用情况。通过这篇文章：Presto内存管理相关参数设置  我们知道Presto里分为RESERVED_POOL和GENERAL_POOL。 判断节点是否阻塞（内存不足）如果使用RESERVED_POOL（意思是说最大SQL使用这个POOL），那判断集群内存超出内存的方法就是： 1、RESERVED_POOL内存被S">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Presto集群内存不足时保护机制">
 <meta property="og:url" content="http://armsword.com/2020/02/18/presto-memory-kill-policy/index.html">
 <meta property="og:site_name" content="armsword&#39;blog">
-<meta property="og:description" content="为了防止集群里节点OOM，Presto有个循环线程来获取当前集群节点和集群整体内存占用情况。通过这篇文章：Presto内存管理相关参数设置  我们知道Presto里分为RESERVED_POOL和GENERAL_POOL。 判断节点是否阻塞（内存不足）：如果使用RESERVED_POOL（意思是说最大SQL使用这个POOL），那判断集群内存超出内存的方法就是： 1、RESERVED_POOL内存被">
+<meta property="og:description" content="为了防止集群里节点OOM，Presto有个循环线程来获取当前集群节点和集群整体内存占用情况。通过这篇文章：Presto内存管理相关参数设置  我们知道Presto里分为RESERVED_POOL和GENERAL_POOL。 判断节点是否阻塞（内存不足）如果使用RESERVED_POOL（意思是说最大SQL使用这个POOL），那判断集群内存超出内存的方法就是： 1、RESERVED_POOL内存被S">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2020-02-18T14:28:21.000Z">
-<meta property="article:modified_time" content="2022-02-24T07:15:33.281Z">
+<meta property="article:modified_time" content="2023-12-26T11:37:33.472Z">
 <meta property="article:author" content="armsword">
 <meta property="article:tag" content="Presto">
 <meta name="twitter:card" content="summary">
@@ -78,7 +78,7 @@
     <div class="article-entry" itemprop="articleBody">
       
         <p>为了防止集群里节点OOM，Presto有个循环线程来获取当前集群节点和集群整体内存占用情况。通过这篇文章：<a href="http://armsword.com/2019/11/13/the-configuration-settings-of-presto-memory-management/">Presto内存管理相关参数设置</a>  我们知道Presto里分为RESERVED_POOL和GENERAL_POOL。</p>
-<h2 id="判断节点是否阻塞（内存不足）："><a href="#判断节点是否阻塞（内存不足）：" class="headerlink" title="判断节点是否阻塞（内存不足）："></a>判断节点是否阻塞（内存不足）：</h2><p>如果使用RESERVED_POOL（意思是说最大SQL使用这个POOL），那判断集群内存超出内存的方法就是：</p>
+<h2 id="判断节点是否阻塞（内存不足）"><a href="#判断节点是否阻塞（内存不足）" class="headerlink" title="判断节点是否阻塞（内存不足）"></a>判断节点是否阻塞（内存不足）</h2><p>如果使用RESERVED_POOL（意思是说最大SQL使用这个POOL），那判断集群内存超出内存的方法就是：</p>
 <p>1、RESERVED_POOL内存被SQL占用了</p>
 <p>2、GENERAL_POOL里有被阻塞的Node</p>
 <p>因为RESERVED_POOL会导致内存浪费，我们集群配置参数没有使用这个POOL，只使用了GENERAL_POOL，所以只需要查看下GENERAL_POOL是怎么判断节点是否Block住的。</p>
@@ -87,7 +87,7 @@
 <p>所以就判断GENERAL_POOL里是否还有剩余内存，如果小于等于0，那就表示该节点是个Block状态。</p>
 <span id="more"></span>
 
-<h2 id="Kill策略："><a href="#Kill策略：" class="headerlink" title="Kill策略："></a>Kill策略：</h2><p>把所有query遍历一遍，如果查询有RESOURCE_OVERCOMMIT标志，且内存溢出了，那就把带有此标志的SQL Kill掉。</p>
+<h2 id="Kill策略"><a href="#Kill策略" class="headerlink" title="Kill策略"></a>Kill策略</h2><p>把所有query遍历一遍，如果查询有RESOURCE_OVERCOMMIT标志，且内存溢出了，那就把带有此标志的SQL Kill掉。</p>
 <figure class="highlight stata"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (resourceOvercommit &amp;&amp; outOfMemory) &#123;</span><br><span class="line">    <span class="comment">// If a query has requested resource overcommit, only kill it if the cluster has run out of memory</span></span><br><span class="line">    DataSize <span class="keyword">memory</span> = succinctBytes(getQueryMemoryReservation(<span class="keyword">query</span>));</span><br><span class="line">    <span class="keyword">query</span>.fail(new PrestoException(CLUSTER_OUT_OF_MEMORY,</span><br><span class="line">       <span class="keyword">format</span>(<span class="string">&quot;The cluster is out of memory and %s=true, so this query was killed. It was using %s of memory&quot;</span>, RESOURCE_OVERCOMMIT, <span class="keyword">memory</span>)));</span><br><span class="line">    queryKilled = true;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 
 <p>如果没有RESOURCE_OVERCOMMIT标志，那就看看内存是否超过集群允许的内存：</p>
@@ -104,6 +104,11 @@
 
       
     </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%A4%E6%96%AD%E8%8A%82%E7%82%B9%E6%98%AF%E5%90%A6%E9%98%BB%E5%A1%9E%EF%BC%88%E5%86%85%E5%AD%98%E4%B8%8D%E8%B6%B3%EF%BC%89"><span class="toc-number">1.</span> <span class="toc-text">判断节点是否阻塞（内存不足）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kill%E7%AD%96%E7%95%A5"><span class="toc-number">2.</span> <span class="toc-text">Kill策略</span></a></li></ol>
+      </div>
     
     
       <footer class="article-footer">

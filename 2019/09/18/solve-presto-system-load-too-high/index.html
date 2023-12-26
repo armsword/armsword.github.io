@@ -5,12 +5,12 @@
   
   <title>Presto System load过高问题调研 - armsword&#39;blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="背景：我们Presto有个集群，每6.5天会出现System load过高问题，这个集群有个特点，只服务于一个业务方，且SQL基本相似。如图所示：Sys load很高（20-40%），严重影响查询性能。 业务SQL查询时间表现为： ScanFilterAndProjectOperator（Source Stage）阶段有机器有明显的长尾现象，比如20台机器，正常这个Operator执行时间只需要1">
+  <meta name="description" content="背景我们Presto有个集群，每6.5天会出现System load过高问题，这个集群有个特点，只服务于一个业务方，且SQL基本相似。如图所示：Sys load很高（20-40%），严重影响查询性能。 业务SQL查询时间表现为： ScanFilterAndProjectOperator（Source Stage）阶段有机器有明显的长尾现象，比如20台机器，正常这个Operator执行时间只需要1S">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Presto System load过高问题调研">
 <meta property="og:url" content="http://armsword.com/2019/09/18/solve-presto-system-load-too-high/index.html">
 <meta property="og:site_name" content="armsword&#39;blog">
-<meta property="og:description" content="背景：我们Presto有个集群，每6.5天会出现System load过高问题，这个集群有个特点，只服务于一个业务方，且SQL基本相似。如图所示：Sys load很高（20-40%），严重影响查询性能。 业务SQL查询时间表现为： ScanFilterAndProjectOperator（Source Stage）阶段有机器有明显的长尾现象，比如20台机器，正常这个Operator执行时间只需要1">
+<meta property="og:description" content="背景我们Presto有个集群，每6.5天会出现System load过高问题，这个集群有个特点，只服务于一个业务方，且SQL基本相似。如图所示：Sys load很高（20-40%），严重影响查询性能。 业务SQL查询时间表现为： ScanFilterAndProjectOperator（Source Stage）阶段有机器有明显的长尾现象，比如20台机器，正常这个Operator执行时间只需要1S">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://armsword.com/img/2019/09/01.png">
 <meta property="og:image" content="http://armsword.com/img/2019/09/02.png">
@@ -19,7 +19,7 @@
 <meta property="og:image" content="http://armsword.com/img/2019/09/05.png">
 <meta property="og:image" content="http://armsword.com/img/2019/09/06.png">
 <meta property="article:published_time" content="2019-09-18T11:04:09.000Z">
-<meta property="article:modified_time" content="2022-02-24T07:15:33.284Z">
+<meta property="article:modified_time" content="2023-12-26T11:35:57.898Z">
 <meta property="article:author" content="armsword">
 <meta property="article:tag" content="presto">
 <meta name="twitter:card" content="summary">
@@ -84,7 +84,7 @@
 
     <div class="article-entry" itemprop="articleBody">
       
-        <h2 id="背景："><a href="#背景：" class="headerlink" title="背景："></a>背景：</h2><p>我们Presto有个集群，每6.5天会出现System load过高问题，这个集群有个特点，只服务于一个业务方，且SQL基本相似。如图所示：Sys load很高（20-40%），严重影响查询性能。<br><img src="/img/2019/09/01.png" width="800" align=left /></p>
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>我们Presto有个集群，每6.5天会出现System load过高问题，这个集群有个特点，只服务于一个业务方，且SQL基本相似。如图所示：Sys load很高（20-40%），严重影响查询性能。<br><img src="/img/2019/09/01.png" width="800" align=left /></p>
 <p>业务SQL查询时间表现为：</p>
 <p>ScanFilterAndProjectOperator（Source Stage）阶段有机器有明显的长尾现象，比如20台机器，正常这个Operator执行时间只需要1S，但是有几台机器会耗时几分钟。而重启服务后，查询恢复正常。</p>
 <span id="more"></span>
@@ -92,7 +92,7 @@
 <p>先jstack看下Presto在干啥：<br><img src="/img/2019/09/02.png"><br>如图所示，Presto通过ScanFilterAndProjectOperator类执行filter过滤，其中这个filter方法是Codegen生成。</p>
 <p>pstack查看下线程栈：<br><img src="/img/2019/09/03.png"></p>
 <p>看到程序主要CPU浪费在Deoptimization::uncommon_trap里了。为什么呢？再说这个问题之前，我们先说下JIT。</p>
-<h2 id="JIT："><a href="#JIT：" class="headerlink" title="JIT："></a>JIT：</h2><p>为了提高热点代码（Hot Spot Code）的执行效率，在运行时，虚拟机将会把这些代码编译成与本地平台相关的机器码，并进行各种层次的优化，完成这个任务的编译器称为即时编译器（JIT）。</p>
+<h2 id="JIT"><a href="#JIT" class="headerlink" title="JIT"></a>JIT</h2><p>为了提高热点代码（Hot Spot Code）的执行效率，在运行时，虚拟机将会把这些代码编译成与本地平台相关的机器码，并进行各种层次的优化，完成这个任务的编译器称为即时编译器（JIT）。</p>
 <p>“热点代码”两类:</p>
 <ul>
 <li>被多次调用的方法</li>
@@ -111,7 +111,7 @@
 <figure class="highlight reasonml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">public <span class="keyword">class</span> DeoptimizationTest</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="constructor">DeoptimizationTest()</span> &#123;&#125;</span><br><span class="line">    static <span class="built_in">int</span> some<span class="constructor">ComplicatedFunction(<span class="params">double</span> <span class="params">x</span>)</span></span><br><span class="line">    &#123;</span><br><span class="line">        return (<span class="built_in">int</span>) (<span class="module-access"><span class="module"><span class="identifier">Math</span>.</span></span>pow(x, x) + <span class="module-access"><span class="module"><span class="identifier">Math</span>.</span></span>log(x) + <span class="module-access"><span class="module"><span class="identifier">Math</span>.</span></span>sqrt(x));</span><br><span class="line">    &#125;</span><br><span class="line">    static void hot<span class="constructor">Method(<span class="params">int</span> <span class="params">iteration</span>)</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (iteration &lt; <span class="number">20</span>) &#123;</span><br><span class="line">            some<span class="constructor">ComplicatedFunction(1.23)</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (iteration &lt; <span class="number">40</span>) &#123;</span><br><span class="line">            some<span class="constructor">ComplicatedFunction(1.23)</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (iteration &lt; <span class="number">60</span>) &#123;</span><br><span class="line">            some<span class="constructor">ComplicatedFunction(1.23)</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (iteration &lt; <span class="number">80</span>) &#123;</span><br><span class="line">            some<span class="constructor">ComplicatedFunction(1.23)</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            some<span class="constructor">ComplicatedFunction(1.23)</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    static void hot<span class="constructor">MethodWrapper(<span class="params">int</span> <span class="params">iteration</span>)</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">int</span> count = <span class="number">100_000</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="built_in">int</span> i = <span class="number">0</span>; i &lt; count; i++) &#123;</span><br><span class="line">            hot<span class="constructor">Method(<span class="params">iteration</span>)</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    public static void main(String<span class="literal">[]</span> args)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="built_in">int</span> k = <span class="number">0</span>; k &lt; <span class="number">100</span>; k++) &#123;</span><br><span class="line">            long start = <span class="module-access"><span class="module"><span class="identifier">System</span>.</span></span>nano<span class="constructor">Time()</span>;</span><br><span class="line">            hot<span class="constructor">MethodWrapper(<span class="params">k</span> + 1)</span>;</span><br><span class="line">            <span class="module-access"><span class="module"><span class="identifier">System</span>.</span></span>out.println(<span class="string">&quot;iteration &quot;</span> + k + <span class="string">&quot;: &quot;</span> + (<span class="module-access"><span class="module"><span class="identifier">System</span>.</span></span>nano<span class="constructor">Time()</span> - start)<span class="operator"> / </span><span class="number">1_000_000</span> + <span class="string">&quot;ms&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>执行代码：javac DeoptimizationTest.java &amp;&amp; java -XX:PerMethodRecompilationCutoff&#x3D;3  DeoptimizationTest<br><img src="/img/2019/09/04.png" width="800" align=left /><br>指定PerMethodRecompilationCutoff为3，意思是PerMethodRecompilationCutoff&#x2F;2 + 1 &#x3D; 2，那么第三个分支将触发大量Deoptimization::Action_none操作，如上图所示，发现第59次迭代时，查询变慢了接近600倍。</p>
 <p>火焰图见下图，可以看到耗时与我们Presto遇到的问题非常相似，耗时主要在Deoptimization::uncommon_trap：<br><img src="/img/2019/09/05.png"></p>
-<h2 id="解决方案："><a href="#解决方案：" class="headerlink" title="解决方案："></a>解决方案：</h2><p>既然当达到阈值会触发Deoptimization::Action_none，那么最简单的解决方法是不让他达到阈值就好了。修改JVM参数：</p>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>既然当达到阈值会触发Deoptimization::Action_none，那么最简单的解决方法是不让他达到阈值就好了。修改JVM参数：</p>
 <p>-XX:PerMethodRecompilationCutoff<br>-XX:PerBytecodeRecompilationCutoff</p>
 <p>这2个值尽量调大一些，比如2000和500以上。</p>
 <p>线上我找了一台机器测试了一周，CPU表现为：</p>
@@ -125,6 +125,11 @@
 
       
     </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#JIT"><span class="toc-number">2.</span> <span class="toc-text">JIT</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="toc-number">3.</span> <span class="toc-text">解决方案</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E9%93%BE%E6%8E%A5"><span class="toc-number">4.</span> <span class="toc-text">参考链接</span></a></li></ol>
+      </div>
     
     
       <footer class="article-footer">

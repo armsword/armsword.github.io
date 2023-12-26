@@ -130,7 +130,7 @@
     <div class="article-entry" itemprop="articleBody">
       
         <p>Presto 社区分家后搞了2个项目，分别为 PrestoDB 和 PrestoSQL，同时他们都成立了自己的基金会。而去年国庆时候，abei写了篇文章比对了2个分支的进展，链接见：<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/87621360">PrestoDB VS PrestoSQL发展比较</a>。 而现在已经分家17个月了，那我们简单梳理下这2个分支的主要核心功能：</p>
-<h3 id="PrestoDB："><a href="#PrestoDB：" class="headerlink" title="PrestoDB："></a>PrestoDB：</h3><ul>
+<h3 id="PrestoDB"><a href="#PrestoDB" class="headerlink" title="PrestoDB"></a>PrestoDB</h3><ul>
 <li>Connector：ElasticSearch 及 Druid</li>
 <li>Master 和Worker 通信协议支持二进制</li>
 <li>Orc 及 Parquet读写性能优化</li>
@@ -140,7 +140,7 @@
 <li>MapReduce-style shuffle，支持部分 etl 任务及大查询</li>
 <li>fix bug 及 improve performace</li>
 </ul>
-<h3 id="PrestoSQL："><a href="#PrestoSQL：" class="headerlink" title="PrestoSQL："></a>PrestoSQL：</h3><ul>
+<h3 id="PrestoSQL"><a href="#PrestoSQL" class="headerlink" title="PrestoSQL"></a>PrestoSQL</h3><ul>
 <li>Connector：ElasticSearch和MemSQL</li>
 <li>spi pushdown</li>
 <li>S3优化读取</li>
@@ -185,7 +185,7 @@
 
     <div class="article-entry" itemprop="articleBody">
       
-        <h3 id="Presto调度task方式："><a href="#Presto调度task方式：" class="headerlink" title="Presto调度task方式："></a>Presto调度task方式：</h3><figure class="highlight angelscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="symbol">SystemPartitioningHandle</span></span><br><span class="line">        <span class="symbol">implements</span> <span class="symbol">ConnectorPartitioningHandle</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">enum</span> SystemPartitioning</span><br><span class="line">    &#123;</span><br><span class="line">        SINGLE,</span><br><span class="line">        FIXED,</span><br><span class="line">        SOURCE,</span><br><span class="line">        SCALED,</span><br><span class="line">        COORDINATOR_ONLY,</span><br><span class="line">        ARBITRARY</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+        <h3 id="Presto调度task方式"><a href="#Presto调度task方式" class="headerlink" title="Presto调度task方式"></a>Presto调度task方式</h3><figure class="highlight angelscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="symbol">SystemPartitioningHandle</span></span><br><span class="line">        <span class="symbol">implements</span> <span class="symbol">ConnectorPartitioningHandle</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">enum</span> SystemPartitioning</span><br><span class="line">    &#123;</span><br><span class="line">        SINGLE,</span><br><span class="line">        FIXED,</span><br><span class="line">        SOURCE,</span><br><span class="line">        SCALED,</span><br><span class="line">        COORDINATOR_ONLY,</span><br><span class="line">        ARBITRARY</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>常见的场景主要包含SINGLE、FIXED及SOURCE类型，其中SINGLE表示最后数据的汇总输出，FIXED表示中间数据的计算，如JOIN等，SOURCE类型表示与源数据打交道的类型。</p>
 <p>以下SQL为例：</p>
 <figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">select</span> * from (select * from <span class="number">1</span>test join <span class="number">2</span>test1 <span class="literal">on</span> <span class="number">1</span>test.id = <span class="number">2</span>test1.<span class="number">123</span>id);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
@@ -234,7 +234,7 @@
     <div class="article-entry" itemprop="articleBody">
       
         <p>为了防止集群里节点OOM，Presto有个循环线程来获取当前集群节点和集群整体内存占用情况。通过这篇文章：<a href="http://armsword.com/2019/11/13/the-configuration-settings-of-presto-memory-management/">Presto内存管理相关参数设置</a>  我们知道Presto里分为RESERVED_POOL和GENERAL_POOL。</p>
-<h2 id="判断节点是否阻塞（内存不足）："><a href="#判断节点是否阻塞（内存不足）：" class="headerlink" title="判断节点是否阻塞（内存不足）："></a>判断节点是否阻塞（内存不足）：</h2><p>如果使用RESERVED_POOL（意思是说最大SQL使用这个POOL），那判断集群内存超出内存的方法就是：</p>
+<h2 id="判断节点是否阻塞（内存不足）"><a href="#判断节点是否阻塞（内存不足）" class="headerlink" title="判断节点是否阻塞（内存不足）"></a>判断节点是否阻塞（内存不足）</h2><p>如果使用RESERVED_POOL（意思是说最大SQL使用这个POOL），那判断集群内存超出内存的方法就是：</p>
 <p>1、RESERVED_POOL内存被SQL占用了</p>
 <p>2、GENERAL_POOL里有被阻塞的Node</p>
 <p>因为RESERVED_POOL会导致内存浪费，我们集群配置参数没有使用这个POOL，只使用了GENERAL_POOL，所以只需要查看下GENERAL_POOL是怎么判断节点是否Block住的。</p>
@@ -382,7 +382,7 @@
 
     <div class="article-entry" itemprop="articleBody">
       
-        <h2 id="背景："><a href="#背景：" class="headerlink" title="背景："></a>背景：</h2><p>我们Presto有个集群，每6.5天会出现System load过高问题，这个集群有个特点，只服务于一个业务方，且SQL基本相似。如图所示：Sys load很高（20-40%），严重影响查询性能。<br><img src="/img/2019/09/01.png" width="800" align=left /></p>
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>我们Presto有个集群，每6.5天会出现System load过高问题，这个集群有个特点，只服务于一个业务方，且SQL基本相似。如图所示：Sys load很高（20-40%），严重影响查询性能。<br><img src="/img/2019/09/01.png" width="800" align=left /></p>
 <p>业务SQL查询时间表现为：</p>
 <p>ScanFilterAndProjectOperator（Source Stage）阶段有机器有明显的长尾现象，比如20台机器，正常这个Operator执行时间只需要1S，但是有几台机器会耗时几分钟。而重启服务后，查询恢复正常。</p>
         

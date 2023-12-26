@@ -125,13 +125,13 @@
     <div class="article-entry" itemprop="articleBody">
       
         <p>简单说下，2011年左右的Paper，Paper里说Twitter的实时索引和检索系统叫做Earlybird，Paper中主要讲了2件事，第一个就是支持Twitter的实时索引的倒排索引结构是怎么样的，第二个就是利用Java并发模型，处理并发读写。</p>
-<h4 id="该引擎功能："><a href="#该引擎功能：" class="headerlink" title="该引擎功能："></a>该引擎功能：</h4><ul>
+<h4 id="该引擎功能"><a href="#该引擎功能" class="headerlink" title="该引擎功能"></a>该引擎功能</h4><ul>
 <li>低延时、高吞吐能力；</li>
 <li>能处理突发峰值（Weibo的特性）；</li>
 <li>突出时效性，时间越近，排名应该越靠前；</li>
 <li>该实时引擎支持AND、OR、NOT以及短语查询，实时性大约10S，查询latency 50ms；</li>
 </ul>
-<h4 id="该实时引擎，基于Lucene，使用Java开发，理由是："><a href="#该实时引擎，基于Lucene，使用Java开发，理由是：" class="headerlink" title="该实时引擎，基于Lucene，使用Java开发，理由是："></a>该实时引擎，基于Lucene，使用Java开发，理由是：</h4><ul>
+<h4 id="该实时引擎，基于Lucene，使用Java开发，理由是"><a href="#该实时引擎，基于Lucene，使用Java开发，理由是" class="headerlink" title="该实时引擎，基于Lucene，使用Java开发，理由是"></a>该实时引擎，基于Lucene，使用Java开发，理由是</h4><ul>
 <li>利用已存在的Lucene代码，并用来做全量索引；</li>
 <li>适用于Twitter以JVM为中心的开发环境；</li>
 <li>利用Java和JVM提供容易理解的并发模型；</li>
@@ -180,7 +180,7 @@
     <div class="article-entry" itemprop="articleBody">
       
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>简单说下问题情况，Proxy即作为客户端又有服务端功能，其接受QS（Query Server）的请求，之后向BS（索引服务）发送请求，然后根据BS的返回结果Merge后返回给QS。不能泄露太多东西，所以本文主要是整理一些知识点和问题查找思路。</p>
-<h2 id="问题和现象："><a href="#问题和现象：" class="headerlink" title="问题和现象："></a>问题和现象：</h2><ul>
+<h2 id="问题和现象"><a href="#问题和现象" class="headerlink" title="问题和现象"></a>问题和现象</h2><ul>
 <li>Proxy机器上出现大量的CLOSE_WAIT。</li>
 <li>Proxy失去服务能力，内存使用不为0，CPU使用率为0。</li>
 <li>机器报警，TcpListenOverFlows。</li>

@@ -31,7 +31,7 @@
 <meta property="og:image" content="http://armsword.com/img/2023/08/zgc_17.png">
 <meta property="og:image" content="http://armsword.com/img/2023/08/zgc_18.png">
 <meta property="article:published_time" content="2023-08-10T08:35:28.000Z">
-<meta property="article:modified_time" content="2023-08-10T09:30:16.114Z">
+<meta property="article:modified_time" content="2023-12-26T11:26:21.044Z">
 <meta property="article:author" content="armsword">
 <meta property="article:tag" content="Elasticsearch">
 <meta name="twitter:card" content="summary">
@@ -197,12 +197,11 @@
 <li>3、某隔离集群上线效果</li>
 </ul>
 <p>如图，上线后P99从16ms降低到8ms降低50%。<br><img src="/img/2023/08/zgc_14.png" alt="P99查询耗时"></p>
-<h3 id="更高性能"><a href="#更高性能" class="headerlink" title="更高性能"></a>更高性能</h3><p>1、某日志集群A上线效果</p>
-<p>ES某日志集群A上线JDK17后，CPU使用率下降20%，写入性能提升，解决了写入队列堆积和reject问题。</p>
+<h3 id="更高性能"><a href="#更高性能" class="headerlink" title="更高性能"></a>更高性能</h3><h4 id="1、某日志集群A上线效果"><a href="#1、某日志集群A上线效果" class="headerlink" title="1、某日志集群A上线效果"></a>1、某日志集群A上线效果</h4><p>ES某日志集群A上线JDK17后，CPU使用率下降20%，写入性能提升，解决了写入队列堆积和reject问题。</p>
 <p><img src="/img/2023/08/zgc_15.png" alt="DataNode写入队列堆积图"></p>
 <p><img src="/img/2023/08/zgc_16.png" alt="DataNode写入reject图"></p>
 <p><img src="/img/2023/08/zgc_17.png" alt="CPU Idle图"></p>
-<h3 id="2、某日志集群B上线效果"><a href="#2、某日志集群B上线效果" class="headerlink" title="2、某日志集群B上线效果"></a>2、某日志集群B上线效果</h3><p>ES某日志集群B上线JDK17后，CPU使用率下降8%，写入性能提升，写入reject降低30%，能够较好地缓解日志集群压力。    </p>
+<h4 id="2、某日志集群B上线效果"><a href="#2、某日志集群B上线效果" class="headerlink" title="2、某日志集群B上线效果"></a>2、某日志集群B上线效果</h4><p>ES某日志集群B上线JDK17后，CPU使用率下降8%，写入性能提升，写入reject降低30%，能够较好地缓解日志集群压力。    </p>
 <p><img src="/img/2023/08/zgc_18.png" alt="DataNode写入reject图"></p>
 <h3 id="更稳定"><a href="#更稳定" class="headerlink" title="更稳定"></a>更稳定</h3><p>上线JDK17-ZGC和JDK17-G1后，ES关于内存问题的报警进一步收敛，最近几乎没有内存方面的报警 。</p>
 <p>此外，ZGC是单代GC，吞吐较低并且在Concurrent Mark阶段耗时长，为避免内存分配停顿，需要更多的内存和ConcGCThread线程，这导致CPU使用率增高。因此，对于注重吞吐的日志场景采用G1，对于CPU相对富足且对延时有一定敏感性的集群，可以通过牺牲一部分CPU换取查询性能，故采用ZGC。</p>
@@ -211,6 +210,11 @@
 
       
     </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">背景</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9D%9E%E6%97%A5%E5%BF%97%E5%9C%BA%E6%99%AF%E7%9A%84GC%E9%97%AE%E9%A2%98"><span class="toc-number">1.1.</span> <span class="toc-text">非日志场景的GC问题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%97%A5%E5%BF%97%E5%9C%BA%E6%99%AF%E7%9A%84Reject%E9%97%AE%E9%A2%98"><span class="toc-number">1.2.</span> <span class="toc-text">日志场景的Reject问题</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#JDK17%E8%90%BD%E5%9C%B0"><span class="toc-number">2.</span> <span class="toc-text">JDK17落地</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Gradle%E7%89%88%E6%9C%AC%E5%8D%87%E7%BA%A7"><span class="toc-number">2.1.</span> <span class="toc-text">Gradle版本升级</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%BA%90%E7%A0%81%E7%BC%96%E8%AF%91"><span class="toc-number">2.2.</span> <span class="toc-text">源码编译</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%90%AD%E5%BB%BAZGC%E6%8C%87%E6%A0%87%E7%9B%91%E6%8E%A7%E4%BD%93%E7%B3%BB"><span class="toc-number">2.3.</span> <span class="toc-text">搭建ZGC指标监控体系</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83%E8%B8%A9%E5%9D%91%E4%B8%8E%E8%B0%83%E4%BC%98"><span class="toc-number">2.4.</span> <span class="toc-text">生产环境踩坑与调优</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8A%E7%BA%BF%E6%95%88%E6%9E%9C"><span class="toc-number">3.</span> <span class="toc-text">上线效果</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9B%B4%E4%BD%8E%E5%BB%B6%E6%97%B6"><span class="toc-number">3.1.</span> <span class="toc-text">更低延时</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9B%B4%E9%AB%98%E6%80%A7%E8%83%BD"><span class="toc-number">3.2.</span> <span class="toc-text">更高性能</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1%E3%80%81%E6%9F%90%E6%97%A5%E5%BF%97%E9%9B%86%E7%BE%A4A%E4%B8%8A%E7%BA%BF%E6%95%88%E6%9E%9C"><span class="toc-number">3.2.1.</span> <span class="toc-text">1、某日志集群A上线效果</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2%E3%80%81%E6%9F%90%E6%97%A5%E5%BF%97%E9%9B%86%E7%BE%A4B%E4%B8%8A%E7%BA%BF%E6%95%88%E6%9E%9C"><span class="toc-number">3.2.2.</span> <span class="toc-text">2、某日志集群B上线效果</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9B%B4%E7%A8%B3%E5%AE%9A"><span class="toc-number">3.3.</span> <span class="toc-text">更稳定</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">4.</span> <span class="toc-text">总结</span></a></li></ol>
+      </div>
     
     
       <footer class="article-footer">

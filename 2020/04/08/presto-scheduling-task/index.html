@@ -5,16 +5,16 @@
   
   <title>Presto调度task选择Worker方法 - armsword&#39;blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="Presto调度task方式：12345678910111213public final class SystemPartitioningHandle        implements ConnectorPartitioningHandle&amp;#123;    private enum SystemPartitioning    &amp;#123;        SINGLE,        FIXED">
+  <meta name="description" content="Presto调度task方式12345678910111213public final class SystemPartitioningHandle        implements ConnectorPartitioningHandle&amp;#123;    private enum SystemPartitioning    &amp;#123;        SINGLE,        FIXED,">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Presto调度task选择Worker方法">
 <meta property="og:url" content="http://armsword.com/2020/04/08/presto-scheduling-task/index.html">
 <meta property="og:site_name" content="armsword&#39;blog">
-<meta property="og:description" content="Presto调度task方式：12345678910111213public final class SystemPartitioningHandle        implements ConnectorPartitioningHandle&amp;#123;    private enum SystemPartitioning    &amp;#123;        SINGLE,        FIXED">
+<meta property="og:description" content="Presto调度task方式12345678910111213public final class SystemPartitioningHandle        implements ConnectorPartitioningHandle&amp;#123;    private enum SystemPartitioning    &amp;#123;        SINGLE,        FIXED,">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://armsword.com/img/2020/04/plan.png">
 <meta property="article:published_time" content="2020-04-08T06:30:22.000Z">
-<meta property="article:modified_time" content="2022-02-24T07:15:33.288Z">
+<meta property="article:modified_time" content="2023-12-26T11:37:57.432Z">
 <meta property="article:author" content="armsword">
 <meta property="article:tag" content="presto">
 <meta name="twitter:card" content="summary">
@@ -79,13 +79,13 @@
 
     <div class="article-entry" itemprop="articleBody">
       
-        <h3 id="Presto调度task方式："><a href="#Presto调度task方式：" class="headerlink" title="Presto调度task方式："></a>Presto调度task方式：</h3><figure class="highlight angelscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="symbol">SystemPartitioningHandle</span></span><br><span class="line">        <span class="symbol">implements</span> <span class="symbol">ConnectorPartitioningHandle</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">enum</span> SystemPartitioning</span><br><span class="line">    &#123;</span><br><span class="line">        SINGLE,</span><br><span class="line">        FIXED,</span><br><span class="line">        SOURCE,</span><br><span class="line">        SCALED,</span><br><span class="line">        COORDINATOR_ONLY,</span><br><span class="line">        ARBITRARY</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+        <h3 id="Presto调度task方式"><a href="#Presto调度task方式" class="headerlink" title="Presto调度task方式"></a>Presto调度task方式</h3><figure class="highlight angelscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="symbol">SystemPartitioningHandle</span></span><br><span class="line">        <span class="symbol">implements</span> <span class="symbol">ConnectorPartitioningHandle</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">enum</span> SystemPartitioning</span><br><span class="line">    &#123;</span><br><span class="line">        SINGLE,</span><br><span class="line">        FIXED,</span><br><span class="line">        SOURCE,</span><br><span class="line">        SCALED,</span><br><span class="line">        COORDINATOR_ONLY,</span><br><span class="line">        ARBITRARY</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>常见的场景主要包含SINGLE、FIXED及SOURCE类型，其中SINGLE表示最后数据的汇总输出，FIXED表示中间数据的计算，如JOIN等，SOURCE类型表示与源数据打交道的类型。</p>
 <p>以下SQL为例：</p>
 <figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">select</span> * from (select * from <span class="number">1</span>test join <span class="number">2</span>test1 <span class="literal">on</span> <span class="number">1</span>test.id = <span class="number">2</span>test1.<span class="number">123</span>id);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 <span id="more"></span>
 
-<h3 id="其执行计划为："><a href="#其执行计划为：" class="headerlink" title="其执行计划为："></a>其执行计划为：</h3><p><img src="/img/2020/04/plan.png"></p>
+<h3 id="其执行计划为"><a href="#其执行计划为" class="headerlink" title="其执行计划为"></a>其执行计划为</h3><p><img src="/img/2020/04/plan.png"></p>
 <p>如上图所示，左右两个stage调度task时都是SOURCE类型，中间为两张表JOIN，其为FIXED类型，最上面的output为SINGLE类型，做最后的汇总输出。</p>
 <p>无论哪种类型，在调度task时，都要选择Worker，那其是怎么选择Worker的呢？</p>
 <p>根据上面我们提到的Presto调度task方式，可以划分为两类：非源头fragment和源头fragment</p>
@@ -103,6 +103,11 @@
 
       
     </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#Presto%E8%B0%83%E5%BA%A6task%E6%96%B9%E5%BC%8F"><span class="toc-number">1.</span> <span class="toc-text">Presto调度task方式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%B6%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92%E4%B8%BA"><span class="toc-number">2.</span> <span class="toc-text">其执行计划为</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9D%9E%E6%BA%90%E5%A4%B4fragment"><span class="toc-number">3.</span> <span class="toc-text">非源头fragment</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%BA%90%E5%A4%B4fragment"><span class="toc-number">4.</span> <span class="toc-text">源头fragment</span></a></li></ol>
+      </div>
     
     
       <footer class="article-footer">

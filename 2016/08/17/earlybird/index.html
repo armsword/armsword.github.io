@@ -5,17 +5,17 @@
   
   <title>Earlybird:Twitter实时搜索引擎 - armsword&#39;blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="简单说下，2011年左右的Paper，Paper里说Twitter的实时索引和检索系统叫做Earlybird，Paper中主要讲了2件事，第一个就是支持Twitter的实时索引的倒排索引结构是怎么样的，第二个就是利用Java并发模型，处理并发读写。 该引擎功能： 低延时、高吞吐能力； 能处理突发峰值（Weibo的特性）； 突出时效性，时间越近，排名应该越靠前； 该实时引擎支持AND、OR、NOT以">
+  <meta name="description" content="简单说下，2011年左右的Paper，Paper里说Twitter的实时索引和检索系统叫做Earlybird，Paper中主要讲了2件事，第一个就是支持Twitter的实时索引的倒排索引结构是怎么样的，第二个就是利用Java并发模型，处理并发读写。 该引擎功能 低延时、高吞吐能力； 能处理突发峰值（Weibo的特性）； 突出时效性，时间越近，排名应该越靠前； 该实时引擎支持AND、OR、NOT以及">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Earlybird:Twitter实时搜索引擎">
 <meta property="og:url" content="http://armsword.com/2016/08/17/earlybird/index.html">
 <meta property="og:site_name" content="armsword&#39;blog">
-<meta property="og:description" content="简单说下，2011年左右的Paper，Paper里说Twitter的实时索引和检索系统叫做Earlybird，Paper中主要讲了2件事，第一个就是支持Twitter的实时索引的倒排索引结构是怎么样的，第二个就是利用Java并发模型，处理并发读写。 该引擎功能： 低延时、高吞吐能力； 能处理突发峰值（Weibo的特性）； 突出时效性，时间越近，排名应该越靠前； 该实时引擎支持AND、OR、NOT以">
+<meta property="og:description" content="简单说下，2011年左右的Paper，Paper里说Twitter的实时索引和检索系统叫做Earlybird，Paper中主要讲了2件事，第一个就是支持Twitter的实时索引的倒排索引结构是怎么样的，第二个就是利用Java并发模型，处理并发读写。 该引擎功能 低延时、高吞吐能力； 能处理突发峰值（Weibo的特性）； 突出时效性，时间越近，排名应该越靠前； 该实时引擎支持AND、OR、NOT以及">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://armsword.com/img/2016/08/earlybird.png">
 <meta property="og:image" content="http://armsword.com/img/2016/08/slice.png">
 <meta property="article:published_time" content="2016-08-16T16:49:46.000Z">
-<meta property="article:modified_time" content="2022-02-24T07:15:33.294Z">
+<meta property="article:modified_time" content="2023-12-26T11:33:50.655Z">
 <meta property="article:author" content="armsword">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://armsword.com/img/2016/08/earlybird.png">
@@ -84,13 +84,13 @@
     <div class="article-entry" itemprop="articleBody">
       
         <p>简单说下，2011年左右的Paper，Paper里说Twitter的实时索引和检索系统叫做Earlybird，Paper中主要讲了2件事，第一个就是支持Twitter的实时索引的倒排索引结构是怎么样的，第二个就是利用Java并发模型，处理并发读写。</p>
-<h4 id="该引擎功能："><a href="#该引擎功能：" class="headerlink" title="该引擎功能："></a>该引擎功能：</h4><ul>
+<h4 id="该引擎功能"><a href="#该引擎功能" class="headerlink" title="该引擎功能"></a>该引擎功能</h4><ul>
 <li>低延时、高吞吐能力；</li>
 <li>能处理突发峰值（Weibo的特性）；</li>
 <li>突出时效性，时间越近，排名应该越靠前；</li>
 <li>该实时引擎支持AND、OR、NOT以及短语查询，实时性大约10S，查询latency 50ms；</li>
 </ul>
-<h4 id="该实时引擎，基于Lucene，使用Java开发，理由是："><a href="#该实时引擎，基于Lucene，使用Java开发，理由是：" class="headerlink" title="该实时引擎，基于Lucene，使用Java开发，理由是："></a>该实时引擎，基于Lucene，使用Java开发，理由是：</h4><ul>
+<h4 id="该实时引擎，基于Lucene，使用Java开发，理由是"><a href="#该实时引擎，基于Lucene，使用Java开发，理由是" class="headerlink" title="该实时引擎，基于Lucene，使用Java开发，理由是"></a>该实时引擎，基于Lucene，使用Java开发，理由是</h4><ul>
 <li>利用已存在的Lucene代码，并用来做全量索引；</li>
 <li>适用于Twitter以JVM为中心的开发环境；</li>
 <li>利用Java和JVM提供容易理解的并发模型；</li>
@@ -98,7 +98,7 @@
 <p>其实上面几条理由与阿里很多开发项目类似，但是阿里的搜索引擎是C++编写的，质量也是非常不错的，叫问天(HA3)。</p>
 <span id="more"></span>
 
-<h2 id="索引构建过程："><a href="#索引构建过程：" class="headerlink" title="索引构建过程："></a>索引构建过程：</h2><p>Earlybird处理三种信号：</p>
+<h2 id="索引构建过程"><a href="#索引构建过程" class="headerlink" title="索引构建过程"></a>索引构建过程</h2><p>Earlybird处理三种信号：</p>
 <ul>
 <li>静态信号，初次建立索引时被添加；</li>
 <li>共鸣信号，动态更新的，比如tweet转发次数；</li>
@@ -110,7 +110,7 @@
 <li>为了处理大容量，tweet按照哈希算法，分发到各个Earlybird服务上，之后将tweet实时地建立索引；</li>
 <li>如上图所示，有一个Updater服务，它推送共鸣信号到Earlybird服务，用于动态地更新索引，比如tweet转发信息等。</li>
 </ol>
-<h2 id="查询过程如下："><a href="#查询过程如下：" class="headerlink" title="查询过程如下："></a>查询过程如下：</h2><ol>
+<h2 id="查询过程如下"><a href="#查询过程如下" class="headerlink" title="查询过程如下"></a>查询过程如下</h2><ol>
 <li>当查询请求过来，先到达前端“Blender”，Blender解析请求，并将搜索用户的本地社交图谱信息也下发到Earlybird服务；</li>
 <li>Earlybird服务执行相关性计算并排序，并将排序好的tweet（排序分数高的，最近发生的tweets）返回给Blender；</li>
 <li>Blender合并各个Earlybird返回的列表，并重排序后返回给用户；</li>
@@ -131,6 +131,11 @@
 
       
     </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%AF%A5%E5%BC%95%E6%93%8E%E5%8A%9F%E8%83%BD"><span class="toc-number">1.</span> <span class="toc-text">该引擎功能</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%AF%A5%E5%AE%9E%E6%97%B6%E5%BC%95%E6%93%8E%EF%BC%8C%E5%9F%BA%E4%BA%8ELucene%EF%BC%8C%E4%BD%BF%E7%94%A8Java%E5%BC%80%E5%8F%91%EF%BC%8C%E7%90%86%E7%94%B1%E6%98%AF"><span class="toc-number">2.</span> <span class="toc-text">该实时引擎，基于Lucene，使用Java开发，理由是</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%B4%A2%E5%BC%95%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B"><span class="toc-number"></span> <span class="toc-text">索引构建过程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E8%AF%A2%E8%BF%87%E7%A8%8B%E5%A6%82%E4%B8%8B"><span class="toc-number"></span> <span class="toc-text">查询过程如下</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Term%E5%AD%97%E5%85%B8"><span class="toc-number"></span> <span class="toc-text">Term字典</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A8%E6%80%81%EF%BC%88active%EF%BC%89%E7%B4%A2%E5%BC%95"><span class="toc-number"></span> <span class="toc-text">动态（active）索引</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%B4%A2%E5%BC%95%E4%BC%98%E5%8C%96"><span class="toc-number"></span> <span class="toc-text">索引优化</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B9%B6%E5%8F%91%E7%AE%A1%E7%90%86"><span class="toc-number"></span> <span class="toc-text">并发管理</span></a>
+      </div>
     
     
       <footer class="article-footer">
