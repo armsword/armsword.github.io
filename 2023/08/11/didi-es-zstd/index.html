@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   
-  <title>如何让ES低成本、高性能？滴滴落地ZSTD压缩算法的实践分享 - armsword的涅槃之地</title>
+  <title>如何让ES低成本、高性能？滴滴落地ZSTD压缩算法的实践分享 - armsword&#39;blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="前文分别介绍了滴滴自研的ES强一致性多活是如何实现的、以及如何提升ES的性能潜力。由于滴滴ES日志场景每天写入量在5PB-10PB量级，写入压力和业务成本压力大，为了提升ES的写入性能，我们让ES支持ZSTD压缩算法，本篇文章详细展开滴滴在落地ZSTD压缩算法上的思考和实践。 背景ES通过索引（Index）对外提供数据检索能力，索引是用于组织和存储数据的逻辑单元。每个索引由若干个分片（shard）">
 <meta property="og:type" content="article">
 <meta property="og:title" content="如何让ES低成本、高性能？滴滴落地ZSTD压缩算法的实践分享">
 <meta property="og:url" content="http://armsword.com/2023/08/11/didi-es-zstd/index.html">
-<meta property="og:site_name" content="armsword的涅槃之地">
+<meta property="og:site_name" content="armsword&#39;blog">
 <meta property="og:description" content="前文分别介绍了滴滴自研的ES强一致性多活是如何实现的、以及如何提升ES的性能潜力。由于滴滴ES日志场景每天写入量在5PB-10PB量级，写入压力和业务成本压力大，为了提升ES的写入性能，我们让ES支持ZSTD压缩算法，本篇文章详细展开滴滴在落地ZSTD压缩算法上的思考和实践。 背景ES通过索引（Index）对外提供数据检索能力，索引是用于组织和存储数据的逻辑单元。每个索引由若干个分片（shard）">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://armsword.com/img/2023/08/zstd_01.png">
@@ -52,9 +52,9 @@
       <a id="logo" class="logo" href="/"></a>
       <nav id="main-nav">
         
-          <a class="main-nav-link" href="/archives">Archives</a>
+          <a class="main-nav-link" href="/">Home</a>
         
-          <a class="main-nav-link" href="/document">Document</a>
+          <a class="main-nav-link" href="/archives">Archives</a>
         
           <a class="main-nav-link" href="/about">About</a>
         

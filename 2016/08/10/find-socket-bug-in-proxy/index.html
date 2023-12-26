@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   
-  <title>记一次线上Bug的查找过程和思路 - armsword的涅槃之地</title>
+  <title>记一次线上Bug的查找过程和思路 - armsword&#39;blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="前言简单说下问题情况，Proxy即作为客户端又有服务端功能，其接受QS（Query Server）的请求，之后向BS（索引服务）发送请求，然后根据BS的返回结果Merge后返回给QS。不能泄露太多东西，所以本文主要是整理一些知识点和问题查找思路。 问题和现象： Proxy机器上出现大量的CLOSE_WAIT。 Proxy失去服务能力，内存使用不为0，CPU使用率为0。 机器报警，TcpListen">
 <meta property="og:type" content="article">
 <meta property="og:title" content="记一次线上Bug的查找过程和思路">
 <meta property="og:url" content="http://armsword.com/2016/08/10/find-socket-bug-in-proxy/index.html">
-<meta property="og:site_name" content="armsword的涅槃之地">
+<meta property="og:site_name" content="armsword&#39;blog">
 <meta property="og:description" content="前言简单说下问题情况，Proxy即作为客户端又有服务端功能，其接受QS（Query Server）的请求，之后向BS（索引服务）发送请求，然后根据BS的返回结果Merge后返回给QS。不能泄露太多东西，所以本文主要是整理一些知识点和问题查找思路。 问题和现象： Proxy机器上出现大量的CLOSE_WAIT。 Proxy失去服务能力，内存使用不为0，CPU使用率为0。 机器报警，TcpListen">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://armsword.com/img/2016/08/tcp.jpg">
@@ -40,9 +40,9 @@
       <a id="logo" class="logo" href="/"></a>
       <nav id="main-nav">
         
-          <a class="main-nav-link" href="/archives">Archives</a>
+          <a class="main-nav-link" href="/">Home</a>
         
-          <a class="main-nav-link" href="/document">Document</a>
+          <a class="main-nav-link" href="/archives">Archives</a>
         
           <a class="main-nav-link" href="/about">About</a>
         

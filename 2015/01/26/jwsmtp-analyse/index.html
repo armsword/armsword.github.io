@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   
-  <title>jwSMTP源码剖析 - armsword的涅槃之地</title>
+  <title>jwSMTP源码剖析 - armsword&#39;blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="前段时间事情太多了，忙着写毕业论文，考试，然后又被抽到了盲审，不过好在有惊无险，最后也在学院提交三月中旬申请答辩成功，如果盲审顺利的话，4月份就可以毕业了。不过这段时间总算可以看代码、看书了，感觉自己操作系统方面有些不扎实，索性买了本孙钟秀的《操作系统教程》看，之后顺便阅读和分析了jwSMTP源码，这里写篇文章记录下。本文不想对代码细节作太多分析，因为代码比较好读，并且文章末尾我会放出我注释过的源">
 <meta property="og:type" content="article">
 <meta property="og:title" content="jwSMTP源码剖析">
 <meta property="og:url" content="http://armsword.com/2015/01/26/jwsmtp-analyse/index.html">
-<meta property="og:site_name" content="armsword的涅槃之地">
+<meta property="og:site_name" content="armsword&#39;blog">
 <meta property="og:description" content="前段时间事情太多了，忙着写毕业论文，考试，然后又被抽到了盲审，不过好在有惊无险，最后也在学院提交三月中旬申请答辩成功，如果盲审顺利的话，4月份就可以毕业了。不过这段时间总算可以看代码、看书了，感觉自己操作系统方面有些不扎实，索性买了本孙钟秀的《操作系统教程》看，之后顺便阅读和分析了jwSMTP源码，这里写篇文章记录下。本文不想对代码细节作太多分析，因为代码比较好读，并且文章末尾我会放出我注释过的源">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2015-01-26T05:50:48.000Z">
@@ -38,9 +38,9 @@
       <a id="logo" class="logo" href="/"></a>
       <nav id="main-nav">
         
-          <a class="main-nav-link" href="/archives">Archives</a>
+          <a class="main-nav-link" href="/">Home</a>
         
-          <a class="main-nav-link" href="/document">Document</a>
+          <a class="main-nav-link" href="/archives">Archives</a>
         
           <a class="main-nav-link" href="/about">About</a>
         

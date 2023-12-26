@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   
-  <title>记一次Presto Worker OOM的查找过程 - armsword的涅槃之地</title>
+  <title>记一次Presto Worker OOM的查找过程 - armsword&#39;blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="背景最近Presto集群又上线了几个新业务，伴之而来的是OOM很频繁，且发生时间多在早晨8点左右，线上稳定性是高优需要解决的，所以查找了下导致Presto集群OOM的原因，发现了一些问题，这里抛砖引玉下，可能其他使用Presto的用户也会遇到类似的问题。 排查过程我给一些业务划分了不同的label，这里说明下我们把Presto引擎改进了下，可以动态将机器划分不同的label，这样SQL查询时候指定">
 <meta property="og:type" content="article">
 <meta property="og:title" content="记一次Presto Worker OOM的查找过程">
 <meta property="og:url" content="http://armsword.com/2020/06/03/the-solution-of-presto-oom-caused-by-orc-statistics/index.html">
-<meta property="og:site_name" content="armsword的涅槃之地">
+<meta property="og:site_name" content="armsword&#39;blog">
 <meta property="og:description" content="背景最近Presto集群又上线了几个新业务，伴之而来的是OOM很频繁，且发生时间多在早晨8点左右，线上稳定性是高优需要解决的，所以查找了下导致Presto集群OOM的原因，发现了一些问题，这里抛砖引玉下，可能其他使用Presto的用户也会遇到类似的问题。 排查过程我给一些业务划分了不同的label，这里说明下我们把Presto引擎改进了下，可以动态将机器划分不同的label，这样SQL查询时候指定">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://armsword.com/img/2020/06/stripe.png">
@@ -47,9 +47,9 @@
       <a id="logo" class="logo" href="/"></a>
       <nav id="main-nav">
         
-          <a class="main-nav-link" href="/archives">Archives</a>
+          <a class="main-nav-link" href="/">Home</a>
         
-          <a class="main-nav-link" href="/document">Document</a>
+          <a class="main-nav-link" href="/archives">Archives</a>
         
           <a class="main-nav-link" href="/about">About</a>
         

@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   
-  <title>Elasticsearch集群JVM coredump问题排查 - armsword的涅槃之地</title>
+  <title>Elasticsearch集群JVM coredump问题排查 - armsword&#39;blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="前言好几年前的文章了，之前排查问题，随手写的，但是发现其他团队人遇到类似问题没有思路，所以还是发出来，给大家一起解决问题的思路。 问题描述ES集群磁盘报警，发现&#x2F;home&#x2F;coresave&#x2F; core文件导致根目录磁盘被打满，删除core文件恢复，已知这个集群新上线了jdk 17 zgc，排查下jvm为啥core。而jvm core一般有以下几个原因：资源超了（内存、">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Elasticsearch集群JVM coredump问题排查">
 <meta property="og:url" content="http://armsword.com/2023/12/06/resolve-es-JVM-coredump/index.html">
-<meta property="og:site_name" content="armsword的涅槃之地">
+<meta property="og:site_name" content="armsword&#39;blog">
 <meta property="og:description" content="前言好几年前的文章了，之前排查问题，随手写的，但是发现其他团队人遇到类似问题没有思路，所以还是发出来，给大家一起解决问题的思路。 问题描述ES集群磁盘报警，发现&#x2F;home&#x2F;coresave&#x2F; core文件导致根目录磁盘被打满，删除core文件恢复，已知这个集群新上线了jdk 17 zgc，排查下jvm为啥core。而jvm core一般有以下几个原因：资源超了（内存、">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://armsword.com/img/2023/12/core.png">
@@ -47,9 +47,9 @@
       <a id="logo" class="logo" href="/"></a>
       <nav id="main-nav">
         
-          <a class="main-nav-link" href="/archives">Archives</a>
+          <a class="main-nav-link" href="/">Home</a>
         
-          <a class="main-nav-link" href="/document">Document</a>
+          <a class="main-nav-link" href="/archives">Archives</a>
         
           <a class="main-nav-link" href="/about">About</a>
         

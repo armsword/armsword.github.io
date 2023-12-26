@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   
-  <title>Presto集群内存不足时保护机制 - armsword的涅槃之地</title>
+  <title>Presto集群内存不足时保护机制 - armsword&#39;blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="为了防止集群里节点OOM，Presto有个循环线程来获取当前集群节点和集群整体内存占用情况。通过这篇文章：Presto内存管理相关参数设置  我们知道Presto里分为RESERVED_POOL和GENERAL_POOL。 判断节点是否阻塞（内存不足）：如果使用RESERVED_POOL（意思是说最大SQL使用这个POOL），那判断集群内存超出内存的方法就是： 1、RESERVED_POOL内存被">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Presto集群内存不足时保护机制">
 <meta property="og:url" content="http://armsword.com/2020/02/18/presto-memory-kill-policy/index.html">
-<meta property="og:site_name" content="armsword的涅槃之地">
+<meta property="og:site_name" content="armsword&#39;blog">
 <meta property="og:description" content="为了防止集群里节点OOM，Presto有个循环线程来获取当前集群节点和集群整体内存占用情况。通过这篇文章：Presto内存管理相关参数设置  我们知道Presto里分为RESERVED_POOL和GENERAL_POOL。 判断节点是否阻塞（内存不足）：如果使用RESERVED_POOL（意思是说最大SQL使用这个POOL），那判断集群内存超出内存的方法就是： 1、RESERVED_POOL内存被">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2020-02-18T14:28:21.000Z">
@@ -39,9 +39,9 @@
       <a id="logo" class="logo" href="/"></a>
       <nav id="main-nav">
         
-          <a class="main-nav-link" href="/archives">Archives</a>
+          <a class="main-nav-link" href="/">Home</a>
         
-          <a class="main-nav-link" href="/document">Document</a>
+          <a class="main-nav-link" href="/archives">Archives</a>
         
           <a class="main-nav-link" href="/about">About</a>
         

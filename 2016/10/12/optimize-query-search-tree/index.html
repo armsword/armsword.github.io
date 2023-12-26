@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   
-  <title>一些常见的搜索查询树优化方法 - armsword的涅槃之地</title>
+  <title>一些常见的搜索查询树优化方法 - armsword&#39;blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="搜索引擎服务收到一个Query后，一般引擎这边是这么搞得，解析语法，生成后缀表达式，即查询搜索树（Search Tree）。搜索查询树负责求交、求并和过滤。所以这个地方也是性能关键点。所以在解析语法后，一般要做查询搜索树优化，减少求交，求并和过滤操作的次数，以此来提高搜索服务的QPS和查询Latency。 因为同事在负责新实时索引的性能优化，我正好负责将全量索引格式迁移到新实时索引上面，即实时索引">
 <meta property="og:type" content="article">
 <meta property="og:title" content="一些常见的搜索查询树优化方法">
 <meta property="og:url" content="http://armsword.com/2016/10/12/optimize-query-search-tree/index.html">
-<meta property="og:site_name" content="armsword的涅槃之地">
+<meta property="og:site_name" content="armsword&#39;blog">
 <meta property="og:description" content="搜索引擎服务收到一个Query后，一般引擎这边是这么搞得，解析语法，生成后缀表达式，即查询搜索树（Search Tree）。搜索查询树负责求交、求并和过滤。所以这个地方也是性能关键点。所以在解析语法后，一般要做查询搜索树优化，减少求交，求并和过滤操作的次数，以此来提高搜索服务的QPS和查询Latency。 因为同事在负责新实时索引的性能优化，我正好负责将全量索引格式迁移到新实时索引上面，即实时索引">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://armsword.com/img/2016/10/and.png">
@@ -45,9 +45,9 @@
       <a id="logo" class="logo" href="/"></a>
       <nav id="main-nav">
         
-          <a class="main-nav-link" href="/archives">Archives</a>
+          <a class="main-nav-link" href="/">Home</a>
         
-          <a class="main-nav-link" href="/document">Document</a>
+          <a class="main-nav-link" href="/archives">Archives</a>
         
           <a class="main-nav-link" href="/about">About</a>
         

@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   
-  <title>Webbench源码剖析 - armsword的涅槃之地</title>
+  <title>Webbench源码剖析 - armsword&#39;blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="我们知道知名的Web网站压力测试工具有Webbench、ab、http_load、siege等等，这种工具的源码都不是太长，所以，我用了一下午和晚上时间仔细了分析了Webbench的源码，并且写下这篇博客记录下。 我们先看下一般Webbench是怎么做压力测试的吧，方法很简单，如下所示： 1234567891011#模拟200次请求，持续时间5秒的压力测试 -c 后为并发数， -t 后为持续时间[">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Webbench源码剖析">
 <meta property="og:url" content="http://armsword.com/2014/10/26/webbench-source-analyse/index.html">
-<meta property="og:site_name" content="armsword的涅槃之地">
+<meta property="og:site_name" content="armsword&#39;blog">
 <meta property="og:description" content="我们知道知名的Web网站压力测试工具有Webbench、ab、http_load、siege等等，这种工具的源码都不是太长，所以，我用了一下午和晚上时间仔细了分析了Webbench的源码，并且写下这篇博客记录下。 我们先看下一般Webbench是怎么做压力测试的吧，方法很简单，如下所示： 1234567891011#模拟200次请求，持续时间5秒的压力测试 -c 后为并发数， -t 后为持续时间[">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://armsword.com/img/2014/10/20141026.png">
@@ -40,9 +40,9 @@
       <a id="logo" class="logo" href="/"></a>
       <nav id="main-nav">
         
-          <a class="main-nav-link" href="/archives">Archives</a>
+          <a class="main-nav-link" href="/">Home</a>
         
-          <a class="main-nav-link" href="/document">Document</a>
+          <a class="main-nav-link" href="/archives">Archives</a>
         
           <a class="main-nav-link" href="/about">About</a>
         

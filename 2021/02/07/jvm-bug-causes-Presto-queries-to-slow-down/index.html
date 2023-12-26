@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   
-  <title>说下那些导致Presto查询变慢的JVM Bug和解决方法 - armsword的涅槃之地</title>
+  <title>说下那些导致Presto查询变慢的JVM Bug和解决方法 - armsword&#39;blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="背景维护Presto集群，遇到了一些JVM Bug会严重导致Presto查询变慢，这里分享下Bugs表现及解决方法。 Ref Proc 耗时太久线上Presto运行一段时间后，查询会越来越慢，打了下火焰图，发现30%的CPU都浪费在young gc上了，看了下gc log，如下： 12345678910111213141516171819202122232425262728292020-12-21">
 <meta property="og:type" content="article">
 <meta property="og:title" content="说下那些导致Presto查询变慢的JVM Bug和解决方法">
 <meta property="og:url" content="http://armsword.com/2021/02/07/jvm-bug-causes-Presto-queries-to-slow-down/index.html">
-<meta property="og:site_name" content="armsword的涅槃之地">
+<meta property="og:site_name" content="armsword&#39;blog">
 <meta property="og:description" content="背景维护Presto集群，遇到了一些JVM Bug会严重导致Presto查询变慢，这里分享下Bugs表现及解决方法。 Ref Proc 耗时太久线上Presto运行一段时间后，查询会越来越慢，打了下火焰图，发现30%的CPU都浪费在young gc上了，看了下gc log，如下： 12345678910111213141516171819202122232425262728292020-12-21">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://armsword.com/img/2021/02/jstack.png">
@@ -43,9 +43,9 @@
       <a id="logo" class="logo" href="/"></a>
       <nav id="main-nav">
         
-          <a class="main-nav-link" href="/archives">Archives</a>
+          <a class="main-nav-link" href="/">Home</a>
         
-          <a class="main-nav-link" href="/document">Document</a>
+          <a class="main-nav-link" href="/archives">Archives</a>
         
           <a class="main-nav-link" href="/about">About</a>
         
