@@ -52,6 +52,48 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-jetty-cause-presto-memory-leak" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/06/23/jetty-cause-presto-memory-leak/">Jetty导致Presto堆外内存泄露的排查过程</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2020/06/23/jetty-cause-presto-memory-leak/" class="article-date">
+  <time datetime="2020-06-23T10:52:11.000Z" itemprop="datePublished">2020-06-23</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>一个Presto集群报警，显示Coordinator内存不足。看了下，发现RES内存(86.7G) &gt; XMX(72G) + 堆外内存(10G)，然后看了下Presto UI里Resource Utilization的Non-Heap Memory Used，只用了200M。问题奇怪，pmap查看进程的内存映像信息，如下：</p>
+<figure class="highlight tap"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[presto@hostname ~/presto-current]$ pmap -x<span class="number"> 107870 </span>| sort -rn -k3 | head -n 10</span><br><span class="line">total kB        <span class="number"> 106752092 </span>86763996 86684760</span><br><span class="line">00007fd673000000<span class="number"> 75644928 </span>61078708<span class="number"> 61078708 </span>rw---   [ anon ]</span><br><span class="line">00007fd5c8000000<span class="number"> 2654208 </span>2537116<span class="number"> 2537116 </span>rw---   [ anon ]</span><br><span class="line">000000000120a000<span class="number"> 1244772 </span>1244644<span class="number"> 1244644 </span>rw---   [ anon ]</span><br><span class="line">00007fd5803cf000 <span class="number"> 520388 </span><span class="number"> 497972 </span><span class="number"> 497972 </span>rw---   [ anon ]</span><br><span class="line">00007fd08c836000 <span class="number"> 149720 </span><span class="number"> 149720 </span><span class="number"> 149720 </span>rw---   [ anon ]</span><br><span class="line">00007fd0e2fe2000 <span class="number"> 147620 </span><span class="number"> 147620 </span><span class="number"> 147620 </span>rw---   [ anon ]</span><br><span class="line">00007fd0d9b35000 <span class="number"> 146920 </span><span class="number"> 146920 </span><span class="number"> 146920 </span>rw---   [ anon ]</span><br><span class="line">00007fe964000000 <span class="number"> 116672 </span><span class="number"> 114164 </span><span class="number"> 114164 </span>rwx--   [ anon ]</span><br><span class="line">00007fd0612b1000 <span class="number"> 111932 </span><span class="number"> 111932 </span><span class="number"> 111932 </span>rw---   [ anon ]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>第一列表示虚拟空间地址，第二列表示该项在虚拟空间中占用的大小，第三列表示RSS，第四列表示DIRTY，第五列表示该项名称（anon是佚名的）。</p>
+<p>jmap -heap 发现堆内内存占用正常，然后我jmap dump了一份内存，dump后发现只有700M+，应该与堆内存无关了，既然这样查找直接从堆外内存入手了。</p>
+        
+          <p class="article-more-link">
+            <a href="/2020/06/23/jetty-cause-presto-memory-leak/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-the-solution-of-presto-oom-caused-by-orc-statistics" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -359,53 +401,6 @@
 
 
     
-      <article id="post-solve-presto-system-load-too-high" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/09/18/solve-presto-system-load-too-high/">Presto System load过高问题调研</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2019/09/18/solve-presto-system-load-too-high/" class="article-date">
-  <time datetime="2019-09-18T11:04:09.000Z" itemprop="datePublished">2019-09-18</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>我们Presto有个集群，每6.5天会出现System load过高问题，这个集群有个特点，只服务于一个业务方，且SQL基本相似。如图所示：Sys load很高（20-40%），严重影响查询性能。<br><img src="/img/2019/09/01.png" width="800" align=left /></p>
-<p>业务SQL查询时间表现为：</p>
-<p>ScanFilterAndProjectOperator（Source Stage）阶段有机器有明显的长尾现象，比如20台机器，正常这个Operator执行时间只需要1S，但是有几台机器会耗时几分钟。而重启服务后，查询恢复正常。</p>
-        
-          <p class="article-more-link">
-            <a href="/2019/09/18/solve-presto-system-load-too-high/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
-
-      </footer>
-    
-  </div>
-  
-</article>
-
-
-    
       <nav id="page-nav">
         <a class="extend prev" rel="prev" href="/page/2/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><span class="space">&hellip;</span><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/4/">下一页 &gt;&gt;</a>
       </nav>
@@ -414,7 +409,7 @@
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2023 armsword&nbsp;
+      &copy; 2024 armsword&nbsp;
       Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a target="_blank" rel="noopener" href="http://github.com/ppoffice">PPOffice</a>
     </div>
   </div>

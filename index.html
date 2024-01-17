@@ -52,6 +52,78 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-my-experiences-in-leading-a-team" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2024/01/17/my-experiences-in-leading-a-team/">关于做好技术团队管理的几点心得</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2024/01/17/my-experiences-in-leading-a-team/" class="article-date">
+  <time datetime="2024-01-17T08:24:41.000Z" itemprop="datePublished">2024-01-17</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>技术Leader核心工作是让团队拿更好的成绩，日常工作主要是制定方案、推进业务、掌控下属、协助领导等四项内容，本次分享主要分享最基础也是最重要的管理职责：</p>
+<ul>
+<li>调动团队同学的工作积极性</li>
+<li>让团队同学更高更快的成长</li>
+</ul>
+<h2 id="1、如何调动团队同学的工作积极性？"><a href="#1、如何调动团队同学的工作积极性？" class="headerlink" title="1、如何调动团队同学的工作积极性？"></a>1、如何调动团队同学的工作积极性？</h2><ul>
+<li>精确的指示。需要更强调为什么做和这么做的意义，没有计划和目的的命令无法为下属提供工作的动力。<ul>
+<li>举例：有个业务需要节省成本，需要要“查询性能提升2倍”。身为主管，自然不能直接告诉下属“查询性能提升2倍”。主管要做的是，考虑怎样才能使性能提升2倍，再用具体的语言指挥下属行动起来。 </li>
+<li>工作边界要清晰</li>
+</ul>
+</li>
+<li>了解下属的能力和意愿<ul>
+<li>根据下属能力进行分工，整体分工需要张弛有度，有能提升硬实力的工作也有易产出有亮眼的工作</li>
+<li>针对个体而言，重点在于提升能力和个人意愿</li>
+<li>针对个体间而言，在于加强分工和协作，分工要有边界</li>
+<li>主管的行为一般有：授权型、参与型、说服型、命令型；根据下属不同性格要有不同的行为</li>
+</ul>
+</li>
+<li>激情会传染。做主管的必须先激情四射，然后才能点燃下属们的激情</li>
+<li>要掌控业务全貌</li>
+<li>技术上能搞事情。能搞定别人解不了的事情，团队影响力越高，团队同学认同感和参与感越强；多思考技术和未来团队发展的事情</li>
+<li>提升下属对你的信任度<ul>
+<li>有一技之长。技术leader某一块技术能力要做到团队最好，影响信服度</li>
+<li>能让对方感受到你是真实的帮助其成长，需要更多换位思考</li>
+<li>利用好团建和聚餐场合</li>
+</ul>
+</li>
+</ul>
+        
+          <p class="article-more-link">
+            <a href="/2024/01/17/my-experiences-in-leading-a-team/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%9B%A2%E9%98%9F%E7%AE%A1%E7%90%86/" rel="tag">团队管理</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-resolve-es-JVM-coredump" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -437,58 +509,6 @@ number_of_pending_tasks：是指主节点创建索引并分配shards等任务，
 
 
     
-      <article id="post-elasticsearch-performance-optimizing-in-online-poi-service" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2021/09/09/elasticsearch-performance-optimizing-in-online-poi-service/">Elasticsearch性能调优之毫秒级搜索POI业务</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2021/09/09/elasticsearch-performance-optimizing-in-online-poi-service/" class="article-date">
-  <time datetime="2021-09-09T12:35:34.000Z" itemprop="datePublished">2021-09-09</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>地图POI搜索业务使用的Elasticsearch集群是自建的2.3版本，维护ES需要耗费很多精力和人力。而目前公司有专门的ES搜索团队，且ES版本已经升级到7.6版本。ES 7.6版本有很多新的特性，如IndexSorting，查询加速，索引off-heap，全新的熔断器等等。6月份，ES搜索团队决定与地图POI合作共建，将ES升级到公司里的ES 7.6，专业的人做专业的事，ES团队维护集群稳定性、提升性能等，这样地图POI团队可以更好的聚焦到业务架构和推荐系统中台化上。</p>
-<p>地图POI分为国内POI和国际化POI，其面向在线搜索业务，对搜索耗时要求比较高，国内POI要求TP50耗时小于5ms，TP99 耗时小于20ms，国际化POI要求TP50耗时小于5ms，TP99耗时小于60ms。且两个业务方的索引查询超时时间都为180ms。由于其业务特点，所以在迁移ES 7.6时，并非一帆风顺，遇到很多性能和稳定性问题，这篇文章会介绍下遇到的性能问题和解决方法。由于篇幅有限，本文只介绍了影响性能最大的三个问题及优化手段和排查问题过程，分别为：</p>
-<ul>
-<li>前缀查询优化</li>
-<li>查询截断</li>
-<li>查询超时毛刺</li>
-</ul>
-<h2 id="前缀查询优化"><a href="#前缀查询优化" class="headerlink" title="前缀查询优化"></a>前缀查询优化</h2><p>调好合适的分片数，之后将索引从Hive离线导入到ES，做一轮压测，耗时曲线图如下图所示，耗时都接近800ms了，并且超过180ms就认为是超时，这与期望的性能有比较大的差距：</p>
-<img src="/img/2021/09/curve.png" width = "100%" />
-
-<p>通过gateway里面的审计日志，计算出国际化POI TP50、TP90、TP99时间，如下图所示：</p>
-<img src="/img/2021/09/TP99.png" width = "100%" />
-
-<p>可以看到TP99时间到了619ms，这与预期的性能有很大差距。所以我们需要看下为什么查询性能这么慢，我们将审计日志里面的压测DSL全部拿到，之后根据查询耗时降序排序，然后将DSL模板归类，发现耗时最久的是类似下面这种DSL：</p>
-        
-          <p class="article-more-link">
-            <a href="/2021/09/09/elasticsearch-performance-optimizing-in-online-poi-service/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
       <nav id="page-nav">
         <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/2/">下一页 &gt;&gt;</a>
       </nav>
@@ -497,7 +517,7 @@ number_of_pending_tasks：是指主节点创建索引并分配shards等任务，
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2023 armsword&nbsp;
+      &copy; 2024 armsword&nbsp;
       Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a target="_blank" rel="noopener" href="http://github.com/ppoffice">PPOffice</a>
     </div>
   </div>

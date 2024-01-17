@@ -52,6 +52,51 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-jwsmtp-analyse" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/01/26/jwsmtp-analyse/">jwSMTP源码剖析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2015/01/26/jwsmtp-analyse/" class="article-date">
+  <time datetime="2015-01-26T05:50:48.000Z" itemprop="datePublished">2015-01-26</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C-C/">C/C++</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>前段时间事情太多了，忙着写毕业论文，考试，然后又被抽到了盲审，不过好在有惊无险，最后也在学院提交三月中旬申请答辩成功，如果盲审顺利的话，4月份就可以毕业了。不过这段时间总算可以看代码、看书了，感觉自己操作系统方面有些不扎实，索性买了本孙钟秀的《操作系统教程》看，之后顺便阅读和分析了jwSMTP源码，这里写篇文章记录下。本文不想对代码细节作太多分析，因为代码比较好读，并且文章末尾我会放出我注释过的源码链接，所以此文多介绍下原理吧。</p>
+<h2 id="jwSMTP"><a href="#jwSMTP" class="headerlink" title="jwSMTP"></a>jwSMTP</h2><p>jwSMTP是一个由C++编写的发送邮件的库，支持Linux、Windows平台。可使用HTML或纯文本方式发送邮件。也可添加附件，支持多个收件人。并且支持LOGIN和PLAIN两种服务器验证方式。</p>
+<h2 id="两种调用方式"><a href="#两种调用方式" class="headerlink" title="两种调用方式"></a>两种调用方式</h2><h3 id="第一种方式"><a href="#第一种方式" class="headerlink" title="第一种方式"></a>第一种方式</h3>
+        
+          <p class="article-more-link">
+            <a href="/2015/01/26/jwsmtp-analyse/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-tinyhttpd-code-analyse" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -335,59 +380,6 @@
 
 
     
-      <article id="post-letter-combinations-of-a-phone-number" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2014/04/09/letter-combinations-of-a-phone-number/">Letter Combinations of a Phone Number</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2014/04/09/letter-combinations-of-a-phone-number/" class="article-date">
-  <time datetime="2014-04-09T08:54:14.000Z" itemprop="datePublished">2014-04-09</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">算法/数据结构</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>由于这个月还没写博客，找道题应付下吧，主要原因是自己现在太忙了，得准备找工作啊，唉，弱的惨不忍睹。好吧，不抱怨了，进入正题，<a target="_blank" rel="noopener" href="http://oj.leetcode.com/problems/letter-combinations-of-a-phone-number/">LeetCode</a>上面的一道题，题目描述为：</p>
-<p>Given a digit string, return all possible letter combinations that the number could represent.</p>
-<p>A mapping of digit to letters (just like on the telephone buttons) is given below.</p>
-<p><img src="/img/2014/04/200px-Telephone-keypad2.svg_.png"></p>
-<pre>**Input:**Digit string "23"
-**Output:** ["ad", "ae", "af", "bd", "be", "bf", "cd", "ce", "cf"].
-**
-Note:**
-Although the above answer is in lexicographical order, your answer could be in any order you want.</pre>
-<p>其实就是组合问题，如下图所示：<br><img src="/img/2014/04/Combo.jpg"></p>
-<p>如图所示，遍历完 1，2，3，就把a,d (g,h,i)遍历完了，之后回溯到e，就是个DFS搞定。</p>
-        
-          <p class="article-more-link">
-            <a href="/2014/04/09/letter-combinations-of-a-phone-number/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
       <nav id="page-nav">
         <a class="extend prev" rel="prev" href="/page/5/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/page/7/">7</a><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/7/">下一页 &gt;&gt;</a>
       </nav>
@@ -396,7 +388,7 @@ Although the above answer is in lexicographical order, your answer could be in a
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2023 armsword&nbsp;
+      &copy; 2024 armsword&nbsp;
       Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a target="_blank" rel="noopener" href="http://github.com/ppoffice">PPOffice</a>
     </div>
   </div>
