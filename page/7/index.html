@@ -52,6 +52,54 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-redis-dict-analyze" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/04/20/redis-dict-analyze/">Redis里dict源码剖析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/04/20/redis-dict-analyze/" class="article-date">
+  <time datetime="2014-04-20T15:07:52.000Z" itemprop="datePublished">2014-04-20</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C-C/">C/C++</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Redis全名叫做Remote Dictionary Server，从全称就可以看出dict是Redis里重要的数据结构，看了下dict.c里的源码，简单分析下。</p>
+<p>dict.c主要是实现了哈希功能，实际上实现哈希（字典）常见的方法有几种：</p>
+<p>&lt;1&gt;比如我们数据结构课上学的数组和链表法，但是这种方法适用于元素个数不多的情况下</p>
+<p>&lt;2&gt;使用复杂的平衡树(B-等等)，性能比较不错，比如MySQL里的索引就使用了这种方法</p>
+<p>&lt;3&gt;哈希表，兼顾了高效和简单性，Redis选择了这种方法。</p>
+<p>我们就解读下dict.c里源码里的数据结构吧，我们知道hash表的性能由hash表的大小和解决冲突的方法决定。Redis里使用了两个哈希表(ht[0])和哈希表(ht[1])，hash[0]是字典主要使用的hash表，而hash[1]主要对0号哈希表进行rehash时才使用。读者可能不明白这个地方啥意思？其实就是，程序每次申请几个字节（默认为4字节），当key&#x2F;value数量达到规定时，程序申请的4字节就翻一倍（这里使用了慢迁移），那什么时候rehash呢？我们知道size &#x3D;&#x3D; used（根据下面的dictht结构体）时，达到最理想状态，所以当used&#x2F;size &gt; 1时，就进行rehash。我们先看看dict.h里定义的几个结构体吧：</p>
+        
+          <p class="article-more-link">
+            <a href="/2014/04/20/redis-dict-analyze/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-letter-combinations-of-a-phone-number" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -325,57 +373,6 @@ Although the above answer is in lexicographical order, your answer could be in a
         
           <p class="article-more-link">
             <a href="/2013/08/25/linux-memory-and-manage/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-redis-source" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2013/08/04/redis-source/">准备看下Redis的源代码</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2013/08/04/redis-source/" class="article-date">
-  <time datetime="2013-08-04T07:22:57.000Z" itemprop="datePublished">2013-08-04</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Database/">Database</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>Redis是一个开源，BSD授权，高性能的key-value数据库，使用ANSI C编写。Redis的出现很大程度补偿了memcached这类key-value存储的不足，因为：</p>
-<p>Memcached基本只支持简单的key-value存储，不支持枚举，不支持持久化和复制能功能。</p>
-<p>Redis除key-value之外，还支持list,set,sorted set,hash等众多数据结构，提供了KEYS进行枚举操作，但不能在线上使用，如果需要枚举线上数据，Redis提供了工具可以直接扫描其dump文件，枚举出所有数据，Redis还同时提供了持久化和复制等功能。</p>
-<p>如果简单地比较Redis与Memcached的区别，大多数都会得到以下观点：</p>
-<ul>
-<li>Redis不仅仅支持简单的k&#x2F;v类型的数据，同时还提供list，set，hash等数据结构的存储。</li>
-<li>Redis支持数据的备份，即master-slave模式的数据备份。</li>
-<li>Redis支持数据的持久化，可以将内存中的数据保持在磁盘中，重启的时候可以再次加载进行使用。<br>Redis和memcached不同之处还在以下方面：1.网络IO模型 2.内存管理方面 3.数据一致性问题 4.存储方式及其它方面（上文提到了）等等，这里不在细说。</li>
-</ul>
-        
-          <p class="article-more-link">
-            <a href="/2013/08/04/redis-source/#more">Read More</a>
           </p>
         
       

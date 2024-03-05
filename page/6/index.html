@@ -52,6 +52,52 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-baidu-lossless-music-downloader" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/01/31/baidu-lossless-music-downloader/">写了一个Chrome插件 - 百度无损音乐下载插件</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2015/01/31/baidu-lossless-music-downloader/" class="article-date">
+  <time datetime="2015-01-31T12:39:13.000Z" itemprop="datePublished">2015-01-31</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Web-Script/">Web/Script</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>1、之前是从<a target="_blank" rel="noopener" href="http://music.baidu.com/">http://music.baidu.com/</a> 入手的，现在发现从此处入手已经找不到方法了。由于我又不是太懂JS语法，于是用了几十分钟，没分析到地址放弃。</p>
+<p>2、灵光一闪，从<a target="_blank" rel="noopener" href="http://fm.baidu.com/">http://fm.baidu.com/</a> 入手，在Chrome下抓包，细心分析后，果然发现蜘丝马迹，如下图所示：</p>
+<p><img src="/img/2014/08/20140809213933.png"></p>
+<p>见左图那个灰色的链接，我们打开[链接](<a target="_blank" rel="noopener" href="http://music.baidu.com/data/music/fmlink?songIds=1181294,291890,620023,7329389,448152,7325038,2119209,309877">http://music.baidu.com/data/music/fmlink?songIds=1181294,291890,620023,7329389,448152,7325038,2119209,309877</a>,     7331713,2121730&amp;type&#x3D;mp3&amp;rate&#x3D;320&amp;callback&#x3D;jQuery1102037159983557648957_1407590773561&amp;_&#x3D;1407590773570                                  “百度无损音乐下载方法”)看下，嘿，发现了许多歌曲信息哦，如下图所示：</p>
+        
+          <p class="article-more-link">
+            <a href="/2015/01/31/baidu-lossless-music-downloader/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-jwsmtp-analyse" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -320,54 +366,6 @@
         
           <p class="article-more-link">
             <a href="/2014/05/18/light-cgi-server/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-redis-dict-analyze" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2014/04/20/redis-dict-analyze/">Redis里dict源码剖析</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2014/04/20/redis-dict-analyze/" class="article-date">
-  <time datetime="2014-04-20T15:07:52.000Z" itemprop="datePublished">2014-04-20</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/C-C/">C/C++</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>Redis全名叫做Remote Dictionary Server，从全称就可以看出dict是Redis里重要的数据结构，看了下dict.c里的源码，简单分析下。</p>
-<p>dict.c主要是实现了哈希功能，实际上实现哈希（字典）常见的方法有几种：</p>
-<p>&lt;1&gt;比如我们数据结构课上学的数组和链表法，但是这种方法适用于元素个数不多的情况下</p>
-<p>&lt;2&gt;使用复杂的平衡树(B-等等)，性能比较不错，比如MySQL里的索引就使用了这种方法</p>
-<p>&lt;3&gt;哈希表，兼顾了高效和简单性，Redis选择了这种方法。</p>
-<p>我们就解读下dict.c里源码里的数据结构吧，我们知道hash表的性能由hash表的大小和解决冲突的方法决定。Redis里使用了两个哈希表(ht[0])和哈希表(ht[1])，hash[0]是字典主要使用的hash表，而hash[1]主要对0号哈希表进行rehash时才使用。读者可能不明白这个地方啥意思？其实就是，程序每次申请几个字节（默认为4字节），当key&#x2F;value数量达到规定时，程序申请的4字节就翻一倍（这里使用了慢迁移），那什么时候rehash呢？我们知道size &#x3D;&#x3D; used（根据下面的dictht结构体）时，达到最理想状态，所以当used&#x2F;size &gt; 1时，就进行rehash。我们先看看dict.h里定义的几个结构体吧：</p>
-        
-          <p class="article-more-link">
-            <a href="/2014/04/20/redis-dict-analyze/#more">Read More</a>
           </p>
         
       

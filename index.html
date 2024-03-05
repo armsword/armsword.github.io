@@ -52,6 +52,59 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-Didi-builds-a-new-generation-of-log-storage-system-based-on-Clickhouse" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2024/03/05/Didi-builds-a-new-generation-of-log-storage-system-based-on-Clickhouse/">滴滴基于 Clickhouse 构建新一代日志存储系统</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2024/03/05/Didi-builds-a-new-generation-of-log-storage-system-based-on-Clickhouse/" class="article-date">
+  <time datetime="2024-03-05T14:12:22.000Z" itemprop="datePublished">2024-03-05</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>此前，滴滴日志主要存储于 ES 中。然而，ES 的分词、倒排和正排等功能导致其写入吞吐量存在明显瓶颈。此外，ES 需要存储原始文本、倒排索引和正排索引，这增加了存储成本，并对内存有较高要求。随着滴滴数据量的不断增长，ES 的性能已无法满足当前需求。</p>
+<p>在追求降低成本和提高效率的背景下，我们开始寻求新的存储解决方案。经过研究，我们决定采用 CK 作为滴滴内部日志的存储支持。据了解，京东、携程、B站等多家公司在业界的实践中也在尝试用 CK 构建日志存储系统。</p>
+<h2 id="挑战"><a href="#挑战" class="headerlink" title="挑战"></a>挑战</h2><p>面临的挑战主要来自下面三个方面：</p>
+<ul>
+<li>数据量大：每天会产生 PB 级别的日志数据，存储系统需要稳定地支撑 PB 级数据的实时写入和存储。</li>
+<li>查询场景多：在一个时间段内的等值查询、模糊查询及排序场景等，查询需要扫描的数据量较大且查询都需要在秒级返回。</li>
+<li>QPS 高：在 PB 级的数据量下，对 Trace 查询同时要满足高 QPS 的要求。</li>
+</ul>
+<h2 id="为什么选-Clickhouse"><a href="#为什么选-Clickhouse" class="headerlink" title="为什么选 Clickhouse"></a>为什么选 Clickhouse</h2><ul>
+<li>大数据量：CK 的分布式架构支持动态扩缩容，可支撑海量数据存储。</li>
+<li>写入性能：CK 的 MergeTree 表的写入速度在200MB&#x2F;s，具有很高吞吐，写入基本没有瓶颈。</li>
+<li>查询性能：CK 支持分区索引和排序索引，具有很高的检索效率，单机每秒可扫描数百万行的数据。</li>
+<li>存储成本：CK 基于列式存储，数据压缩比很高，同时基于HDFS做冷热分离，能够进一步地降低存储成本。</li>
+</ul>
+<h2 id="架构升级"><a href="#架构升级" class="headerlink" title="架构升级"></a>架构升级</h2><img src="/img/2024/03/arch.png" width = "100%" />
+        
+          <p class="article-more-link">
+            <a href="/2024/03/05/Didi-builds-a-new-generation-of-log-storage-system-based-on-Clickhouse/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-my-experiences-in-leading-a-team" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -437,69 +490,6 @@ number_of_pending_tasks：是指主节点创建索引并分配shards等任务，
       <footer class="article-footer">
         
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/elasticsearch/" rel="tag">elasticsearch</a></li></ul>
-
-      </footer>
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-common-compression-algorithms-in-search-engines" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2022/01/18/common-compression-algorithms-in-search-engines/">科普下搜索索引里常用的压缩算法</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2022/01/18/common-compression-algorithms-in-search-engines/" class="article-date">
-  <time datetime="2022-01-18T09:43:14.000Z" itemprop="datePublished">2022-01-18</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>数据压缩是存储领域常用的优化手段，压缩算法可以减少数据的大小减少存储成本、减少磁盘的寻道时间提高I&#x2F;O的性能、减少数据的传输时间并提高缓冲区的命中率，节省的I&#x2F;O时间可以轻易补偿它带来的CPU额外开销。目前在用的主流压缩算法包括zlib、snappy和lz4等。压缩算法并不是压缩比越高越好，压缩比越高，其解压缩速度可能越慢，CPU消耗就会越大，这需要根据硬件配置和业务场景做Trade off。本文主要介绍了如下几种搜索索引里常见的压缩算法，大部分压缩算法也适用于OLAP领域，同时有些场景可能需要结合多种场景实现，比如倒排索引的posting list压缩就需要结合PForDelta及Simple算法才能获得更好的压缩比。同时在选择压缩算法时，也会考虑该压缩算法是否支持流式压缩等。</p>
-<ul>
-<li>Fixed length</li>
-<li>Variable Byte</li>
-<li>Improved Variable Byte</li>
-<li>Group Varint</li>
-<li>Run Length Encoding</li>
-<li>Dictionary Coding</li>
-<li>Simple 9</li>
-<li>Simple 16</li>
-<li>PForDelta</li>
-<li>Huffman Coding</li>
-<li>LZ77</li>
-<li>Elasticsearch 行存压缩算法</li>
-</ul>
-<h2 id="Fixed-length"><a href="#Fixed-length" class="headerlink" title="Fixed length"></a>Fixed length</h2><h3 id="压缩方法"><a href="#压缩方法" class="headerlink" title="压缩方法"></a>压缩方法</h3><p>找到一组数据的最大值，之后计算出最大位宽N：</p>
-<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">10</span>,<span class="number">35</span>,<span class="number">100</span>,<span class="number">170</span>,<span class="number">370</span>,<span class="number">29000</span>,<span class="number">30000</span>,<span class="number">30010</span></span><br></pre></td></tr></table></figure>
-
-<p>2^15 &#x3D; 32768  &gt; 30010，则位宽为15，即每个32bit的数据可以用15bit表示</p>
-        
-          <p class="article-more-link">
-            <a href="/2022/01/18/common-compression-algorithms-in-search-engines/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/" rel="tag">搜索引擎</a></li></ul>
 
       </footer>
     

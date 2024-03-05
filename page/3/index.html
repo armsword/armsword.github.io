@@ -52,6 +52,67 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-presto-in-didichuxing" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/11/03/presto-in-didichuxing/">Presto 在滴滴的探索和实践</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2020/11/03/presto-in-didichuxing/" class="article-date">
+  <time datetime="2020-11-03T07:59:12.000Z" itemprop="datePublished">2020-11-03</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Presto-简介"><a href="#Presto-简介" class="headerlink" title="Presto 简介"></a>Presto 简介</h2><h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>Presto是Facebook 开源的 MPP (Massive Parallel Processing) SQL 引擎，其理念来源于一个叫 Volcano 的并行数据库，该数据库提出了一个并行执行 SQL 的模型，它被设计为用来专门进行高速、实时的数据分析。Presto是一个SQL计算引擎，分离计算层和存储层，其不存储数据，通过Connector SPI实现对各种数据源（Storage）的访问。</p>
+<h3 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h3><img src="/img/2020/11/架构.png" width = "71%" />
+
+<p>Presto沿用了通用的Master-Slave架构，一个Coordinator，多个Worker。Coordinator负责解析SQL语句，生成执行计划，分发执行任务给Worker节点执行；Worker节点负责实际执行查询任务。Presto提供了一套Connector接口，用于读取元信息和原始数据，Presto 内置有多种数据源，如 Hive、MySQL、Kudu、Kafka 等。同时，Presto 的扩展机制允许自定义 Connector，从而实现对定制数据源的查询。假如配置了Hive Connector，需要配置一个Hive MetaStore服务为Presto提供Hive元信息，Worker节点通过Hive Connector与HDFS交互，读取原始数据。</p>
+<h3 id="实现低延时原理"><a href="#实现低延时原理" class="headerlink" title="实现低延时原理"></a>实现低延时原理</h3><p>Presto是一个交互式查询引擎，我们最关心的是Presto实现低延时查询的原理，以下几点是其性能脱颖而出的主要原因。</p>
+<ul>
+<li>完全基于内存的并行计算</li>
+<li>流水线</li>
+<li>本地化计算</li>
+<li>动态编译执行计划</li>
+<li>小心使用内存和数据结构</li>
+<li>GC控制</li>
+<li>无容错</li>
+</ul>
+<h2 id="Presto-在滴滴的应用"><a href="#Presto-在滴滴的应用" class="headerlink" title="Presto 在滴滴的应用"></a>Presto 在滴滴的应用</h2><h3 id="业务场景"><a href="#业务场景" class="headerlink" title="业务场景"></a>业务场景</h3><ul>
+<li>Hive SQL查询加速</li>
+<li>数据平台Ad-Hoc查询</li>
+<li>报表（BI报表、自定义报表）</li>
+<li>活动营销</li>
+<li>数据质量检测</li>
+<li>资产管理</li>
+<li>固定数据产品</li>
+</ul>
+        
+          <p class="article-more-link">
+            <a href="/2020/11/03/presto-in-didichuxing/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-jetty-cause-presto-memory-leak" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -335,54 +396,6 @@
         
           <p class="article-more-link">
             <a href="/2019/11/13/the-configuration-settings-of-presto-memory-management/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
-
-      </footer>
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-presto-orc-and-performance-optimization" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/09/30/presto-orc-and-performance-optimization/">Presto ORC及其性能优化</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2019/09/30/presto-orc-and-performance-optimization/" class="article-date">
-  <time datetime="2019-09-30T07:06:04.000Z" itemprop="datePublished">2019-09-30</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>ORC的全称是(Optimized Row Columnar)，其是为了加速Hive查询以及节省Hadoop磁盘空间而生的，其使用列式存储，支持多种文件压缩方式。由于其被广泛应用在Hadoop系统中，Presto 0.77版本在Hive Connector里实现了ORC Reader。</p>
-<h2 id="ORC文件结构"><a href="#ORC文件结构" class="headerlink" title="ORC文件结构"></a>ORC文件结构</h2><img src="/img/2019/09/01.jpg" width="800" align=left />
-
-<p>上图（图1）来自网络，有很多文章通过这张图片介绍了ORC文件结构，我这里就不多啰嗦了，我们直接通过数据来看文件格式吧。</p>
-        
-          <p class="article-more-link">
-            <a href="/2019/09/30/presto-orc-and-performance-optimization/#more">Read More</a>
           </p>
         
       

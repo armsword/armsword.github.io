@@ -52,6 +52,69 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-common-compression-algorithms-in-search-engines" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2022/01/18/common-compression-algorithms-in-search-engines/">科普下搜索索引里常用的压缩算法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2022/01/18/common-compression-algorithms-in-search-engines/" class="article-date">
+  <time datetime="2022-01-18T09:43:14.000Z" itemprop="datePublished">2022-01-18</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>数据压缩是存储领域常用的优化手段，压缩算法可以减少数据的大小减少存储成本、减少磁盘的寻道时间提高I&#x2F;O的性能、减少数据的传输时间并提高缓冲区的命中率，节省的I&#x2F;O时间可以轻易补偿它带来的CPU额外开销。目前在用的主流压缩算法包括zlib、snappy和lz4等。压缩算法并不是压缩比越高越好，压缩比越高，其解压缩速度可能越慢，CPU消耗就会越大，这需要根据硬件配置和业务场景做Trade off。本文主要介绍了如下几种搜索索引里常见的压缩算法，大部分压缩算法也适用于OLAP领域，同时有些场景可能需要结合多种场景实现，比如倒排索引的posting list压缩就需要结合PForDelta及Simple算法才能获得更好的压缩比。同时在选择压缩算法时，也会考虑该压缩算法是否支持流式压缩等。</p>
+<ul>
+<li>Fixed length</li>
+<li>Variable Byte</li>
+<li>Improved Variable Byte</li>
+<li>Group Varint</li>
+<li>Run Length Encoding</li>
+<li>Dictionary Coding</li>
+<li>Simple 9</li>
+<li>Simple 16</li>
+<li>PForDelta</li>
+<li>Huffman Coding</li>
+<li>LZ77</li>
+<li>Elasticsearch 行存压缩算法</li>
+</ul>
+<h2 id="Fixed-length"><a href="#Fixed-length" class="headerlink" title="Fixed length"></a>Fixed length</h2><h3 id="压缩方法"><a href="#压缩方法" class="headerlink" title="压缩方法"></a>压缩方法</h3><p>找到一组数据的最大值，之后计算出最大位宽N：</p>
+<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">10</span>,<span class="number">35</span>,<span class="number">100</span>,<span class="number">170</span>,<span class="number">370</span>,<span class="number">29000</span>,<span class="number">30000</span>,<span class="number">30010</span></span><br></pre></td></tr></table></figure>
+
+<p>2^15 &#x3D; 32768  &gt; 30010，则位宽为15，即每个32bit的数据可以用15bit表示</p>
+        
+          <p class="article-more-link">
+            <a href="/2022/01/18/common-compression-algorithms-in-search-engines/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/" rel="tag">搜索引擎</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-elasticsearch-performance-optimizing-in-online-poi-service" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -341,67 +404,6 @@
         
           <p class="article-more-link">
             <a href="/2020/12/10/solve-presto-jvm-coredump/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-presto-in-didichuxing" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/11/03/presto-in-didichuxing/">Presto 在滴滴的探索和实践</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2020/11/03/presto-in-didichuxing/" class="article-date">
-  <time datetime="2020-11-03T07:59:12.000Z" itemprop="datePublished">2020-11-03</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="Presto-简介"><a href="#Presto-简介" class="headerlink" title="Presto 简介"></a>Presto 简介</h2><h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>Presto是Facebook 开源的 MPP (Massive Parallel Processing) SQL 引擎，其理念来源于一个叫 Volcano 的并行数据库，该数据库提出了一个并行执行 SQL 的模型，它被设计为用来专门进行高速、实时的数据分析。Presto是一个SQL计算引擎，分离计算层和存储层，其不存储数据，通过Connector SPI实现对各种数据源（Storage）的访问。</p>
-<h3 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h3><img src="/img/2020/11/架构.png" width = "71%" />
-
-<p>Presto沿用了通用的Master-Slave架构，一个Coordinator，多个Worker。Coordinator负责解析SQL语句，生成执行计划，分发执行任务给Worker节点执行；Worker节点负责实际执行查询任务。Presto提供了一套Connector接口，用于读取元信息和原始数据，Presto 内置有多种数据源，如 Hive、MySQL、Kudu、Kafka 等。同时，Presto 的扩展机制允许自定义 Connector，从而实现对定制数据源的查询。假如配置了Hive Connector，需要配置一个Hive MetaStore服务为Presto提供Hive元信息，Worker节点通过Hive Connector与HDFS交互，读取原始数据。</p>
-<h3 id="实现低延时原理"><a href="#实现低延时原理" class="headerlink" title="实现低延时原理"></a>实现低延时原理</h3><p>Presto是一个交互式查询引擎，我们最关心的是Presto实现低延时查询的原理，以下几点是其性能脱颖而出的主要原因。</p>
-<ul>
-<li>完全基于内存的并行计算</li>
-<li>流水线</li>
-<li>本地化计算</li>
-<li>动态编译执行计划</li>
-<li>小心使用内存和数据结构</li>
-<li>GC控制</li>
-<li>无容错</li>
-</ul>
-<h2 id="Presto-在滴滴的应用"><a href="#Presto-在滴滴的应用" class="headerlink" title="Presto 在滴滴的应用"></a>Presto 在滴滴的应用</h2><h3 id="业务场景"><a href="#业务场景" class="headerlink" title="业务场景"></a>业务场景</h3><ul>
-<li>Hive SQL查询加速</li>
-<li>数据平台Ad-Hoc查询</li>
-<li>报表（BI报表、自定义报表）</li>
-<li>活动营销</li>
-<li>数据质量检测</li>
-<li>资产管理</li>
-<li>固定数据产品</li>
-</ul>
-        
-          <p class="article-more-link">
-            <a href="/2020/11/03/presto-in-didichuxing/#more">Read More</a>
           </p>
         
       
