@@ -52,6 +52,54 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-Reading-Notes-on-36-Practical-Lectures-on-Technical-Management" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2024/05/06/Reading-Notes-on-36-Practical-Lectures-on-Technical-Management/">读《技术管理实战36讲》</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2024/05/06/Reading-Notes-on-36-Practical-Lectures-on-Technical-Management/" class="article-date">
+  <time datetime="2024-05-06T12:27:39.000Z" itemprop="datePublished">2024-05-06</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="一、管理方法论和角色认知"><a href="#一、管理方法论和角色认知" class="headerlink" title="一、管理方法论和角色认知"></a>一、管理方法论和角色认知</h2><h3 id="1、管理方法论"><a href="#1、管理方法论" class="headerlink" title="1、管理方法论"></a>1、管理方法论</h3><img src="/img/2024/05/manage.png" width = "100%" />
+<img src="/img/2024/05/renzhi.png" width = "100%" />
+
+<h3 id="2-角色转换"><a href="#2-角色转换" class="headerlink" title="2.角色转换"></a>2.角色转换</h3><img src="/img/2024/05/transfer.png" width = "100%" />
+        
+          <p class="article-more-link">
+            <a href="/2024/05/06/Reading-Notes-on-36-Practical-Lectures-on-Technical-Management/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%8A%80%E6%9C%AF%E7%AE%A1%E7%90%86/" rel="tag">技术管理</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-Didi-builds-a-new-generation-of-log-storage-system-based-on-Clickhouse" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -370,126 +418,6 @@
       <footer class="article-footer">
         
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Elasticsearch/" rel="tag">Elasticsearch</a></li></ul>
-
-      </footer>
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-the-most-frequently-used-commands-of-elasticsearch" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2022/09/27/the-most-frequently-used-commands-of-elasticsearch/">Elasticsearch常用的命令</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2022/09/27/the-most-frequently-used-commands-of-elasticsearch/" class="article-date">
-  <time datetime="2022-09-27T07:10:23.000Z" itemprop="datePublished">2022-09-27</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <ul>
-<li><a href="#%E9%9B%86%E7%BE%A4%E5%81%A5%E5%BA%B7%E7%8A%B6%E6%80%81%E7%9B%B8%E5%85%B3">集群健康状态相关</a><ul>
-<li><a href="#%E6%9F%A5%E7%9C%8B%E9%9B%86%E7%BE%A4%E5%81%A5%E5%BA%B7%E7%8A%B6%E6%80%81">查看集群健康状态</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8B%E6%9C%AA%E5%88%86%E9%85%8D%E5%8E%9F%E5%9B%A0">查看未分配原因</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8B%E5%85%B7%E4%BD%93%E7%B4%A2%E5%BC%95%E6%9C%AA%E5%88%86%E9%85%8D%E6%88%96%E4%B8%8D%E6%90%AC%E8%BF%81%E7%9A%84%E5%8E%9F%E5%9B%A0">查看具体索引未分配或不搬迁的原因</a></li>
-<li><a href="#%E8%A7%A3%E9%87%8A%E4%B8%80%E4%B8%AA%E7%B4%A2%E5%BC%95%E4%B8%BA%E4%BB%80%E4%B9%88%E5%88%86%E9%85%8D%E5%88%B0%E8%AF%A5%E8%8A%82%E7%82%B9">解释一个索引为什么分配到该节点</a></li>
-<li><a href="#%E9%87%8D%E6%96%B0%E5%B0%9D%E8%AF%95%E5%88%86%E9%85%8D%E5%A4%B1%E8%B4%A5%E7%9A%84shard">重新尝试分配失败的shard</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8B%E7%AD%89%E5%BE%85%E4%B8%AD%E7%9A%84%E4%BB%BB%E5%8A%A1">查看等待中的任务</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8Bnodes">查看nodes</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8Bactive-master">查看active master</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8B%E9%9B%86%E7%BE%A4%E5%86%85%E6%AD%A3%E5%9C%A8%E6%90%AC%E8%BF%81%E7%9A%84%E7%B4%A2%E5%BC%95">查看集群内正在搬迁的索引</a></li>
-</ul>
-</li>
-<li><a href="#%E7%B4%A2%E5%BC%95%E7%9B%B8%E5%85%B3">索引相关</a><ul>
-<li><a href="#%E6%9F%A5%E7%9C%8Bindex%E9%85%8D%E7%BD%AE%E4%BF%A1%E6%81%AF">查看index配置信息</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8Bindex%E7%9A%84mapping%E4%BF%A1%E6%81%AF">查看index的mapping信息</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8Bindex%E7%9A%84%E6%A8%A1%E6%9D%BF">查看index的模板</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8Bindex%E7%9A%84shard%E4%BF%A1%E6%81%AF">查看index的shard信息</a></li>
-<li><a href="#%E4%BF%AE%E6%94%B9%E7%B4%A2%E5%BC%95%E9%BB%98%E8%AE%A4%E5%BB%B6%E6%97%B6">修改索引默认延时</a></li>
-<li><a href="#%E7%B4%A2%E5%BC%95%E6%90%AC%E8%BF%81">索引搬迁</a></li>
-<li><a href="#%E5%8F%96%E6%B6%88%E7%B4%A2%E5%BC%95%E6%90%AC%E8%BF%81">取消索引搬迁</a></li>
-<li><a href="#%E7%B4%A2%E5%BC%95shard%E9%87%8D%E5%AE%9A%E5%90%91%E4%B8%A2%E5%BC%83shard">索引shard重定向（丢弃shard）</a></li>
-<li><a href="#%E6%9F%A5%E7%9C%8B%E7%B4%A2%E5%BC%95checkpoint%E4%BF%A1%E6%81%AF">查看索引checkpoint信息</a></li>
-<li><a href="#%E7%B4%A2%E5%BC%95reindex">索引reindex</a></li>
-<li><a href="#%E8%BF%81%E7%A7%BBshard%E5%88%B0%E5%88%AB%E7%9A%84%E8%8A%82%E7%82%B9">迁移shard到别的节点</a></li>
-</ul>
-</li>
-<li><a href="#%E9%9B%86%E7%BE%A4%E7%9B%B8%E5%85%B3%E7%9A%84%E8%AE%BE%E7%BD%AE">集群相关的设置</a><ul>
-<li><a href="#%E6%9F%A5%E7%9C%8B%E8%8A%82%E7%82%B9%E9%85%8D%E7%BD%AE%E7%9A%84%E7%BA%BF%E7%A8%8B%E6%B1%A0%E5%A4%A7%E5%B0%8F">查看节点配置的线程池大小</a></li>
-<li><a href="#%E4%B8%B4%E6%97%B6%E5%85%B3%E9%97%AD%E7%A3%81%E7%9B%98%E6%A3%80%E6%B5%8B%E5%8A%A0%E5%BF%ABmaster%E5%A4%84%E7%90%86%E9%80%9F%E5%BA%A6">临时关闭磁盘检测加快master处理速度</a></li>
-<li><a href="#%E9%9B%86%E7%BE%A4%E7%BA%A7%E5%88%AB%E6%8E%92%E9%99%A4%E6%9F%90%E5%8F%B0%E6%9C%BA%E5%99%A8">集群级别排除某台机器</a></li>
-<li><a href="#%E6%97%A5%E5%BF%97%E7%BA%A7%E5%88%AB%E8%AE%BE%E7%BD%AE">日志级别设置</a></li>
-<li><a href="#%E9%9B%86%E7%BE%A4%E7%9A%84%E8%BF%81%E7%A7%BB%E5%8F%82%E6%95%B0">集群的迁移参数</a></li>
-<li><a href="#shard%E5%9D%87%E8%A1%A1%E7%9A%84%E8%AE%BE%E7%BD%AE">shard均衡的设置</a></li>
-<li><a href="#%E5%9F%BA%E4%BA%8E%E7%A3%81%E7%9B%98%E7%9A%84%E5%88%86%E7%89%87%E5%88%86%E9%85%8D%E8%AE%BE%E7%BD%AE">基于磁盘的分片分配设置</a></li>
-</ul>
-</li>
-</ul>
-<h2 id="集群健康状态相关"><a href="#集群健康状态相关" class="headerlink" title="集群健康状态相关"></a>集群健康状态相关</h2><h3 id="查看集群健康状态"><a href="#查看集群健康状态" class="headerlink" title="查看集群健康状态"></a>查看集群健康状态</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cluster/health</span><br></pre></td></tr></table></figure>
-<img src="/img/2022/09/cluster_name.png" width = "100%" />
-number_of_pending_tasks：是指主节点创建索引并分配shards等任务，如果该指标数值一直未减小代表集群存在不稳定因素 。
-
-<h3 id="查看未分配原因"><a href="#查看未分配原因" class="headerlink" title="查看未分配原因"></a>查看未分配原因</h3><figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET _cluster<span class="regexp">/allocation/</span>explain</span><br></pre></td></tr></table></figure>
-<p>有以下几种可能</p>
-<ul>
-<li>INDEX_CREATED : Unassigned as a result of an API creation of an index.    索引创建 : 由于API创建索引而未分配的</li>
-<li>CLUSTER_RECOVERED : Unassigned as a result of a full cluster recovery.   集群恢复 : 由于整个集群恢复而未分配</li>
-<li>INDEX_REOPENED : Unassigned as a result of opening a closed index.        索引重新打开</li>
-<li>DANGLING_INDEX_IMPORTED : Unassigned as a result of importing a dangling index.   导入危险的索引</li>
-<li>NEW_INDEX_RESTORED : Unassigned as a result of restoring into a new index.   重新恢复一个新索引</li>
-<li>EXISTING_INDEX_RESTORED : Unassigned as a result of restoring into a closed index.  重新恢复一个已关闭的索引</li>
-<li>REPLICA_ADDED : Unassigned as a result of explicit addition of a replica.      添加副本</li>
-<li>ALLOCATION_FAILED : Unassigned as a result of a failed allocation of the shard.    分配分片失败</li>
-<li>NODE_LEFT : Unassigned as a result of the node hosting it leaving the cluster.  集群中节点丢失</li>
-<li>REROUTE_CANCELLED : Unassigned as a result of explicit cancel reroute command.   reroute命令取消</li>
-<li>REINITIALIZED :  When a shard moves from started back to initializing, for example, with shadow replicas.   重新初始化</li>
-<li>REALLOCATED_REPLICA :  A better replica location is identified and causes the existing replica allocation to be cancelled.   重新分配副本</li>
-</ul>
-<h3 id="查看具体索引未分配或不搬迁的原因"><a href="#查看具体索引未分配或不搬迁的原因" class="headerlink" title="查看具体索引未分配或不搬迁的原因"></a>查看具体索引未分配或不搬迁的原因</h3><figure class="highlight gradle"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">GET _cluster<span class="regexp">/allocation/</span>explain</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;index&quot;</span>:<span class="string">&quot;index_name&quot;</span>,</span><br><span class="line">  <span class="string">&quot;shard&quot;</span>:<span class="number">0</span>,</span><br><span class="line">  <span class="string">&quot;primary&quot;</span>:<span class="keyword">true</span> </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>返回结果：<br><img src="/img/2022/09/index.png" width = "100%" /></p>
-<ol>
-<li>The current state of the shard.</li>
-<li>The reason for the shard originally becoming unassigned.</li>
-<li>Whether to allocate the shard.</li>
-<li>Whether to allocate the shard to the particular node.</li>
-<li>The decider which led to the no decision for the node.导致该节点没有决策的决策器。</li>
-<li>An explanation as to why the decider returned a no decision, with a helpful hint pointing to the setting that led to the decision.              解释为什么决策器返回“否”决策，并提供一个有用的提示，指出导致该决策的设置。</li>
-</ol>
-<h3 id="解释一个索引为什么分配到该节点"><a href="#解释一个索引为什么分配到该节点" class="headerlink" title="解释一个索引为什么分配到该节点"></a>解释一个索引为什么分配到该节点</h3><figure class="highlight gradle"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">GET _cluster<span class="regexp">/allocation/</span>explain</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;index&quot;</span>: <span class="string">&quot;my-index-000001&quot;</span>,</span><br><span class="line">  <span class="string">&quot;shard&quot;</span>: <span class="number">0</span>,</span><br><span class="line">  <span class="string">&quot;primary&quot;</span>: <span class="keyword">false</span>,</span><br><span class="line">  <span class="string">&quot;current_node&quot;</span>: <span class="string">&quot;my-node&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="重新尝试分配失败的shard"><a href="#重新尝试分配失败的shard" class="headerlink" title="重新尝试分配失败的shard"></a>重新尝试分配失败的shard</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">POST _cluster/reroute?retry_failed=<span class="literal">true</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="查看等待中的任务"><a href="#查看等待中的任务" class="headerlink" title="查看等待中的任务"></a>查看等待中的任务</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cat/pending_tasks</span><br></pre></td></tr></table></figure>
-<p>可以看到任务都被指派了优先级（ 比如说 URGENT 要比 HIGH 更早的处理 ）<br><img src="/img/2022/09/tasks.png" width = "100%" /></p>
-<h3 id="查看nodes"><a href="#查看nodes" class="headerlink" title="查看nodes"></a>查看nodes</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cat/nodes</span><br></pre></td></tr></table></figure>
-        
-          <p class="article-more-link">
-            <a href="/2022/09/27/the-most-frequently-used-commands-of-elasticsearch/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/elasticsearch/" rel="tag">elasticsearch</a></li></ul>
 
       </footer>
     

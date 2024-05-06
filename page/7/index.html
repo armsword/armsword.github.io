@@ -52,6 +52,53 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-light-cgi-server" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/05/18/light-cgi-server/">写了一个简单的CGI Server</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/05/18/light-cgi-server/" class="article-date">
+  <time datetime="2014-05-18T09:22:17.000Z" itemprop="datePublished">2014-05-18</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>之前看过一些开源程序的源码，也略微知道些Apache的CGI处理程序架构，于是用了一段时间，用C写了一个简单的CGI Server，代码算上头文件，一共1200行左右，难度中等偏上。麻雀虽小，五脏俱全。如果把程序里所涉及的HTTP协议，Linux下POSIX编程等等搞清楚，我想找工作中肯定是有足够的竞争力的，当然我也只是皮毛而已，不再班门弄斧了，下面简单的说下程序流程吧。</p>
+<p>再说程序流程之前，我先简单说下CGI吧，CGI这个东西比较老了，N年之前，没有PHP JSP等等动态脚本之前，这个是非常火的。只要能支持输入输出的程序，都可以编写CGI脚本，比如Apache就集成了CGI服务器功能，你可以使用Python编写简单的CGI脚本，可以参照前几天我发的文章，<a href="http://armsword.com/2014/05/07/let-apache-understand-python-cgi/">点击此处</a>，现在CGI 脚本基本上使用的比较少了，但是在一些对效率要求比较高的设计里还是可以看到一些身影，比如腾讯的QQ相册，QQ空间里就可以看到（你可以打开QQ空间，查看源码-查找CGI），他们的脚本应该是C&#x2F;C++编写的，效率，你懂的，如果你想更多的了解CGI脚本相关，可以<a target="_blank" rel="noopener" href="http://www.jdon.com/idea/cgi.htm">点击此处</a>，推荐了解一些，但是不值得深入学习，那个精力不如学习PHP&#x2F;Python了。。。</p>
+<p>其实说白了，CGI 扮演的就是在服务器和特定解释器之间输入输出协议的角色，每个来自用户的请求，Web服务器都会唤起特定语言解释器的命令行，执行CGI脚本。</p>
+<p>现在来介绍下此CGI Server，我不想长篇大论了，一幅图来描述其执行过程（字比较丑，凑合看吧），具体看代码吧：</p>
+<p><img src="/img/2014/05/20140518171043.jpg"></p>
+        
+          <p class="article-more-link">
+            <a href="/2014/05/18/light-cgi-server/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-redis-dict-analyze" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -326,53 +373,6 @@ Although the above answer is in lexicographical order, your answer could be in a
         
           <p class="article-more-link">
             <a href="/2013/09/26/lru-cache/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-linux-memory-and-manage" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2013/08/25/linux-memory-and-manage/">linux内存空间分配和内存管理</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2013/08/25/linux-memory-and-manage/" class="article-date">
-  <time datetime="2013-08-25T14:58:28.000Z" itemprop="datePublished">2013-08-25</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Linux/">Linux</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>前段时间把《程序员的自我修养–链接、装载与库》这本书看完了，期间有些地方不是太明白，当时网络搜索了下，今天把当时看到的东西摘抄下，基本文中大部分内容都是拷贝下面提到的参考链接里的东西，自己在组织下，以备以后需要时查看。</p>
-<p>地址分为三类，逻辑地址，线性地址和物理地址。</p>
-<p>在《深入理解linux内核》中其把地址分为三类：逻辑地址（汇编语言中操作数地址或指令的地址，对于80x86的CPU，逻辑地址是段+段内偏移地址）、线性地址（也叫虚拟地址）和物理地址。但在Stott Maxwell的《Linux Core Kernel Commentrary》中确是这样分的：逻辑地址（也叫虚拟地址）、线性地址和物理地址。按照386CPU总设计师John Crowford的解释，虚拟地址是保护模式下段和段内偏移量组成的地址，而逻辑地址就是代码段内偏移量，或称进程的逻辑地址。其实对于linux来说，这三种说法都没错，由于linux下并不主张将程序分段，而是主张分页，所以即使是在80x86的体系结构下，段的基地址也是0。因此逻辑地址、线性地址、虚拟地址在linux中其实是相同的。所以对于linux下的ELF可执行文件来说，代码段的起始地址0x08048000既是逻辑地址，也是线性地址也是虚拟地址。</p>
-<p>1.X86的物理地址空间布局</p>
-<p><img src="/img/2013/08/201382501.jpg"><br>以x86_32，4G RAM为例：</p>
-        
-          <p class="article-more-link">
-            <a href="/2013/08/25/linux-memory-and-manage/#more">Read More</a>
           </p>
         
       
