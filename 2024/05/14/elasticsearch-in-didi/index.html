@@ -26,7 +26,7 @@
 <meta property="og:image" content="http://armsword.com/img/2024/05/safe.png">
 <meta property="og:image" content="http://armsword.com/img/2024/05/stability.png">
 <meta property="article:published_time" content="2024-05-14T14:00:08.000Z">
-<meta property="article:modified_time" content="2024-05-14T14:35:25.751Z">
+<meta property="article:modified_time" content="2024-05-14T14:39:50.153Z">
 <meta property="article:author" content="armsword">
 <meta property="article:tag" content="Elasticsearch">
 <meta name="twitter:card" content="summary">
@@ -96,7 +96,6 @@
 <h2 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h2><img src="/img/2024/05/infr.png" width = "100%" />
 
 <span id="more"></span>
-
 <p>滴滴 ES 整体产品架构如上图所示，目前ES服务基于物理机部署，Gateway 和管控基于容器部署，我们也调研过 ES on K8S，因为我们 ES 的业务场景多是在线端上文本检索，考虑到稳定性，所以最后还是决定使用物理机部署模式。</p>
 <p>管控层主要负责实现以下功能：智能 segment Merge（防止 segment 膨胀导致 datanode Full GC），索引生命周期管理，索引预创建（避免每天凌晨索引集中创建，导致 Master&#x2F;Clientnode OOM），租户管控等。</p>
 <p>网关层（Gateway）除了负责读写转发外，还具备查询优化能力（例如，将 BKD 查询改写为数值类型的等值查询或范围查询）、三级限流（包括 AppID、索引模板级别和查询 DSL 级别）、租户鉴权功能以及 SQL 能力（基于 NLPChina 开源的 ES SQL 能力进行魔改并封装到 Gateway）等。我们的检索服务仅对外暴露 Gateway 接口。</p>
