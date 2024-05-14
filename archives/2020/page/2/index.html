@@ -51,38 +51,88 @@
     </div>
   </div>
 </header>
-    <section id="main" class="outer">
+    <section id="main" class="outer"><% switch (type) {
+    case 'archive':
+    var last;
+    page.posts.each(function(post, i){
+    var year = post.date.year();
+    if (last != year){
+      if (last != null){ %>
+        </div></section>
+      <% }
+      last = year; %>
       <section class="archives-wrap">
         <div class="archive-year-wrap">
-          <a href="/archives/2020" class="archive-year">2020</a>
+          <a href="<%- url_for('archives/' + year) %>" class="archive-year"><%= year %></a>
         </div>
         <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      
-        <a href="/2020/02/18/presto-memory-kill-policy/" class="archive-article-date">
-  <time datetime="2020-02-18T14:28:21.000Z" itemprop="datePublished">2月 18</time>
-</a>
-      
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2020/02/18/presto-memory-kill-policy/">Presto集群内存不足时保护机制</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
+    <% } %>
+    <%- partial('archive-post', {post: post, archive: true}) %>
+  <% });
+    if (page.posts.length){ %>
     </div></section>
-  
+  <% }
+    if (page.total > 1){ %>
       <nav id="page-nav">
-        <a class="extend prev" rel="prev" href="/archives/2020/">&lt;&lt; 上一页</a><a class="page-number" href="/archives/2020/">1</a><span class="page-number current">2</span>
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
       </nav>
-    </section>
+    <% }
+    break;
+  case 'category': %>
+    <section class="archives-wrap">
+    <div class="archive-category-wrap">
+      <span class="archive-category"><%= page.category %></span>
+    </div>
+    <div class="archives">
+    <% page.posts.each(function (post, i) { %>
+      <%- partial('archive-post', {post: post, archive: false}) %>
+    <% }); %>
+    </div></section>
+    <% if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+  case 'tag': %>
+    <section class="archives-wrap">
+    <div class="archive-tag-wrap">
+      <span class="archive-tag">#<%= page.tag %></span>
+    </div>
+    <div class="archives">
+    <% page.posts.each(function (post, i) { %>
+      <%- partial('archive-post', {post: post, archive: false}) %>
+    <% }); %>
+    </div></section>
+    <% if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+  default:
+    page.posts.each(function(post){ %>
+      <%- partial('article', {post: post, index: true}) %>
+    <% })
+    if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+} %></section>
     <footer id="footer">
   
   <div class="outer">

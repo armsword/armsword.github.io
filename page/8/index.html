@@ -51,246 +51,88 @@
     </div>
   </div>
 </header>
-    <section id="main" class="outer">
-      <article id="post-linux-memory-and-manage" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2013/08/25/linux-memory-and-manage/">linux内存空间分配和内存管理</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2013/08/25/linux-memory-and-manage/" class="article-date">
-  <time datetime="2013-08-25T14:58:28.000Z" itemprop="datePublished">2013-08-25</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Linux/">Linux</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>前段时间把《程序员的自我修养–链接、装载与库》这本书看完了，期间有些地方不是太明白，当时网络搜索了下，今天把当时看到的东西摘抄下，基本文中大部分内容都是拷贝下面提到的参考链接里的东西，自己在组织下，以备以后需要时查看。</p>
-<p>地址分为三类，逻辑地址，线性地址和物理地址。</p>
-<p>在《深入理解linux内核》中其把地址分为三类：逻辑地址（汇编语言中操作数地址或指令的地址，对于80x86的CPU，逻辑地址是段+段内偏移地址）、线性地址（也叫虚拟地址）和物理地址。但在Stott Maxwell的《Linux Core Kernel Commentrary》中确是这样分的：逻辑地址（也叫虚拟地址）、线性地址和物理地址。按照386CPU总设计师John Crowford的解释，虚拟地址是保护模式下段和段内偏移量组成的地址，而逻辑地址就是代码段内偏移量，或称进程的逻辑地址。其实对于linux来说，这三种说法都没错，由于linux下并不主张将程序分段，而是主张分页，所以即使是在80x86的体系结构下，段的基地址也是0。因此逻辑地址、线性地址、虚拟地址在linux中其实是相同的。所以对于linux下的ELF可执行文件来说，代码段的起始地址0x08048000既是逻辑地址，也是线性地址也是虚拟地址。</p>
-<p>1.X86的物理地址空间布局</p>
-<p><img src="/img/2013/08/201382501.jpg"><br>以x86_32，4G RAM为例：</p>
-        
-          <p class="article-more-link">
-            <a href="/2013/08/25/linux-memory-and-manage/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-redis-source" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2013/08/04/redis-source/">准备看下Redis的源代码</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2013/08/04/redis-source/" class="article-date">
-  <time datetime="2013-08-04T07:22:57.000Z" itemprop="datePublished">2013-08-04</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Database/">Database</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>Redis是一个开源，BSD授权，高性能的key-value数据库，使用ANSI C编写。Redis的出现很大程度补偿了memcached这类key-value存储的不足，因为：</p>
-<p>Memcached基本只支持简单的key-value存储，不支持枚举，不支持持久化和复制能功能。</p>
-<p>Redis除key-value之外，还支持list,set,sorted set,hash等众多数据结构，提供了KEYS进行枚举操作，但不能在线上使用，如果需要枚举线上数据，Redis提供了工具可以直接扫描其dump文件，枚举出所有数据，Redis还同时提供了持久化和复制等功能。</p>
-<p>如果简单地比较Redis与Memcached的区别，大多数都会得到以下观点：</p>
-<ul>
-<li>Redis不仅仅支持简单的k&#x2F;v类型的数据，同时还提供list，set，hash等数据结构的存储。</li>
-<li>Redis支持数据的备份，即master-slave模式的数据备份。</li>
-<li>Redis支持数据的持久化，可以将内存中的数据保持在磁盘中，重启的时候可以再次加载进行使用。<br>Redis和memcached不同之处还在以下方面：1.网络IO模型 2.内存管理方面 3.数据一致性问题 4.存储方式及其它方面（上文提到了）等等，这里不在细说。</li>
-</ul>
-        
-          <p class="article-more-link">
-            <a href="/2013/08/04/redis-source/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-some-methods-about-gcc-and-gdb" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2012/11/27/some-methods-about-gcc-and-gdb/">编译和调试C/C++程序常用到的一些知识点</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2012/11/27/some-methods-about-gcc-and-gdb/" class="article-date">
-  <time datetime="2012-11-27T07:14:54.000Z" itemprop="datePublished">2012-11-27</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Linux/">Linux</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>做个笔记，记录下编译和调试C&#x2F;C++程序常用的一些知识点，主要就是gcc、gdb的一些常用使用方法。</p>
-<h2 id="gcc"><a href="#gcc" class="headerlink" title="gcc"></a>gcc</h2><p>如图所示，先看下C&#x2F;C++代码生成可执行文件的过程，共4步：预处理、编译、汇编、链接。</p>
-<p><img src="/img/2012/11/gcc.png"></p>
-<p>一步到位的编译命令为：</p>
-<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -Wall -g <span class="keyword">test</span>.c -o <span class="keyword">test</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
-        
-          <p class="article-more-link">
-            <a href="/2012/11/27/some-methods-about-gcc-and-gdb/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-install-tools" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2012/10/01/install-tools/">工欲善其事必先利其器</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2012/10/01/install-tools/" class="article-date">
-  <time datetime="2012-10-01T12:22:29.000Z" itemprop="datePublished">2012-10-01</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Linux/">Linux</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="Emacs开发环境配置"><a href="#Emacs开发环境配置" class="headerlink" title="Emacs开发环境配置"></a>Emacs开发环境配置</h2><h2 id="Vim开发环境配置"><a href="#Vim开发环境配置" class="headerlink" title="Vim开发环境配置"></a>Vim开发环境配置</h2><p>首先，我们先看下自己的VIM都安装了什么插件，命令：:scriptnames</p>
-<p>我们先配置下vimrc文件，vim ~&#x2F;.vimrc ，我们先设置让其显示行号和高亮代码，添加如下代码：</p>
-<p>set nu!  “显示行号<br>syntax enable   “语法高亮<br>syntax on</p>
-<h3 id="TagList"><a href="#TagList" class="headerlink" title="TagList"></a>TagList</h3><p>功能：有点像VC里面的工作区，里面列出了当前文件的所有的宏，全局变量，函数名等。CTRL+W 连续2下可以左右切换。</p>
-<p>下载taglist压缩包, 下载地址：<a target="_blank" rel="noopener" href="http://www.vim.org/scripts/script.php?script_id=273">http://www.vim.org/scripts/script.php?script_id&#x3D;273</a>，然后把解压的两个文件taglist.vim 和 taglist.txt 分别放到$HOME&#x2F;.vim&#x2F;plugin 和 $HOME&#x2F;.vim&#x2F;doc 目录中。</p>
-<p>之后在～&#x2F;.vimrc中添加如下几条命令：</p>
-<p>let Tlist_Auto_Open &#x3D; 1<br>let Tlist_Ctags_Cmd &#x3D; ‘&#x2F;usr&#x2F;bin&#x2F;ctags’<br>let Tlist_Show_One_File &#x3D; 1<br>let Tlist_Exit_OnlyWindow &#x3D; 1</p>
-<p>此时，我们打开一个.c文件查看，发现左边多出一个workspace，当不想出现此工作区时，使用:Tlist可以关闭和打开。</p>
-        
-          <p class="article-more-link">
-            <a href="/2012/10/01/install-tools/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-hello-world" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2012/08/01/hello-world/"> 人生大病，只是一“傲”字</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2012/08/01/hello-world/" class="article-date">
-  <time datetime="2012-08-01T05:50:43.000Z" itemprop="datePublished">2012-08-01</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%88%91%E7%9A%84%E7%94%9F%E6%B4%BB/">我的生活</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>先生曰：“人生大病，只是一傲字。为子而傲必不孝，为臣而傲必不忠，为父而傲必不慈，为友而傲必不信。故象与丹朱俱不肖，亦只一傲字，便结果了此生。诸君常要体此人心本是天然之理，精精明明，无致介染着，只是一无我而已：胸中切不可有，有即傲也。古先圣人许多好处，也只是无我而已，无我自能谦。谦者众善之基，傲者众恶之魁。”</p>
-<p>引用王阳明先生的这段话来表示下我今后的学习和生活态度，与君共勉。</p>
-
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
+    <section id="main" class="outer"><% switch (type) {
+    case 'archive':
+    var last;
+    page.posts.each(function(post, i){
+    var year = post.date.year();
+    if (last != year){
+      if (last != null){ %>
+        </div></section>
+      <% }
+      last = year; %>
+      <section class="archives-wrap">
+        <div class="archive-year-wrap">
+          <a href="<%- url_for('archives/' + year) %>" class="archive-year"><%= year %></a>
+        </div>
+        <div class="archives">
+    <% } %>
+    <%- partial('archive-post', {post: post, archive: true}) %>
+  <% });
+    if (page.posts.length){ %>
+    </div></section>
+  <% }
+    if (page.total > 1){ %>
       <nav id="page-nav">
-        <a class="extend prev" rel="prev" href="/page/7/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><span class="page-number current">8</span>
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
       </nav>
-    </section>
+    <% }
+    break;
+  case 'category': %>
+    <section class="archives-wrap">
+    <div class="archive-category-wrap">
+      <span class="archive-category"><%= page.category %></span>
+    </div>
+    <div class="archives">
+    <% page.posts.each(function (post, i) { %>
+      <%- partial('archive-post', {post: post, archive: false}) %>
+    <% }); %>
+    </div></section>
+    <% if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+  case 'tag': %>
+    <section class="archives-wrap">
+    <div class="archive-tag-wrap">
+      <span class="archive-tag">#<%= page.tag %></span>
+    </div>
+    <div class="archives">
+    <% page.posts.each(function (post, i) { %>
+      <%- partial('archive-post', {post: post, archive: false}) %>
+    <% }); %>
+    </div></section>
+    <% if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+  default:
+    page.posts.each(function(post){ %>
+      <%- partial('article', {post: post, index: true}) %>
+    <% })
+    if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+} %></section>
     <footer id="footer">
   
   <div class="outer">
