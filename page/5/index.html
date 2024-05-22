@@ -52,6 +52,60 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-the-memory-management-and-tuning-experience-of-presto" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2018/05/22/the-memory-management-and-tuning-experience-of-presto/">Presto内存管理原理和调优</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2018/05/22/the-memory-management-and-tuning-experience-of-presto/" class="article-date">
+  <time datetime="2018-05-22T10:32:44.000Z" itemprop="datePublished">2018-05-22</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="内存池"><a href="#内存池" class="headerlink" title="内存池"></a>内存池</h2><p>Presto有三种内存池，分别为GENERAL_POOL、RESERVED_POOL、SYSTEM_POOL。这三个内存池占用的内存大小是由下面算法进行分配的：</p>
+<figure class="highlight reasonml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">builder.put(RESERVED_POOL, <span class="keyword">new</span> <span class="constructor">MemoryPool(RESERVED_POOL, <span class="params">config</span>.<span class="params">getMaxQueryMemoryPerNode</span>()</span>));</span><br><span class="line"></span><br><span class="line">builder.put(SYSTEM_POOL, <span class="keyword">new</span> <span class="constructor">MemoryPool(SYSTEM_POOL, <span class="params">systemMemoryConfig</span>.<span class="params">getReservedSystemMemory</span>()</span>));</span><br><span class="line"></span><br><span class="line">long maxHeap = <span class="module-access"><span class="module"><span class="identifier">Runtime</span>.</span></span>get<span class="constructor">Runtime()</span>.max<span class="constructor">Memory()</span>;</span><br><span class="line">maxMemory = <span class="keyword">new</span> <span class="constructor">DataSize(<span class="params">maxHeap</span> - <span class="params">systemMemoryConfig</span>.<span class="params">getReservedSystemMemory</span>()</span>.<span class="keyword">to</span><span class="constructor">Bytes()</span>, BYTE);</span><br><span class="line">DataSize generalPoolSize = <span class="keyword">new</span> <span class="constructor">DataSize(Math.<span class="params">max</span>(0, <span class="params">maxMemory</span>.<span class="params">toBytes</span>()</span> - config.get<span class="constructor">MaxQueryMemoryPerNode()</span>.<span class="keyword">to</span><span class="constructor">Bytes()</span>), BYTE);</span><br><span class="line">builder.put(GENERAL_POOL, <span class="keyword">new</span> <span class="constructor">MemoryPool(GENERAL_POOL, <span class="params">generalPoolSize</span>)</span>);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>梳理这块代码对应的逻辑和配置文件，得出RESERVED_POOL大小由config.properties里的query.max-memory-per-node指定；SYSTEM_POOL由config.properties里的resources.reserved-system-memory指定，如果不指定，默认值为Runtime.getRuntime().maxMemory() * 0.4，即0.4 * Xmx值；而GENERAL_POOL值为 总内存（Xmx值）- 预留的（max-memory-per-node）- 系统的（0.4 * Xmx）。</p>
+<p>而这三种内存池分别用于不同的地方，分析代码和阅读Presto开发手册，大体可以定位出：</p>
+<ul>
+<li>GENERAL_POOL is the memory pool used by the physical operators in a query.</li>
+<li>SYSTEM_POOL is mostly used by the exchange buffers and readers&#x2F;writers.</li>
+<li>RESERVED_POOL is for running a large query when the general pool becomes full.</li>
+</ul>
+        
+          <p class="article-more-link">
+            <a href="/2018/05/22/the-memory-management-and-tuning-experience-of-presto/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-presto" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -354,55 +408,6 @@
         
           <p class="article-more-link">
             <a href="/2016/08/17/earlybird/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-find-socket-bug-in-proxy" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/08/10/find-socket-bug-in-proxy/">记一次线上Bug的查找过程和思路</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2016/08/10/find-socket-bug-in-proxy/" class="article-date">
-  <time datetime="2016-08-10T13:33:40.000Z" itemprop="datePublished">2016-08-10</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Linux/">Linux</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>简单说下问题情况，Proxy即作为客户端又有服务端功能，其接受QS（Query Server）的请求，之后向BS（索引服务）发送请求，然后根据BS的返回结果Merge后返回给QS。不能泄露太多东西，所以本文主要是整理一些知识点和问题查找思路。</p>
-<h2 id="问题和现象"><a href="#问题和现象" class="headerlink" title="问题和现象"></a>问题和现象</h2><ul>
-<li>Proxy机器上出现大量的CLOSE_WAIT。</li>
-<li>Proxy失去服务能力，内存使用不为0，CPU使用率为0。</li>
-<li>机器报警，TcpListenOverFlows。</li>
-</ul>
-<figure class="highlight cos"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">命令查看：</span><br><span class="line">netstat -n | awk &#x27;/<span class="symbol">^tcp</span>/ &#123;++<span class="keyword">S</span>[<span class="built_in">$NF</span>]&#125; END &#123;<span class="keyword">for</span>(a in <span class="keyword">S</span>) <span class="keyword">print</span> a, <span class="keyword">S</span>[a]&#125;&#x27;</span><br><span class="line"> </span><br><span class="line"> </span><br><span class="line">结果：</span><br><span class="line">TIME_WAIT <span class="number">31927</span></span><br><span class="line">CLOSE_WAIT <span class="number">1570</span></span><br><span class="line">ESTABLISHED <span class="number">40</span></span><br><span class="line"> </span><br><span class="line">TIME_WAIT：表示主动关闭，通过优化系统内核参数可容易解决。</span><br><span class="line">CLOSE_WAIT：表示被动关闭，需要从程序本身出发。</span><br><span class="line">ESTABLISHED：表示正在通信</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">注：以上数据非真实线上情况，只为举例</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-        
-          <p class="article-more-link">
-            <a href="/2016/08/10/find-socket-bug-in-proxy/#more">Read More</a>
           </p>
         
       

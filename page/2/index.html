@@ -52,6 +52,56 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-es-jdk17-and-zgc" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2023/08/10/es-jdk17-and-zgc/">解锁滴滴ES的性能潜力：JDK 17和ZGC的升级之路</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2023/08/10/es-jdk17-and-zgc/" class="article-date">
+  <time datetime="2023-08-10T08:35:28.000Z" itemprop="datePublished">2023-08-10</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>前文介绍了<a href="%E6%8E%A2%E7%B4%A2ES%E9%AB%98%E5%8F%AF%E7%94%A8%EF%BC%9A%E6%BB%B4%E6%BB%B4%E8%87%AA%E7%A0%94%E8%B7%A8%E6%95%B0%E6%8D%AE%E4%B8%AD%E5%BF%83%E5%A4%8D%E5%88%B6%E6%8A%80%E6%9C%AF%E8%AF%A6%E8%A7%A3">滴滴自研的ES强一致性多活</a>是如何实现的，其中也提到为了提升查询性能和解决查询毛刺问题，滴滴ES原地升级JDK17和ZGC，在这个过程中我们遇到了哪些问题，怎样解决的，以及最终上线效果如何，这篇文章就带大家深入了解。</p>
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>滴滴ES在2020年的时候由2.X升级到7.6.0，该版本是在官方7.6.0的基础上改造而来，支持的是JDK11，采用的垃圾回收器是G1。ES的业务主要分为两类，一类是日志场景，该场景写多读少，高峰期CPU使用率在85%左右，写入性能是它的主要瓶颈；另一类是非日志场景，例如POI检索、订单、支付，这些场景对查询耗时及查询稳定性都有着较高的要求。</p>
+<p>随着ES业务数据量的增长，GC导致的查询稳定性压力剧增，已经逐渐无法满足业务需求。以下是ES面临的主要问题：</p>
+<h3 id="非日志场景的GC问题"><a href="#非日志场景的GC问题" class="headerlink" title="非日志场景的GC问题"></a>非日志场景的GC问题</h3><p>1、Yong GC平均暂停时间长，一些集群的平均暂停时间达到百毫秒级别。</p>
+<p>GC暂停时间长在订单集群这种112G大内存的进程中表现尤为明显。下图为订单集群的GC暂停时间，可以发现一次Yang GC的平均暂停时间就达到了200ms，有些甚至超过了1s。ES的核心业务POI、订单等对查询耗时的P99以及Max都有一定的需求，GC暂停导致的查询延时以及毛刺问题无法满足业务需求。</p>
+<p><img src="/img/2023/08/zgc_01.png" alt="订单集群的GC暂停时间"></p>
+        
+          <p class="article-more-link">
+            <a href="/2023/08/10/es-jdk17-and-zgc/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Elasticsearch/" rel="tag">Elasticsearch</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-didi-es-high-availability-solution" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -448,49 +498,6 @@ number_of_pending_tasks：是指主节点创建索引并分配shards等任务，
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/perf/" rel="tag">perf</a></li></ul>
 
       </footer>
-    
-  </div>
-  
-</article>
-
-
-    
-      <article id="post-jvm-bug-causes-Presto-queries-to-slow-down" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2021/02/07/jvm-bug-causes-Presto-queries-to-slow-down/">说下那些导致Presto查询变慢的JVM Bug和解决方法</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2021/02/07/jvm-bug-causes-Presto-queries-to-slow-down/" class="article-date">
-  <time datetime="2021-02-07T02:24:48.000Z" itemprop="datePublished">2021-02-07</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>维护Presto集群，遇到了一些JVM Bug会严重导致Presto查询变慢，这里分享下Bugs表现及解决方法。</p>
-<h2 id="Ref-Proc-耗时太久"><a href="#Ref-Proc-耗时太久" class="headerlink" title="Ref Proc 耗时太久"></a>Ref Proc 耗时太久</h2><p>线上Presto运行一段时间后，查询会越来越慢，打了下火焰图，发现30%的CPU都浪费在young gc上了，看了下gc log，如下：</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="number">2020-12-21T20:50:15.009</span><span class="string">+0800:</span> <span class="attr">4753827.928:</span> [<span class="string">GC</span> <span class="string">pause</span> <span class="string">(GCLocker</span> <span class="string">Initiated</span> <span class="string">GC)</span> <span class="string">(young)</span> <span class="string">(initial-mark)</span>, <span class="number">0.5723063</span> <span class="string">secs</span>]</span><br><span class="line">   [<span class="attr">Parallel Time:</span> <span class="number">66.9</span> <span class="string">ms</span>, <span class="attr">GC Workers:</span> <span class="number">33</span>]</span><br><span class="line">      [<span class="string">GC</span> <span class="string">Worker</span> <span class="string">Start</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">4753827940.4</span>, <span class="attr">Avg:</span> <span class="number">4753827940.5</span>, <span class="attr">Max:</span> <span class="number">4753827940.7</span>, <span class="attr">Diff:</span> <span class="number">0.4</span>]</span><br><span class="line">      [<span class="string">Ext</span> <span class="string">Root</span> <span class="string">Scanning</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">26.2</span>, <span class="attr">Avg:</span> <span class="number">27.3</span>, <span class="attr">Max:</span> <span class="number">54.9</span>, <span class="attr">Diff:</span> <span class="number">28.7</span>, <span class="attr">Sum:</span> <span class="number">899.6</span>]</span><br><span class="line">      [<span class="string">Update</span> <span class="string">RS</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">9.2</span>, <span class="attr">Max:</span> <span class="number">9.8</span>, <span class="attr">Diff:</span> <span class="number">9.8</span>, <span class="attr">Sum:</span> <span class="number">304.3</span>]</span><br><span class="line">         [<span class="attr">Processed Buffers: Min:</span> <span class="number">0</span>, <span class="attr">Avg:</span> <span class="number">19.9</span>, <span class="attr">Max:</span> <span class="number">35</span>, <span class="attr">Diff:</span> <span class="number">35</span>, <span class="attr">Sum:</span> <span class="number">657</span>]</span><br><span class="line">      [<span class="string">Scan</span> <span class="string">RS</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">0.0</span>, <span class="attr">Max:</span> <span class="number">0.0</span>, <span class="attr">Diff:</span> <span class="number">0.0</span>, <span class="attr">Sum:</span> <span class="number">0.1</span>]</span><br><span class="line">      [<span class="string">Code</span> <span class="string">Root</span> <span class="string">Scanning</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">0.0</span>, <span class="attr">Max:</span> <span class="number">0.0</span>, <span class="attr">Diff:</span> <span class="number">0.0</span>, <span class="attr">Sum:</span> <span class="number">0.0</span>]</span><br><span class="line">      [<span class="string">Object</span> <span class="string">Copy</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">0.5</span>, <span class="attr">Avg:</span> <span class="number">11.2</span>, <span class="attr">Max:</span> <span class="number">13.8</span>, <span class="attr">Diff:</span> <span class="number">13.3</span>, <span class="attr">Sum:</span> <span class="number">369.9</span>]</span><br><span class="line">      [<span class="string">Termination</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">7.8</span>, <span class="attr">Max:</span> <span class="number">8.4</span>, <span class="attr">Diff:</span> <span class="number">8.4</span>, <span class="attr">Sum:</span> <span class="number">256.8</span>]</span><br><span class="line">         [<span class="attr">Termination Attempts: Min:</span> <span class="number">1</span>, <span class="attr">Avg:</span> <span class="number">1.5</span>, <span class="attr">Max:</span> <span class="number">4</span>, <span class="attr">Diff:</span> <span class="number">3</span>, <span class="attr">Sum:</span> <span class="number">51</span>]</span><br><span class="line">      [<span class="string">GC</span> <span class="string">Worker</span> <span class="string">Other</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">0.0</span>, <span class="attr">Max:</span> <span class="number">0.0</span>, <span class="attr">Diff:</span> <span class="number">0.0</span>, <span class="attr">Sum:</span> <span class="number">0.5</span>]</span><br><span class="line">      [<span class="string">GC</span> <span class="string">Worker</span> <span class="string">Total</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">55.3</span>, <span class="attr">Avg:</span> <span class="number">55.5</span>, <span class="attr">Max:</span> <span class="number">55.7</span>, <span class="attr">Diff:</span> <span class="number">0.5</span>, <span class="attr">Sum:</span> <span class="number">1831.3</span>]</span><br><span class="line">      [<span class="string">GC</span> <span class="string">Worker</span> <span class="string">End</span> <span class="string">(ms):</span> <span class="attr">Min:</span> <span class="number">4753827996.0</span>, <span class="attr">Avg:</span> <span class="number">4753827996.0</span>, <span class="attr">Max:</span> <span class="number">4753827996.1</span>, <span class="attr">Diff:</span> <span class="number">0.1</span>]</span><br><span class="line">   [<span class="attr">Code Root Fixup:</span> <span class="number">0.4</span> <span class="string">ms</span>]</span><br><span class="line">   [<span class="attr">Code Root Purge:</span> <span class="number">0.0</span> <span class="string">ms</span>]</span><br><span class="line">   [<span class="attr">Clear CT:</span> <span class="number">0.6</span> <span class="string">ms</span>]</span><br><span class="line">   [<span class="attr">Other:</span> <span class="number">504.4</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Choose CSet:</span> <span class="number">0.0</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Ref Proc:</span> <span class="number">501.3</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Ref Enq:</span> <span class="number">0.0</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Redirty Cards:</span> <span class="number">0.5</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Humongous Register:</span> <span class="number">0.2</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Humongous Reclaim:</span> <span class="number">0.0</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Free CSet:</span> <span class="number">0.2</span> <span class="string">ms</span>]</span><br><span class="line">   [<span class="attr">Eden:</span> <span class="number">320.</span><span class="string">0M(3264.0M)-&gt;0.0B(3392.0M)</span> <span class="attr">Survivors:</span> <span class="number">416.</span><span class="string">0M-&gt;288.0M</span> <span class="attr">Heap:</span> <span class="number">9068.</span><span class="string">7M(72.0G)-&gt;8759.2M(72.0G)</span>]</span><br><span class="line"> [<span class="attr">Times:</span> <span class="string">user=1.70</span> <span class="string">sys=0.39</span>, <span class="string">real=0.57</span> <span class="string">secs</span>]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>从上面我们可以看到 Ref Proc: 501.3 ms，总共young gc耗时0.57s，而Ref Proc耗时就达到了0.5s。我们需要看下Ref Proc耗时主要在哪个地方。<br>我们通过配置gc参数<code>-XX:+PrintReferenceGC</code>，可以看到详细的Reference GC时间，并且如下图Case，JNI Weak Reference是主要瓶颈点。</p>
-        
-          <p class="article-more-link">
-            <a href="/2021/02/07/jvm-bug-causes-Presto-queries-to-slow-down/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
     
   </div>
   
