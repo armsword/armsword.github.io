@@ -51,168 +51,88 @@
     </div>
   </div>
 </header>
-    <section id="main" class="outer">
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2018" class="archive-year">2018</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      
-        <a href="/2018/05/22/the-memory-management-and-tuning-experience-of-presto/" class="archive-article-date">
-  <time datetime="2018-05-22T10:32:44.000Z" itemprop="datePublished">5月 22</time>
-</a>
-      
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2018/05/22/the-memory-management-and-tuning-experience-of-presto/">Presto内存管理原理和调优</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
+    <section id="main" class="outer"><% switch (type) {
+    case 'archive':
+    var last;
+    page.posts.each(function(post, i){
+    var year = post.date.year();
+    if (last != year){
+      if (last != null){ %>
         </div></section>
-      
+      <% }
+      last = year; %>
       <section class="archives-wrap">
         <div class="archive-year-wrap">
-          <a href="/archives/2017" class="archive-year">2017</a>
+          <a href="<%- url_for('archives/' + year) %>" class="archive-year"><%= year %></a>
         </div>
         <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      
-        <a href="/2017/12/05/presto/" class="archive-article-date">
-  <time datetime="2017-12-05T03:31:11.000Z" itemprop="datePublished">12月 5</time>
-</a>
-      
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2017/12/05/presto/">分布式SQL查询引擎Presto原理介绍</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      
-        <a href="/2017/01/16/distributed-solutions-for-search-engines/" class="archive-article-date">
-  <time datetime="2017-01-16T08:36:49.000Z" itemprop="datePublished">1月 16</time>
-</a>
-      
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2017/01/16/distributed-solutions-for-search-engines/">说说常见搜索引擎的分布式解决方法</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
-        </div></section>
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2016" class="archive-year">2016</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      
-        <a href="/2016/10/29/minder/" class="archive-article-date">
-  <time datetime="2016-10-29T11:54:14.000Z" itemprop="datePublished">10月 29</time>
-</a>
-      
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2016/10/29/minder/">Minder：一个分布式启停进程服务</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      
-        <a href="/2016/10/12/optimize-query-search-tree/" class="archive-article-date">
-  <time datetime="2016-10-12T11:33:21.000Z" itemprop="datePublished">10月 12</time>
-</a>
-      
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2016/10/12/optimize-query-search-tree/">一些常见的搜索查询树优化方法</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      
-        <a href="/2016/09/10/a-high-performace-and-thread-safe-cpp-log-lib/" class="archive-article-date">
-  <time datetime="2016-09-10T13:53:09.000Z" itemprop="datePublished">9月 10</time>
-</a>
-      
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2016/09/10/a-high-performace-and-thread-safe-cpp-log-lib/">dlog:高性能线程安全的C++日志库</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      
-        <a href="/2016/08/17/earlybird/" class="archive-article-date">
-  <time datetime="2016-08-16T16:49:46.000Z" itemprop="datePublished">8月 17</time>
-</a>
-      
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2016/08/17/earlybird/">Earlybird:Twitter实时搜索引擎</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
+    <% } %>
+    <%- partial('archive-post', {post: post, archive: true}) %>
+  <% });
+    if (page.posts.length){ %>
     </div></section>
-  
+  <% }
+    if (page.total > 1){ %>
       <nav id="page-nav">
-        <a class="extend prev" rel="prev" href="/archives/page/4/">&lt;&lt; 上一页</a><a class="page-number" href="/archives/">1</a><span class="space">&hellip;</span><a class="page-number" href="/archives/page/3/">3</a><a class="page-number" href="/archives/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/archives/page/6/">6</a><a class="page-number" href="/archives/page/7/">7</a><a class="page-number" href="/archives/page/8/">8</a><a class="extend next" rel="next" href="/archives/page/6/">下一页 &gt;&gt;</a>
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
       </nav>
-    </section>
+    <% }
+    break;
+  case 'category': %>
+    <section class="archives-wrap">
+    <div class="archive-category-wrap">
+      <span class="archive-category"><%= page.category %></span>
+    </div>
+    <div class="archives">
+    <% page.posts.each(function (post, i) { %>
+      <%- partial('archive-post', {post: post, archive: false}) %>
+    <% }); %>
+    </div></section>
+    <% if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+  case 'tag': %>
+    <section class="archives-wrap">
+    <div class="archive-tag-wrap">
+      <span class="archive-tag">#<%= page.tag %></span>
+    </div>
+    <div class="archives">
+    <% page.posts.each(function (post, i) { %>
+      <%- partial('archive-post', {post: post, archive: false}) %>
+    <% }); %>
+    </div></section>
+    <% if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+  default:
+    page.posts.each(function(post){ %>
+      <%- partial('article', {post: post, index: true}) %>
+    <% })
+    if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+} %></section>
     <footer id="footer">
   
   <div class="outer">

@@ -51,160 +51,88 @@
     </div>
   </div>
 </header>
-    <section id="main" class="outer">
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2024" class="archive-year">2024</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      
-        <a href="/2024/05/22/how-to-build-a-high-performance-team/" class="archive-article-date">
-  <time datetime="2024-05-22T08:34:17.000Z" itemprop="datePublished">5月 22</time>
-</a>
-      
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2024/05/22/how-to-build-a-high-performance-team/">如何打造一个高绩效团队</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      
-        <a href="/2024/05/14/elasticsearch-in-didi/" class="archive-article-date">
-  <time datetime="2024-05-14T14:00:08.000Z" itemprop="datePublished">5月 14</time>
-</a>
-      
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2024/05/14/elasticsearch-in-didi/">Elasticsearch 在滴滴的应用与实践</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      
-        <a href="/2024/05/06/Reading-Notes-on-36-Practical-Lectures-on-Technical-Management/" class="archive-article-date">
-  <time datetime="2024-05-06T12:27:39.000Z" itemprop="datePublished">5月 6</time>
-</a>
-      
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2024/05/06/Reading-Notes-on-36-Practical-Lectures-on-Technical-Management/">读《技术管理实战36讲》</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      
-        <a href="/2024/03/05/Didi-builds-a-new-generation-of-log-storage-system-based-on-Clickhouse/" class="archive-article-date">
-  <time datetime="2024-03-05T14:12:22.000Z" itemprop="datePublished">3月 5</time>
-</a>
-      
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2024/03/05/Didi-builds-a-new-generation-of-log-storage-system-based-on-Clickhouse/">滴滴基于 Clickhouse 构建新一代日志存储系统</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      
-        <a href="/2024/01/17/my-experiences-in-leading-a-team/" class="archive-article-date">
-  <time datetime="2024-01-17T08:24:41.000Z" itemprop="datePublished">1月 17</time>
-</a>
-      
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2024/01/17/my-experiences-in-leading-a-team/">关于做好技术团队管理的几点心得</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
+    <section id="main" class="outer"><% switch (type) {
+    case 'archive':
+    var last;
+    page.posts.each(function(post, i){
+    var year = post.date.year();
+    if (last != year){
+      if (last != null){ %>
         </div></section>
-      
+      <% }
+      last = year; %>
       <section class="archives-wrap">
         <div class="archive-year-wrap">
-          <a href="/archives/2023" class="archive-year">2023</a>
+          <a href="<%- url_for('archives/' + year) %>" class="archive-year"><%= year %></a>
         </div>
         <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      
-        <a href="/2023/12/06/resolve-es-JVM-coredump/" class="archive-article-date">
-  <time datetime="2023-12-06T08:38:57.000Z" itemprop="datePublished">12月 6</time>
-</a>
-      
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2023/12/06/resolve-es-JVM-coredump/">Elasticsearch集群JVM coredump问题排查</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      
-        <a href="/2023/08/11/didi-es-zstd/" class="archive-article-date">
-  <time datetime="2023-08-11T09:21:04.000Z" itemprop="datePublished">8月 11</time>
-</a>
-      
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2023/08/11/didi-es-zstd/">如何让ES低成本、高性能？滴滴落地ZSTD压缩算法的实践分享</a>
-    </h1>
-  
-
-    </header>
-  </div>
-</article>
-  
+    <% } %>
+    <%- partial('archive-post', {post: post, archive: true}) %>
+  <% });
+    if (page.posts.length){ %>
     </div></section>
-  
+  <% }
+    if (page.total > 1){ %>
       <nav id="page-nav">
-        <span class="page-number current">1</span><a class="page-number" href="/archives/page/2/">2</a><a class="page-number" href="/archives/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/archives/page/8/">8</a><a class="extend next" rel="next" href="/archives/page/2/">下一页 &gt;&gt;</a>
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
       </nav>
-    </section>
+    <% }
+    break;
+  case 'category': %>
+    <section class="archives-wrap">
+    <div class="archive-category-wrap">
+      <span class="archive-category"><%= page.category %></span>
+    </div>
+    <div class="archives">
+    <% page.posts.each(function (post, i) { %>
+      <%- partial('archive-post', {post: post, archive: false}) %>
+    <% }); %>
+    </div></section>
+    <% if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+  case 'tag': %>
+    <section class="archives-wrap">
+    <div class="archive-tag-wrap">
+      <span class="archive-tag">#<%= page.tag %></span>
+    </div>
+    <div class="archives">
+    <% page.posts.each(function (post, i) { %>
+      <%- partial('archive-post', {post: post, archive: false}) %>
+    <% }); %>
+    </div></section>
+    <% if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+  default:
+    page.posts.each(function(post){ %>
+      <%- partial('article', {post: post, index: true}) %>
+    <% })
+    if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+} %></section>
     <footer id="footer">
   
   <div class="outer">
