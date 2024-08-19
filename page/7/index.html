@@ -51,88 +51,347 @@
     </div>
   </div>
 </header>
-    <section id="main" class="outer"><% switch (type) {
-    case 'archive':
-    var last;
-    page.posts.each(function(post, i){
-    var year = post.date.year();
-    if (last != year){
-      if (last != null){ %>
-        </div></section>
-      <% }
-      last = year; %>
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="<%- url_for('archives/' + year) %>" class="archive-year"><%= year %></a>
-        </div>
-        <div class="archives">
-    <% } %>
-    <%- partial('archive-post', {post: post, archive: true}) %>
-  <% });
-    if (page.posts.length){ %>
-    </div></section>
-  <% }
-    if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-  case 'category': %>
-    <section class="archives-wrap">
-    <div class="archive-category-wrap">
-      <span class="archive-category"><%= page.category %></span>
+    <section id="main" class="outer">
+      <article id="post-redis-ae-analyse" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/09/04/redis-ae-analyse/">Redis AE事件库源码剖析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/09/04/redis-ae-analyse/" class="article-date">
+  <time datetime="2014-09-03T17:56:57.000Z" itemprop="datePublished">2014-09-04</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
     </div>
-    <div class="archives">
-    <% page.posts.each(function (post, i) { %>
-      <%- partial('archive-post', {post: post, archive: false}) %>
-    <% }); %>
-    </div></section>
-    <% if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-  case 'tag': %>
-    <section class="archives-wrap">
-    <div class="archive-tag-wrap">
-      <span class="archive-tag">#<%= page.tag %></span>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>很久之前就看过AE库了，不过这东西好久不看，也忘得差不多了，正好要找工作了，简历上写了之前的项目用过这个AE事件库，索性我就又把AE库看了一遍，本来表达能力就差，复习下吧。</p>
+<p>先上张图，下图左侧是ae.c文件里所有的函数，一目了然。</p>
+<p><img src="/img/2014/09/201409040835.png"></p>
+<p>AE事件库包含文件事件和时间事件，其包含2个源文件ae.c和ae.h，当然还有四个不同的多用复用封装的文件：ae_epoll.c、ae_select.c、ae_evport.c、ae_kqueue.c。一般常用的是ae_select.c（跨平台用），linux下多用ae_epoll.c。我们就以ae_epoll.c为例吧。</p>
+        
+          <p class="article-more-link">
+            <a href="/2014/09/04/redis-ae-analyse/#more">Read More</a>
+          </p>
+        
+      
     </div>
-    <div class="archives">
-    <% page.posts.each(function (post, i) { %>
-      <%- partial('archive-post', {post: post, archive: false}) %>
-    <% }); %>
-    </div></section>
-    <% if (page.total > 1){ %>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-consistent-hashing" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/07/21/consistent-hashing/">一致性哈希算法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/07/21/consistent-hashing/" class="article-date">
+  <time datetime="2014-07-21T14:04:29.000Z" itemprop="datePublished">2014-07-21</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">算法/数据结构</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>一致性hash算法在分布式系统里面使用比较广，我也只是听说过这个概念，今天看到一个<a href="http://www.codeproject.com/Articles/56138/Consistent-hashing">一致性hash开源库</a>，随手写篇文章，记录下吧。</p>
+<p>假如我们使用普通的哈希方式来处理负载均衡，到目标机器的映射使用的算法为：</p>
+<p>hash(o) mod n (n表示机器的总数)</p>
+<p>如果需要增加或减少一台机器的时候，算法就变为 hash(o) mod (n + 1) &#x2F; hash(o) mod (n - 1)</p>
+<p>不仅需要重新编写代码，当服务器做了大量变更，大量的o会重定向不同的服务器而导致了缓冲不被命中，所以此时，就提出了一致性hash算法。</p>
+<h3 id="一致性哈希算法"><a href="#一致性哈希算法" class="headerlink" title="一致性哈希算法"></a>一致性哈希算法</h3><p>简单的说，哈希函数将o映射到 0 ~ 2^32 - 1的值区间，将这些数字头尾相连，然后将它们组织成一个闭合的圆环。如图一所示：<br><img src="/img/2014/07/2014721circle.jpg"></p>
+<p>要实现一致性哈希算法，思路就是下面2个步骤：</p>
+        
+          <p class="article-more-link">
+            <a href="/2014/07/21/consistent-hashing/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-light-cgi-server" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/05/18/light-cgi-server/">写了一个简单的CGI Server</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/05/18/light-cgi-server/" class="article-date">
+  <time datetime="2014-05-18T09:22:17.000Z" itemprop="datePublished">2014-05-18</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>之前看过一些开源程序的源码，也略微知道些Apache的CGI处理程序架构，于是用了一段时间，用C写了一个简单的CGI Server，代码算上头文件，一共1200行左右，难度中等偏上。麻雀虽小，五脏俱全。如果把程序里所涉及的HTTP协议，Linux下POSIX编程等等搞清楚，我想找工作中肯定是有足够的竞争力的，当然我也只是皮毛而已，不再班门弄斧了，下面简单的说下程序流程吧。</p>
+<p>再说程序流程之前，我先简单说下CGI吧，CGI这个东西比较老了，N年之前，没有PHP JSP等等动态脚本之前，这个是非常火的。只要能支持输入输出的程序，都可以编写CGI脚本，比如Apache就集成了CGI服务器功能，你可以使用Python编写简单的CGI脚本，可以参照前几天我发的文章，<a href="http://armsword.com/2014/05/07/let-apache-understand-python-cgi/">点击此处</a>，现在CGI 脚本基本上使用的比较少了，但是在一些对效率要求比较高的设计里还是可以看到一些身影，比如腾讯的QQ相册，QQ空间里就可以看到（你可以打开QQ空间，查看源码-查找CGI），他们的脚本应该是C&#x2F;C++编写的，效率，你懂的，如果你想更多的了解CGI脚本相关，可以<a href="http://www.jdon.com/idea/cgi.htm">点击此处</a>，推荐了解一些，但是不值得深入学习，那个精力不如学习PHP&#x2F;Python了。。。</p>
+<p>其实说白了，CGI 扮演的就是在服务器和特定解释器之间输入输出协议的角色，每个来自用户的请求，Web服务器都会唤起特定语言解释器的命令行，执行CGI脚本。</p>
+<p>现在来介绍下此CGI Server，我不想长篇大论了，一幅图来描述其执行过程（字比较丑，凑合看吧），具体看代码吧：</p>
+<p><img src="/img/2014/05/20140518171043.jpg"></p>
+        
+          <p class="article-more-link">
+            <a href="/2014/05/18/light-cgi-server/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-redis-dict-analyze" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/04/20/redis-dict-analyze/">Redis里dict源码剖析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/04/20/redis-dict-analyze/" class="article-date">
+  <time datetime="2014-04-20T15:07:52.000Z" itemprop="datePublished">2014-04-20</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C-C/">C/C++</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Redis全名叫做Remote Dictionary Server，从全称就可以看出dict是Redis里重要的数据结构，看了下dict.c里的源码，简单分析下。</p>
+<p>dict.c主要是实现了哈希功能，实际上实现哈希（字典）常见的方法有几种：</p>
+<p>&lt;1&gt;比如我们数据结构课上学的数组和链表法，但是这种方法适用于元素个数不多的情况下</p>
+<p>&lt;2&gt;使用复杂的平衡树(B-等等)，性能比较不错，比如MySQL里的索引就使用了这种方法</p>
+<p>&lt;3&gt;哈希表，兼顾了高效和简单性，Redis选择了这种方法。</p>
+<p>我们就解读下dict.c里源码里的数据结构吧，我们知道hash表的性能由hash表的大小和解决冲突的方法决定。Redis里使用了两个哈希表(ht[0])和哈希表(ht[1])，hash[0]是字典主要使用的hash表，而hash[1]主要对0号哈希表进行rehash时才使用。读者可能不明白这个地方啥意思？其实就是，程序每次申请几个字节（默认为4字节），当key&#x2F;value数量达到规定时，程序申请的4字节就翻一倍（这里使用了慢迁移），那什么时候rehash呢？我们知道size &#x3D;&#x3D; used（根据下面的dictht结构体）时，达到最理想状态，所以当used&#x2F;size &gt; 1时，就进行rehash。我们先看看dict.h里定义的几个结构体吧：</p>
+        
+          <p class="article-more-link">
+            <a href="/2014/04/20/redis-dict-analyze/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-letter-combinations-of-a-phone-number" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/04/09/letter-combinations-of-a-phone-number/">Letter Combinations of a Phone Number</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/04/09/letter-combinations-of-a-phone-number/" class="article-date">
+  <time datetime="2014-04-09T08:54:14.000Z" itemprop="datePublished">2014-04-09</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">算法/数据结构</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>由于这个月还没写博客，找道题应付下吧，主要原因是自己现在太忙了，得准备找工作啊，唉，弱的惨不忍睹。好吧，不抱怨了，进入正题，<a href="http://oj.leetcode.com/problems/letter-combinations-of-a-phone-number/">LeetCode</a>上面的一道题，题目描述为：</p>
+<p>Given a digit string, return all possible letter combinations that the number could represent.</p>
+<p>A mapping of digit to letters (just like on the telephone buttons) is given below.</p>
+<p><img src="/img/2014/04/200px-Telephone-keypad2.svg_.png"></p>
+<pre>**Input:**Digit string "23"
+**Output:** ["ad", "ae", "af", "bd", "be", "bf", "cd", "ce", "cf"].
+**
+Note:**
+Although the above answer is in lexicographical order, your answer could be in any order you want.</pre>
+<p>其实就是组合问题，如下图所示：<br><img src="/img/2014/04/Combo.jpg"></p>
+<p>如图所示，遍历完 1，2，3，就把a,d (g,h,i)遍历完了，之后回溯到e，就是个DFS搞定。</p>
+        
+          <p class="article-more-link">
+            <a href="/2014/04/09/letter-combinations-of-a-phone-number/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-python-in-crawler" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/03/31/python-in-crawler/">使用python编写简单网络爬虫技巧总结</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/03/31/python-in-crawler/" class="article-date">
+  <time datetime="2014-03-31T10:53:39.000Z" itemprop="datePublished">2014-03-31</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/ML-NLP/">ML/NLP</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>使用python写过几个小玩具，基本上都与爬虫、Web相关的，自己也积累了下经验，也看过很多文章，一直想总结下，可惜现在要忙于找工作，实验室活也比较多，也就落下了。感觉如果时间长不记录，也就懒散了，并且许多东西我写完过个两天，我自己都记不住当时怎么想的了。</p>
+<p>0、HTTP协议</p>
+<p>基本上常见的Web开发里，Web内容都是通过HTTP协议进行传输的（虽然咱不懂Web开发，但是基本的计算机网络知识还是了解的），通过TCP连接服务器的80端口，爬虫其实质就是通过模拟浏览器发送HTTP请求，至于HTTP请求相关知识，点击<a href="http://zh.wikipedia.org/wiki/%E8%B6%85%E6%96%87%E6%9C%AC%E4%BC%A0%E8%BE%93%E5%8D%8F%E8%AE%AE">这里</a>。</p>
+<figure class="highlight oxygene"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">HTTP通常通过创建到服务器<span class="number">80</span>端口的TCP连接进行通信</span><br><span class="line">HTTP协议的内容包括请求方式（<span class="keyword">method</span>）, <span class="title function_">url</span>，<span class="title function_">header</span>，<span class="title function_">body</span>，通常以纯文本方式发送</span><br><span class="line"><span class="title function_">HTTP</span>返回内容包括状态码，<span class="title function_">header</span>，<span class="title function_">body</span>，通常以纯文本方式返回</span><br><span class="line"><span class="title function_">header</span>以及<span class="title function_">body</span>间以<span class="title function_">CRLF</span><span class="params">(\r\n)</span>分割</span><br></pre></td></tr></table></figure>
+<p>1、最基础的抓取网站内容</p>
+<p>使用python编写一个网络爬虫是非常简单的，如下例所示：</p>
+<figure class="highlight gradle"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> urllib2</span><br><span class="line">content = urllib2.urlopen(<span class="string">&#x27;http://armsword.com&#x27;</span>).<span class="keyword">read</span>()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+        
+          <p class="article-more-link">
+            <a href="/2014/03/31/python-in-crawler/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-linux-io-multiplexing" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/03/07/linux-io-multiplexing/">Linux IO复用—select poll 和 epoll</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/03/07/linux-io-multiplexing/" class="article-date">
+  <time datetime="2014-03-07T09:33:18.000Z" itemprop="datePublished">2014-03-07</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>在Socket编程时，为了处理大量客户的连接请求，需要使用非阻塞I&#x2F;O和端口复用，select、poll和epoll是Linux API提供的I&#x2F;O复用方式。其实在*nix下的网络并发方法向来不缺，比如典型的Apache模型（Process Per Connection，简称PPC），TPC（Thread Per Connection）模型，这两种模型思想类似，就是利用了多进程、多线程概念，让进来的每一个连接去干别的事情去。但是连接多了以后，首先需要较大的内存，且进程&#x2F;线程切换开销会非常大，因此这类模型能接受的最大连接数都不会太高。</p>
+<p>Linux 2.6中加入了epoll之后（据说Windows下使用的是IOCP，但是我没使用过），在高性能服务器领域中得到广泛的应用，主要原因就是高效。在讲epoll之前，我们先总结下select、poll，因为epoll其实也就是他们的增强版本，比如select是一个系统调用，而epoll是个模块，由三个系统调用组成，内核中由文件系统实现。</p>
+        
+          <p class="article-more-link">
+            <a href="/2014/03/07/linux-io-multiplexing/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
+        <a class="extend prev" rel="prev" href="/page/6/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><span class="page-number current">7</span><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/8/">下一页 &gt;&gt;</a>
       </nav>
-    <% }
-    break;
-  default:
-    page.posts.each(function(post){ %>
-      <%- partial('article', {post: post, index: true}) %>
-    <% })
-    if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-} %></section>
+    </section>
     <footer id="footer">
   
   <div class="outer">

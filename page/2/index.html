@@ -51,88 +51,464 @@
     </div>
   </div>
 </header>
-    <section id="main" class="outer"><% switch (type) {
-    case 'archive':
-    var last;
-    page.posts.each(function(post, i){
-    var year = post.date.year();
-    if (last != year){
-      if (last != null){ %>
-        </div></section>
-      <% }
-      last = year; %>
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="<%- url_for('archives/' + year) %>" class="archive-year"><%= year %></a>
-        </div>
-        <div class="archives">
-    <% } %>
-    <%- partial('archive-post', {post: post, archive: true}) %>
-  <% });
-    if (page.posts.length){ %>
-    </div></section>
-  <% }
-    if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-  case 'category': %>
-    <section class="archives-wrap">
-    <div class="archive-category-wrap">
-      <span class="archive-category"><%= page.category %></span>
+    <section id="main" class="outer">
+      <article id="post-es-jdk17-and-zgc" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2023/08/10/es-jdk17-and-zgc/">解锁滴滴ES的性能潜力：JDK 17和ZGC的升级之路</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2023/08/10/es-jdk17-and-zgc/" class="article-date">
+  <time datetime="2023-08-10T08:35:28.000Z" itemprop="datePublished">2023-08-10</time>
+</a>
+      
     </div>
-    <div class="archives">
-    <% page.posts.each(function (post, i) { %>
-      <%- partial('archive-post', {post: post, archive: false}) %>
-    <% }); %>
-    </div></section>
-    <% if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-  case 'tag': %>
-    <section class="archives-wrap">
-    <div class="archive-tag-wrap">
-      <span class="archive-tag">#<%= page.tag %></span>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>前文介绍了<a href="%E6%8E%A2%E7%B4%A2ES%E9%AB%98%E5%8F%AF%E7%94%A8%EF%BC%9A%E6%BB%B4%E6%BB%B4%E8%87%AA%E7%A0%94%E8%B7%A8%E6%95%B0%E6%8D%AE%E4%B8%AD%E5%BF%83%E5%A4%8D%E5%88%B6%E6%8A%80%E6%9C%AF%E8%AF%A6%E8%A7%A3">滴滴自研的ES强一致性多活</a>是如何实现的，其中也提到为了提升查询性能和解决查询毛刺问题，滴滴ES原地升级JDK17和ZGC，在这个过程中我们遇到了哪些问题，怎样解决的，以及最终上线效果如何，这篇文章就带大家深入了解。</p>
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>滴滴ES在2020年的时候由2.X升级到7.6.0，该版本是在官方7.6.0的基础上改造而来，支持的是JDK11，采用的垃圾回收器是G1。ES的业务主要分为两类，一类是日志场景，该场景写多读少，高峰期CPU使用率在85%左右，写入性能是它的主要瓶颈；另一类是非日志场景，例如POI检索、订单、支付，这些场景对查询耗时及查询稳定性都有着较高的要求。</p>
+<p>随着ES业务数据量的增长，GC导致的查询稳定性压力剧增，已经逐渐无法满足业务需求。以下是ES面临的主要问题：</p>
+<h3 id="非日志场景的GC问题"><a href="#非日志场景的GC问题" class="headerlink" title="非日志场景的GC问题"></a>非日志场景的GC问题</h3><p>1、Yong GC平均暂停时间长，一些集群的平均暂停时间达到百毫秒级别。</p>
+<p>GC暂停时间长在订单集群这种112G大内存的进程中表现尤为明显。下图为订单集群的GC暂停时间，可以发现一次Yang GC的平均暂停时间就达到了200ms，有些甚至超过了1s。ES的核心业务POI、订单等对查询耗时的P99以及Max都有一定的需求，GC暂停导致的查询延时以及毛刺问题无法满足业务需求。</p>
+<p><img src="/img/2023/08/zgc_01.png" alt="订单集群的GC暂停时间"></p>
+        
+          <p class="article-more-link">
+            <a href="/2023/08/10/es-jdk17-and-zgc/#more">Read More</a>
+          </p>
+        
+      
     </div>
-    <div class="archives">
-    <% page.posts.each(function (post, i) { %>
-      <%- partial('archive-post', {post: post, archive: false}) %>
-    <% }); %>
-    </div></section>
-    <% if (page.total > 1){ %>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Elasticsearch/" rel="tag">Elasticsearch</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-didi-es-high-availability-solution" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2023/08/08/didi-es-high-availability-solution/">探索ES高可用：滴滴自研跨数据中心复制技术详解</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2023/08/08/didi-es-high-availability-solution/" class="article-date">
+  <time datetime="2023-08-08T02:00:48.000Z" itemprop="datePublished">2023-08-08</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Elasticsearch 是一个基于Lucene构建的开源、分布式、RESTful接口的全文搜索引擎，其每个字段均可被索引，且能够横向扩展至数以百计的服务器存储以及处理TB级的数据，其可以在极短的时间内存储、搜索和分析大量的数据。</p>
+<p>滴滴ES发展至今，承接了公司绝大部分端上检索和日志场景，包括地图POI检索、订单检索、客服、内搜及把脉ELK场景等。</p>
+<p>近几年围绕稳定性、成本、效率和数据安全这几个方向持续探索：</p>
+<ul>
+<li>滴滴ES有很多在线P0级检索场景，为了提升集群稳定性，我们自研了跨数据中心复制能力，实现多机房数据写入强一致性，并配合管控平台让ES支持多活能力；</li>
+<li>为了提升查询性能和解决查询毛刺问题，我们在7.6版本上原地升级支持JDK 17；</li>
+<li>ES日志场景每天写入量在5PB-10PB量级，写入压力和业务成本压力大，为了提升ES的写入性能，我们让ES支持ZSTD压缩算法；</li>
+<li>由于ES索引里包含很多敏感数据，我们又完善了ES的安全认证能力。</li>
+</ul>
+<p>基于以上探索，我们总结了一定的经验，现分成4篇文章详细介绍。本篇文章介绍滴滴ES如何实现索引的跨数据中心复制从而保证索引的高可用。</p>
+<p>滴滴跨数据中心复制能力 - Didi Cross Datacenter Replication，由滴滴自研，简称DCDR，它能够将数据从一个 Elasticsearch 集群原生复制到另一个 Elasticsearch 集群。如图所示，DCDR工作在索引模板或索引层面，采用主从索引设计模型，由Leader索引主动将数据push到Follower索引，从而保证了主从索引数据的强一致性。</p>
+<p><img src="/img/2023/08/dcdr_01.png" alt="DCDR跨数据中心复制能力图"></p>
+        
+          <p class="article-more-link">
+            <a href="/2023/08/08/didi-es-high-availability-solution/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Elasticsearch/" rel="tag">Elasticsearch</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-the-most-frequently-used-commands-of-elasticsearch" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2022/09/27/the-most-frequently-used-commands-of-elasticsearch/">Elasticsearch常用的命令</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2022/09/27/the-most-frequently-used-commands-of-elasticsearch/" class="article-date">
+  <time datetime="2022-09-27T07:10:23.000Z" itemprop="datePublished">2022-09-27</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ul>
+<li><a href="#%E9%9B%86%E7%BE%A4%E5%81%A5%E5%BA%B7%E7%8A%B6%E6%80%81%E7%9B%B8%E5%85%B3">集群健康状态相关</a><ul>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E9%9B%86%E7%BE%A4%E5%81%A5%E5%BA%B7%E7%8A%B6%E6%80%81">查看集群健康状态</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E6%9C%AA%E5%88%86%E9%85%8D%E5%8E%9F%E5%9B%A0">查看未分配原因</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E5%85%B7%E4%BD%93%E7%B4%A2%E5%BC%95%E6%9C%AA%E5%88%86%E9%85%8D%E6%88%96%E4%B8%8D%E6%90%AC%E8%BF%81%E7%9A%84%E5%8E%9F%E5%9B%A0">查看具体索引未分配或不搬迁的原因</a></li>
+<li><a href="#%E8%A7%A3%E9%87%8A%E4%B8%80%E4%B8%AA%E7%B4%A2%E5%BC%95%E4%B8%BA%E4%BB%80%E4%B9%88%E5%88%86%E9%85%8D%E5%88%B0%E8%AF%A5%E8%8A%82%E7%82%B9">解释一个索引为什么分配到该节点</a></li>
+<li><a href="#%E9%87%8D%E6%96%B0%E5%B0%9D%E8%AF%95%E5%88%86%E9%85%8D%E5%A4%B1%E8%B4%A5%E7%9A%84shard">重新尝试分配失败的shard</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E7%AD%89%E5%BE%85%E4%B8%AD%E7%9A%84%E4%BB%BB%E5%8A%A1">查看等待中的任务</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8Bnodes">查看nodes</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8Bactive-master">查看active master</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E9%9B%86%E7%BE%A4%E5%86%85%E6%AD%A3%E5%9C%A8%E6%90%AC%E8%BF%81%E7%9A%84%E7%B4%A2%E5%BC%95">查看集群内正在搬迁的索引</a></li>
+</ul>
+</li>
+<li><a href="#%E7%B4%A2%E5%BC%95%E7%9B%B8%E5%85%B3">索引相关</a><ul>
+<li><a href="#%E6%9F%A5%E7%9C%8Bindex%E9%85%8D%E7%BD%AE%E4%BF%A1%E6%81%AF">查看index配置信息</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8Bindex%E7%9A%84mapping%E4%BF%A1%E6%81%AF">查看index的mapping信息</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8Bindex%E7%9A%84%E6%A8%A1%E6%9D%BF">查看index的模板</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8Bindex%E7%9A%84shard%E4%BF%A1%E6%81%AF">查看index的shard信息</a></li>
+<li><a href="#%E4%BF%AE%E6%94%B9%E7%B4%A2%E5%BC%95%E9%BB%98%E8%AE%A4%E5%BB%B6%E6%97%B6">修改索引默认延时</a></li>
+<li><a href="#%E7%B4%A2%E5%BC%95%E6%90%AC%E8%BF%81">索引搬迁</a></li>
+<li><a href="#%E5%8F%96%E6%B6%88%E7%B4%A2%E5%BC%95%E6%90%AC%E8%BF%81">取消索引搬迁</a></li>
+<li><a href="#%E7%B4%A2%E5%BC%95shard%E9%87%8D%E5%AE%9A%E5%90%91%E4%B8%A2%E5%BC%83shard">索引shard重定向（丢弃shard）</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E7%B4%A2%E5%BC%95checkpoint%E4%BF%A1%E6%81%AF">查看索引checkpoint信息</a></li>
+<li><a href="#%E7%B4%A2%E5%BC%95reindex">索引reindex</a></li>
+<li><a href="#%E8%BF%81%E7%A7%BBshard%E5%88%B0%E5%88%AB%E7%9A%84%E8%8A%82%E7%82%B9">迁移shard到别的节点</a></li>
+</ul>
+</li>
+<li><a href="#%E9%9B%86%E7%BE%A4%E7%9B%B8%E5%85%B3%E7%9A%84%E8%AE%BE%E7%BD%AE">集群相关的设置</a><ul>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E8%8A%82%E7%82%B9%E9%85%8D%E7%BD%AE%E7%9A%84%E7%BA%BF%E7%A8%8B%E6%B1%A0%E5%A4%A7%E5%B0%8F">查看节点配置的线程池大小</a></li>
+<li><a href="#%E4%B8%B4%E6%97%B6%E5%85%B3%E9%97%AD%E7%A3%81%E7%9B%98%E6%A3%80%E6%B5%8B%E5%8A%A0%E5%BF%ABmaster%E5%A4%84%E7%90%86%E9%80%9F%E5%BA%A6">临时关闭磁盘检测加快master处理速度</a></li>
+<li><a href="#%E9%9B%86%E7%BE%A4%E7%BA%A7%E5%88%AB%E6%8E%92%E9%99%A4%E6%9F%90%E5%8F%B0%E6%9C%BA%E5%99%A8">集群级别排除某台机器</a></li>
+<li><a href="#%E6%97%A5%E5%BF%97%E7%BA%A7%E5%88%AB%E8%AE%BE%E7%BD%AE">日志级别设置</a></li>
+<li><a href="#%E9%9B%86%E7%BE%A4%E7%9A%84%E8%BF%81%E7%A7%BB%E5%8F%82%E6%95%B0">集群的迁移参数</a></li>
+<li><a href="#shard%E5%9D%87%E8%A1%A1%E7%9A%84%E8%AE%BE%E7%BD%AE">shard均衡的设置</a></li>
+<li><a href="#%E5%9F%BA%E4%BA%8E%E7%A3%81%E7%9B%98%E7%9A%84%E5%88%86%E7%89%87%E5%88%86%E9%85%8D%E8%AE%BE%E7%BD%AE">基于磁盘的分片分配设置</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="集群健康状态相关"><a href="#集群健康状态相关" class="headerlink" title="集群健康状态相关"></a>集群健康状态相关</h2><h3 id="查看集群健康状态"><a href="#查看集群健康状态" class="headerlink" title="查看集群健康状态"></a>查看集群健康状态</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cluster/health</span><br></pre></td></tr></table></figure>
+<img src="/img/2022/09/cluster_name.png" width = "100%" />
+number_of_pending_tasks：是指主节点创建索引并分配shards等任务，如果该指标数值一直未减小代表集群存在不稳定因素 。
+
+<h3 id="查看未分配原因"><a href="#查看未分配原因" class="headerlink" title="查看未分配原因"></a>查看未分配原因</h3><figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GET</span> _cluster/allocation/<span class="keyword">explain</span></span><br></pre></td></tr></table></figure>
+<p>有以下几种可能</p>
+<ul>
+<li>INDEX_CREATED : Unassigned as a result of an API creation of an index.    索引创建 : 由于API创建索引而未分配的</li>
+<li>CLUSTER_RECOVERED : Unassigned as a result of a full cluster recovery.   集群恢复 : 由于整个集群恢复而未分配</li>
+<li>INDEX_REOPENED : Unassigned as a result of opening a closed index.        索引重新打开</li>
+<li>DANGLING_INDEX_IMPORTED : Unassigned as a result of importing a dangling index.   导入危险的索引</li>
+<li>NEW_INDEX_RESTORED : Unassigned as a result of restoring into a new index.   重新恢复一个新索引</li>
+<li>EXISTING_INDEX_RESTORED : Unassigned as a result of restoring into a closed index.  重新恢复一个已关闭的索引</li>
+<li>REPLICA_ADDED : Unassigned as a result of explicit addition of a replica.      添加副本</li>
+<li>ALLOCATION_FAILED : Unassigned as a result of a failed allocation of the shard.    分配分片失败</li>
+<li>NODE_LEFT : Unassigned as a result of the node hosting it leaving the cluster.  集群中节点丢失</li>
+<li>REROUTE_CANCELLED : Unassigned as a result of explicit cancel reroute command.   reroute命令取消</li>
+<li>REINITIALIZED :  When a shard moves from started back to initializing, for example, with shadow replicas.   重新初始化</li>
+<li>REALLOCATED_REPLICA :  A better replica location is identified and causes the existing replica allocation to be cancelled.   重新分配副本</li>
+</ul>
+<h3 id="查看具体索引未分配或不搬迁的原因"><a href="#查看具体索引未分配或不搬迁的原因" class="headerlink" title="查看具体索引未分配或不搬迁的原因"></a>查看具体索引未分配或不搬迁的原因</h3><figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GET</span> _cluster/allocation/<span class="keyword">explain</span></span><br><span class="line">&#123;</span><br><span class="line">  &quot;index&quot;:&quot;index_name&quot;,</span><br><span class="line">  &quot;shard&quot;:<span class="number">0</span>,</span><br><span class="line">  &quot;primary&quot;:<span class="keyword">true</span> </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>返回结果：<br><img src="/img/2022/09/index.png" width = "100%" /></p>
+<ol>
+<li>The current state of the shard.</li>
+<li>The reason for the shard originally becoming unassigned.</li>
+<li>Whether to allocate the shard.</li>
+<li>Whether to allocate the shard to the particular node.</li>
+<li>The decider which led to the no decision for the node.导致该节点没有决策的决策器。</li>
+<li>An explanation as to why the decider returned a no decision, with a helpful hint pointing to the setting that led to the decision.              解释为什么决策器返回“否”决策，并提供一个有用的提示，指出导致该决策的设置。</li>
+</ol>
+<h3 id="解释一个索引为什么分配到该节点"><a href="#解释一个索引为什么分配到该节点" class="headerlink" title="解释一个索引为什么分配到该节点"></a>解释一个索引为什么分配到该节点</h3><figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GET</span> _cluster/allocation/<span class="keyword">explain</span></span><br><span class="line">&#123;</span><br><span class="line">  &quot;index&quot;: &quot;my-index-000001&quot;,</span><br><span class="line">  &quot;shard&quot;: <span class="number">0</span>,</span><br><span class="line">  &quot;primary&quot;: <span class="keyword">false</span>,</span><br><span class="line">  &quot;current_node&quot;: &quot;my-node&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="重新尝试分配失败的shard"><a href="#重新尝试分配失败的shard" class="headerlink" title="重新尝试分配失败的shard"></a>重新尝试分配失败的shard</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">POST _cluster/reroute?retry_failed=<span class="literal">true</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="查看等待中的任务"><a href="#查看等待中的任务" class="headerlink" title="查看等待中的任务"></a>查看等待中的任务</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cat/pending_tasks</span><br></pre></td></tr></table></figure>
+<p>可以看到任务都被指派了优先级（ 比如说 URGENT 要比 HIGH 更早的处理 ）<br><img src="/img/2022/09/tasks.png" width = "100%" /></p>
+<h3 id="查看nodes"><a href="#查看nodes" class="headerlink" title="查看nodes"></a>查看nodes</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cat/nodes</span><br></pre></td></tr></table></figure>
+        
+          <p class="article-more-link">
+            <a href="/2022/09/27/the-most-frequently-used-commands-of-elasticsearch/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/elasticsearch/" rel="tag">elasticsearch</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-common-compression-algorithms-in-search-engines" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2022/01/18/common-compression-algorithms-in-search-engines/">科普下搜索索引里常用的压缩算法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2022/01/18/common-compression-algorithms-in-search-engines/" class="article-date">
+  <time datetime="2022-01-18T09:43:14.000Z" itemprop="datePublished">2022-01-18</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>数据压缩是存储领域常用的优化手段，压缩算法可以减少数据的大小减少存储成本、减少磁盘的寻道时间提高I&#x2F;O的性能、减少数据的传输时间并提高缓冲区的命中率，节省的I&#x2F;O时间可以轻易补偿它带来的CPU额外开销。目前在用的主流压缩算法包括zlib、snappy和lz4等。压缩算法并不是压缩比越高越好，压缩比越高，其解压缩速度可能越慢，CPU消耗就会越大，这需要根据硬件配置和业务场景做Trade off。本文主要介绍了如下几种搜索索引里常见的压缩算法，大部分压缩算法也适用于OLAP领域，同时有些场景可能需要结合多种场景实现，比如倒排索引的posting list压缩就需要结合PForDelta及Simple算法才能获得更好的压缩比。同时在选择压缩算法时，也会考虑该压缩算法是否支持流式压缩等。</p>
+<ul>
+<li>Fixed length</li>
+<li>Variable Byte</li>
+<li>Improved Variable Byte</li>
+<li>Group Varint</li>
+<li>Run Length Encoding</li>
+<li>Dictionary Coding</li>
+<li>Simple 9</li>
+<li>Simple 16</li>
+<li>PForDelta</li>
+<li>Huffman Coding</li>
+<li>LZ77</li>
+<li>Elasticsearch 行存压缩算法</li>
+</ul>
+<h2 id="Fixed-length"><a href="#Fixed-length" class="headerlink" title="Fixed length"></a>Fixed length</h2><h3 id="压缩方法"><a href="#压缩方法" class="headerlink" title="压缩方法"></a>压缩方法</h3><p>找到一组数据的最大值，之后计算出最大位宽N：</p>
+<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">10</span>,<span class="number">35</span>,<span class="number">100</span>,<span class="number">170</span>,<span class="number">370</span>,<span class="number">29000</span>,<span class="number">30000</span>,<span class="number">30010</span></span><br></pre></td></tr></table></figure>
+
+<p>2^15 &#x3D; 32768  &gt; 30010，则位宽为15，即每个32bit的数据可以用15bit表示</p>
+        
+          <p class="article-more-link">
+            <a href="/2022/01/18/common-compression-algorithms-in-search-engines/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/" rel="tag">搜索引擎</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-elasticsearch-performance-optimizing-in-online-poi-service" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2021/09/09/elasticsearch-performance-optimizing-in-online-poi-service/">Elasticsearch性能调优之毫秒级搜索POI业务</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2021/09/09/elasticsearch-performance-optimizing-in-online-poi-service/" class="article-date">
+  <time datetime="2021-09-09T12:35:34.000Z" itemprop="datePublished">2021-09-09</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>地图POI搜索业务使用的Elasticsearch集群是自建的2.3版本，维护ES需要耗费很多精力和人力。而目前公司有专门的ES搜索团队，且ES版本已经升级到7.6版本。ES 7.6版本有很多新的特性，如IndexSorting，查询加速，索引off-heap，全新的熔断器等等。6月份，ES搜索团队决定与地图POI合作共建，将ES升级到公司里的ES 7.6，专业的人做专业的事，ES团队维护集群稳定性、提升性能等，这样地图POI团队可以更好的聚焦到业务架构和推荐系统中台化上。</p>
+<p>地图POI分为国内POI和国际化POI，其面向在线搜索业务，对搜索耗时要求比较高，国内POI要求TP50耗时小于5ms，TP99 耗时小于20ms，国际化POI要求TP50耗时小于5ms，TP99耗时小于60ms。且两个业务方的索引查询超时时间都为180ms。由于其业务特点，所以在迁移ES 7.6时，并非一帆风顺，遇到很多性能和稳定性问题，这篇文章会介绍下遇到的性能问题和解决方法。由于篇幅有限，本文只介绍了影响性能最大的三个问题及优化手段和排查问题过程，分别为：</p>
+<ul>
+<li>前缀查询优化</li>
+<li>查询截断</li>
+<li>查询超时毛刺</li>
+</ul>
+<h2 id="前缀查询优化"><a href="#前缀查询优化" class="headerlink" title="前缀查询优化"></a>前缀查询优化</h2><p>调好合适的分片数，之后将索引从Hive离线导入到ES，做一轮压测，耗时曲线图如下图所示，耗时都接近800ms了，并且超过180ms就认为是超时，这与期望的性能有比较大的差距：</p>
+<img src="/img/2021/09/curve.png" width = "100%" />
+
+<p>通过gateway里面的审计日志，计算出国际化POI TP50、TP90、TP99时间，如下图所示：</p>
+<img src="/img/2021/09/TP99.png" width = "100%" />
+
+<p>可以看到TP99时间到了619ms，这与预期的性能有很大差距。所以我们需要看下为什么查询性能这么慢，我们将审计日志里面的压测DSL全部拿到，之后根据查询耗时降序排序，然后将DSL模板归类，发现耗时最久的是类似下面这种DSL：</p>
+        
+          <p class="article-more-link">
+            <a href="/2021/09/09/elasticsearch-performance-optimizing-in-online-poi-service/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-es-memory-management" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2021/03/26/es-memory-management/">ES 内存管理分析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2021/03/26/es-memory-management/" class="article-date">
+  <time datetime="2021-03-26T09:55:27.000Z" itemprop="datePublished">2021-03-26</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>刚接触ES，研究了下ES内存管理，参考了一些文章，整理了一篇文章，方便自己记忆。</p>
+<p>命令 GET _cat&#x2F;nodes?help 列出所有node, 并展示node所在机器的运行状态信息，help可显示帮助信息</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cat/nodes?<span class="attribute">h</span>=name,hp,hm,rp,rm,qcm,rcm,fm,sm&amp;v</span><br></pre></td></tr></table></figure>
+
+<p>解析下上面参数的意义 </p>
+<img src="/img/2021/03/cat.png" width = "100%" />
+
+<p>信息如下：</p>
+<img src="/img/2021/03/node.png" width = "100%" />
+
+<p>以红框里的node为例， 内存占用 &#x3D; (8.6 gb)qcm + (1gb) rcm + (0.35gb) fm + (2.2 gb)sm，大约12 gb。 </p>
+        
+          <p class="article-more-link">
+            <a href="/2021/03/26/es-memory-management/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Elasticsearch/" rel="tag">Elasticsearch</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-use-async-profiler-find-cpu-bottleneck" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2021/03/23/use-async-profiler-find-cpu-bottleneck/">使用火焰图定位 OLAP 引擎瓶颈</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2021/03/23/use-async-profiler-find-cpu-bottleneck/" class="article-date">
+  <time datetime="2021-03-23T12:24:35.000Z" itemprop="datePublished">2021-03-23</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>在维护 OLAP 引擎时，很多时候需要对引擎做系统的性能分析和优化，此时往往需要查看 CPU 耗时，了解主要耗时点及瓶颈在哪里。俗语有曰：兵欲善其事必先利其器，程序员定位性能问题也需要一件“利器”。性能调优工具（perf）能够显示系统的调用栈及时间分布，但是呈现内容上只能单一的列出调用栈或者非层次化的时间分布，不够直观。火焰图（flame graph）能够帮助大家更直观的发现问题。本文将以 Presto 为例，介绍火焰图的使用技巧。</p>
+<h2 id="初识火焰图"><a href="#初识火焰图" class="headerlink" title="初识火焰图"></a>初识火焰图</h2><p>Perf 的原理是这样子的：每隔一个固定的时间，就在 CPU 上（每个核上都有）产生一个中断，在中断上看看，当前是哪个 pid，哪个函数，然后给对应的 pid 和函数加一个统计值，这样，我们就知道 CPU 有百分几的时间在某个 pid，或者某个函数上了。而火焰图（Flame Graph）是由 Linux 性能优化大师 Brendan Gregg 发明的，和所有其他的 profiling 方法不同的是，火焰图以一个全局的视野来看待时间分布，它从底部往顶部，列出所有可能导致性能瓶颈的调用栈。</p>
+<img src="/img/2021/03/01.png" width = "90%" />
+
+<p>火焰图整个图形看起来就像一个跳动的火焰，这就是它名字的由来。火焰图有以下特征（这里以采样CPU 火焰图为例）：</p>
+<ul>
+<li>每一列代表一个调用栈，每一个格子代表一个函数。</li>
+<li>纵轴展示了栈的深度，按照调用关系从下到上排列。最顶上格子代表采样时，正在占用 CPU 的函数</li>
+<li>横轴的意义是指：火焰图将采集的多个调用栈信息，并行关系。横轴格子的宽度代表其在采样中出现频率，所以一个格子的宽度越大，说明它是瓶颈原因的可能性就越大。</li>
+<li>火焰图格子的颜色是随机的暖色调，方便区分各个调用信息。</li>
+<li>其他的采样方式也可以使用火焰图， 比如内存</li>
+</ul>
+<p>所以，火焰图就是看顶层的哪个函数占据的宽度最大。只要有”平顶”，就表示该函数可能存在性能问题，也是我们性能优化收益最大的地方。<br>Java生态常见的用于perf的工具有：allocation-instrumenter、YourKit Profiler、async-profiler、JProfiler、Arthas（基于 async-profiler ）。笔者推荐使用阿里巴巴出品的 Arthas 或 async-profiler，笔者喜欢使用 async-profiler 这个 perf 工具生成火焰图，主要原因是用法简单，足够满足日常排查性能问题了。</p>
+        
+          <p class="article-more-link">
+            <a href="/2021/03/23/use-async-profiler-find-cpu-bottleneck/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/perf/" rel="tag">perf</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
       <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
+        <a class="extend prev" rel="prev" href="/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/3/">下一页 &gt;&gt;</a>
       </nav>
-    <% }
-    break;
-  default:
-    page.posts.each(function(post){ %>
-      <%- partial('article', {post: post, index: true}) %>
-    <% })
-    if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-} %></section>
+    </section>
     <footer id="footer">
   
   <div class="outer">

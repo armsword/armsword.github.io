@@ -51,88 +51,379 @@
     </div>
   </div>
 </header>
-    <section id="main" class="outer"><% switch (type) {
-    case 'archive':
-    var last;
-    page.posts.each(function(post, i){
-    var year = post.date.year();
-    if (last != year){
-      if (last != null){ %>
-        </div></section>
-      <% }
-      last = year; %>
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="<%- url_for('archives/' + year) %>" class="archive-year"><%= year %></a>
-        </div>
-        <div class="archives">
-    <% } %>
-    <%- partial('archive-post', {post: post, archive: true}) %>
-  <% });
-    if (page.posts.length){ %>
-    </div></section>
-  <% }
-    if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-  case 'category': %>
-    <section class="archives-wrap">
-    <div class="archive-category-wrap">
-      <span class="archive-category"><%= page.category %></span>
+    <section id="main" class="outer">
+      <article id="post-the-memory-management-and-tuning-experience-of-presto" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2018/05/22/the-memory-management-and-tuning-experience-of-presto/">Presto内存管理原理和调优</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2018/05/22/the-memory-management-and-tuning-experience-of-presto/" class="article-date">
+  <time datetime="2018-05-22T10:32:44.000Z" itemprop="datePublished">2018-05-22</time>
+</a>
+      
     </div>
-    <div class="archives">
-    <% page.posts.each(function (post, i) { %>
-      <%- partial('archive-post', {post: post, archive: false}) %>
-    <% }); %>
-    </div></section>
-    <% if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-  case 'tag': %>
-    <section class="archives-wrap">
-    <div class="archive-tag-wrap">
-      <span class="archive-tag">#<%= page.tag %></span>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="内存池"><a href="#内存池" class="headerlink" title="内存池"></a>内存池</h2><p>Presto有三种内存池，分别为GENERAL_POOL、RESERVED_POOL、SYSTEM_POOL。这三个内存池占用的内存大小是由下面算法进行分配的：</p>
+<figure class="highlight gradle"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">builder.put(RESERVED_POOL, <span class="keyword">new</span> MemoryPool(RESERVED_POOL, config.getMaxQueryMemoryPerNode()));</span><br><span class="line"></span><br><span class="line">builder.put(SYSTEM_POOL, <span class="keyword">new</span> MemoryPool(SYSTEM_POOL, systemMemoryConfig.getReservedSystemMemory()));</span><br><span class="line"></span><br><span class="line"><span class="keyword">long</span> maxHeap = <span class="keyword">Runtime</span>.getRuntime().maxMemory();</span><br><span class="line">maxMemory = <span class="keyword">new</span> DataSize(maxHeap - systemMemoryConfig.getReservedSystemMemory().toBytes(), <span class="keyword">BYTE</span>);</span><br><span class="line">DataSize generalPoolSize = <span class="keyword">new</span> DataSize(Math.max(<span class="number">0</span>, maxMemory.toBytes() - config.getMaxQueryMemoryPerNode().toBytes()), <span class="keyword">BYTE</span>);</span><br><span class="line">builder.put(GENERAL_POOL, <span class="keyword">new</span> MemoryPool(GENERAL_POOL, generalPoolSize));</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>梳理这块代码对应的逻辑和配置文件，得出RESERVED_POOL大小由config.properties里的query.max-memory-per-node指定；SYSTEM_POOL由config.properties里的resources.reserved-system-memory指定，如果不指定，默认值为Runtime.getRuntime().maxMemory() * 0.4，即0.4 * Xmx值；而GENERAL_POOL值为 总内存（Xmx值）- 预留的（max-memory-per-node）- 系统的（0.4 * Xmx）。</p>
+<p>而这三种内存池分别用于不同的地方，分析代码和阅读Presto开发手册，大体可以定位出：</p>
+<ul>
+<li>GENERAL_POOL is the memory pool used by the physical operators in a query.</li>
+<li>SYSTEM_POOL is mostly used by the exchange buffers and readers&#x2F;writers.</li>
+<li>RESERVED_POOL is for running a large query when the general pool becomes full.</li>
+</ul>
+        
+          <p class="article-more-link">
+            <a href="/2018/05/22/the-memory-management-and-tuning-experience-of-presto/#more">Read More</a>
+          </p>
+        
+      
     </div>
-    <div class="archives">
-    <% page.posts.each(function (post, i) { %>
-      <%- partial('archive-post', {post: post, archive: false}) %>
-    <% }); %>
-    </div></section>
-    <% if (page.total > 1){ %>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-presto" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2017/12/05/presto/">分布式SQL查询引擎Presto原理介绍</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2017/12/05/presto/" class="article-date">
+  <time datetime="2017-12-05T03:31:11.000Z" itemprop="datePublished">2017-12-05</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>我们实时引擎组新引入了一款分布式SQL查询引擎，名字叫Presto，目前已经调研和测试了2个月了，并且期间某平台也从impala平台迁入到了Presto平台，查询性能有了2-3倍的提升（各种原因导致），所以本文将结合作者这段时间的测试和调研研究，来揭开Presto的神秘面纱。</p>
+<h2 id="Presto是神马"><a href="#Presto是神马" class="headerlink" title="Presto是神马"></a>Presto是神马</h2><p>Presto是由Facebook开发的一个分布式SQL查询引擎， 它被设计为用来专门进行高速、实时的数据分析。它的产生是为了解决Hive的MapReduce模型太慢以及不能通过BI或Dashboards直接展现HDFS数据等问题。Presto是一个纯粹的计算引擎，它不存储数据，其通过Connector获取第三方Storage服务的数据。</p>
+<h2 id="历史"><a href="#历史" class="headerlink" title="历史"></a>历史</h2><ul>
+<li>2012年秋季，Facebook启动Presto项目</li>
+<li>2013年冬季，Presto开源</li>
+<li>2017年11月，11888 commits，203 releases，198 contributors</li>
+</ul>
+<h2 id="功能和优点"><a href="#功能和优点" class="headerlink" title="功能和优点"></a>功能和优点</h2><ul>
+<li>Ad-hoc，期望查询时间秒级或几分钟</li>
+<li>比Hive快10倍</li>
+<li>支持多数据源，如Hive、Kafka、MySQL、MonogoDB、Redis、JMX等，也可自己实现Connector</li>
+<li>Client Protocol: HTTP+JSON, support various languages(Python, Ruby, PHP, Node.js Java)</li>
+<li>支持JDBC&#x2F;ODBC连接</li>
+<li>ANSI SQL，支持窗口函数，join，聚合，复杂查询等</li>
+</ul>
+<h2 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h2><ul>
+<li>Master-Slave架构</li>
+<li>三个模块</li>
+<li>Coordinator、Discovery Service、Worker</li>
+<li>Connector</li>
+</ul>
+        
+          <p class="article-more-link">
+            <a href="/2017/12/05/presto/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-distributed-solutions-for-search-engines" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2017/01/16/distributed-solutions-for-search-engines/">说说常见搜索引擎的分布式解决方法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2017/01/16/distributed-solutions-for-search-engines/" class="article-date">
+  <time datetime="2017-01-16T08:36:49.000Z" itemprop="datePublished">2017-01-16</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/">搜索引擎</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>随着索引数据的增大以及请求的增多，分布式搜索是最好的一种解决方案，主要解决两个问题，其一是能让单台机器load所有索引数据到内存中，其二是请求延时大，解决请求latency问题。我之前为团队写了篇专利，内容是关于分布式搜索解决方案的，所以粗略的看了下大部分开源的搜索引擎是怎么实现分布式的，后面的文章我会简单说下常见的搜索引擎的分布式解决方案。</p>
+<p>首先我们先说下几个简单概念，分布式搜索都是M*N（横向切分数据，纵向切分流量）这个维度去解决问题的，虽然不同产品或场景概念不完全相同，读者可以简单认为一份完整的数据，被均分为M份，每一份被称为一个分配（Shard或者Partition），然后提供对每个Shard提供N份副本（Replica）。那么分布式的设计就围绕着以下问题：</p>
+<ul>
+<li>如何选择合适的分片(Shard)，副本(Replica)的数量</li>
+<li>如何做路由，即怎么在所有Shard里找到一份完整的数据（找到对应的机器列表）</li>
+<li>如何做负载均衡</li>
+<li>如果提高服务的可扩展性</li>
+<li>如何提高服务的服务能力（QPS），当索引和搜索并发量增大时，如何平滑解决</li>
+<li>如何更新索引，全量和增量索引的更新解决方法</li>
+<li>如果提高服务的稳定性，单台服务挂掉怎么不影响整体服务等等</li>
+</ul>
+<p>下面就说下常见的搜索引擎的分布式解决方案，因为开源的搜索产品基本上都没有在工作中用过，对代码细节并不是太了解，只是研究了下其原理，所以理解的会有些偏差，看官们如果发现错误直接指出即可。</p>
+        
+          <p class="article-more-link">
+            <a href="/2017/01/16/distributed-solutions-for-search-engines/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-minder" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/10/29/minder/">Minder：一个分布式启停进程服务</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2016/10/29/minder/" class="article-date">
+  <time datetime="2016-10-29T11:54:14.000Z" itemprop="datePublished">2016-10-29</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/">分布式系统</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="关于"><a href="#关于" class="headerlink" title="关于"></a>关于</h2><p>打算造个轮子，先备份下简单的设计手册吧。Minder是一个分布式启停进程服务，主要用于以下目的。</p>
+<ul>
+<li>命令或远程RPC调用启动和停止进程</li>
+<li>当进程挂掉，可以拉起来进程</li>
+<li>获得机器对应的系统信息，如CPU，内存，硬盘等等</li>
+</ul>
+<h2 id="设计"><a href="#设计" class="headerlink" title="设计"></a>设计</h2><h3 id="方案一（不采用）"><a href="#方案一（不采用）" class="headerlink" title="方案一（不采用）"></a>方案一（不采用）</h3><p>分为Server和Client端</p>
+<h3 id="Server"><a href="#Server" class="headerlink" title="Server"></a>Server</h3><p>Server在每台机器上都需要安装，Server是个常驻进程，负责真正的启停进程，同时需要一个Check线程，用于判断进程状态，当程序挂掉以便重启进程，重启进程可以在配置里有个次数限制。</p>
+        
+          <p class="article-more-link">
+            <a href="/2016/10/29/minder/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-optimize-query-search-tree" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/10/12/optimize-query-search-tree/">一些常见的搜索查询树优化方法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2016/10/12/optimize-query-search-tree/" class="article-date">
+  <time datetime="2016-10-12T11:33:21.000Z" itemprop="datePublished">2016-10-12</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/">搜索引擎</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>搜索引擎服务收到一个Query后，一般引擎这边是这么搞得，解析语法，生成后缀表达式，即查询搜索树（Search Tree）。搜索查询树负责求交、求并和过滤。所以这个地方也是性能关键点。所以在解析语法后，一般要做查询搜索树优化，减少求交，求并和过滤操作的次数，以此来提高搜索服务的QPS和查询Latency。</p>
+<p>因为同事在负责新实时索引的性能优化，我正好负责将全量索引格式迁移到新实时索引上面，即实时索引的代码即支持全量索引也支持实时索引，减少运维和代码维护成本。我在查阅代码的同事，顺便与同事沟通了一些优化方法，进入全量索引代码里发现老的全量索引里已经有一些优化方法了，这些方法应该是市面上常见的方法，多数人也是应该知道的，这里记录下吧。主流优化操作主要包括以下四种：</p>
+<h3 id="全AND操作"><a href="#全AND操作" class="headerlink" title="全AND操作"></a>全AND操作</h3><p>如果父子节点都是AND，则可以合并，如（A &amp; B）&amp;  (C &amp; D)，优化后为 A &amp; B &amp; C &amp; D ，能提早发现交为空，并退出，如下图所示。</p>
+        
+          <p class="article-more-link">
+            <a href="/2016/10/12/optimize-query-search-tree/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-a-high-performace-and-thread-safe-cpp-log-lib" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/09/10/a-high-performace-and-thread-safe-cpp-log-lib/">dlog:高性能线程安全的C++日志库</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2016/09/10/a-high-performace-and-thread-safe-cpp-log-lib/" class="article-date">
+  <time datetime="2016-09-10T13:53:09.000Z" itemprop="datePublished">2016-09-10</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>打算闲暇时光写点靠谱的东西比如名字服务、KV存储等基础服务类软件，所以周末就先从封装一些基础库开始。上周末写了个C++日志库，支持多线程，性能也还不错，今天就做了下测试和修改了下bug。这里说下该库的使用方法，以及实现思路以及一些性能调优方法。欢迎交流和指教。</p>
+<h3 id="源码地址"><a href="#源码地址" class="headerlink" title="源码地址"></a>源码地址</h3><p><a href="https://github.com/armsword/dlog">https://github.com/armsword/dlog</a></p>
+<h3 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h3><p>执行build.sh，在上层目录里会生成build文件，测试的可执行文件在release&#x2F;bin目录下。</p>
+        
+          <p class="article-more-link">
+            <a href="/2016/09/10/a-high-performace-and-thread-safe-cpp-log-lib/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-earlybird" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/08/17/earlybird/">Earlybird:Twitter实时搜索引擎</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2016/08/17/earlybird/" class="article-date">
+  <time datetime="2016-08-16T16:49:46.000Z" itemprop="datePublished">2016-08-17</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/">搜索引擎</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>简单说下，2011年左右的Paper，Paper里说Twitter的实时索引和检索系统叫做Earlybird，Paper中主要讲了2件事，第一个就是支持Twitter的实时索引的倒排索引结构是怎么样的，第二个就是利用Java并发模型，处理并发读写。</p>
+<h4 id="该引擎功能"><a href="#该引擎功能" class="headerlink" title="该引擎功能"></a>该引擎功能</h4><ul>
+<li>低延时、高吞吐能力；</li>
+<li>能处理突发峰值（Weibo的特性）；</li>
+<li>突出时效性，时间越近，排名应该越靠前；</li>
+<li>该实时引擎支持AND、OR、NOT以及短语查询，实时性大约10S，查询latency 50ms；</li>
+</ul>
+<h4 id="该实时引擎，基于Lucene，使用Java开发，理由是"><a href="#该实时引擎，基于Lucene，使用Java开发，理由是" class="headerlink" title="该实时引擎，基于Lucene，使用Java开发，理由是"></a>该实时引擎，基于Lucene，使用Java开发，理由是</h4><ul>
+<li>利用已存在的Lucene代码，并用来做全量索引；</li>
+<li>适用于Twitter以JVM为中心的开发环境；</li>
+<li>利用Java和JVM提供容易理解的并发模型；</li>
+</ul>
+<p>其实上面几条理由与阿里很多开发项目类似，但是阿里的搜索引擎是C++编写的，质量也是非常不错的，叫问天(HA3)。</p>
+        
+          <p class="article-more-link">
+            <a href="/2016/08/17/earlybird/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
+        <a class="extend prev" rel="prev" href="/page/4/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/6/">下一页 &gt;&gt;</a>
       </nav>
-    <% }
-    break;
-  default:
-    page.posts.each(function(post){ %>
-      <%- partial('article', {post: post, index: true}) %>
-    <% })
-    if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-} %></section>
+    </section>
     <footer id="footer">
   
   <div class="outer">
