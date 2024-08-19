@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>使用python编写简单网络爬虫技巧总结 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="使用python写过几个小玩具，基本上都与爬虫、Web相关的，自己也积累了下经验，也看过很多文章，一直想总结下，可惜现在要忙于找工作，实验室活也比较多，也就落下了。感觉如果时间长不记录，也就懒散了，并且许多东西我写完过个两天，我自己都记不住当时怎么想的了。 0、HTTP协议 基本上常见的Web开发里，Web内容都是通过HTTP协议进行传输的（虽然咱不懂Web开发，但是基本的计算机网络知识还是了解的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用python编写简单网络爬虫技巧总结">
+<meta property="og:url" content="http://armsword.com/2014/03/31/python-in-crawler/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="使用python写过几个小玩具，基本上都与爬虫、Web相关的，自己也积累了下经验，也看过很多文章，一直想总结下，可惜现在要忙于找工作，实验室活也比较多，也就落下了。感觉如果时间长不记录，也就懒散了，并且许多东西我写完过个两天，我自己都记不住当时怎么想的了。 0、HTTP协议 基本上常见的Web开发里，Web内容都是通过HTTP协议进行传输的（虽然咱不懂Web开发，但是基本的计算机网络知识还是了解的">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2014-03-31T10:53:39.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.284Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-python-in-crawler" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      使用python编写简单网络爬虫技巧总结
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/03/31/python-in-crawler/" class="article-date">
+  <time datetime="2014-03-31T10:53:39.000Z" itemprop="datePublished">2014-03-31</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/ML-NLP/">ML/NLP</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>使用python写过几个小玩具，基本上都与爬虫、Web相关的，自己也积累了下经验，也看过很多文章，一直想总结下，可惜现在要忙于找工作，实验室活也比较多，也就落下了。感觉如果时间长不记录，也就懒散了，并且许多东西我写完过个两天，我自己都记不住当时怎么想的了。</p>
+<p>0、HTTP协议</p>
+<p>基本上常见的Web开发里，Web内容都是通过HTTP协议进行传输的（虽然咱不懂Web开发，但是基本的计算机网络知识还是了解的），通过TCP连接服务器的80端口，爬虫其实质就是通过模拟浏览器发送HTTP请求，至于HTTP请求相关知识，点击<a href="http://zh.wikipedia.org/wiki/%E8%B6%85%E6%96%87%E6%9C%AC%E4%BC%A0%E8%BE%93%E5%8D%8F%E8%AE%AE">这里</a>。</p>
+<figure class="highlight oxygene"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">HTTP通常通过创建到服务器<span class="number">80</span>端口的TCP连接进行通信</span><br><span class="line">HTTP协议的内容包括请求方式（<span class="keyword">method</span>）, <span class="title function_">url</span>，<span class="title function_">header</span>，<span class="title function_">body</span>，通常以纯文本方式发送</span><br><span class="line"><span class="title function_">HTTP</span>返回内容包括状态码，<span class="title function_">header</span>，<span class="title function_">body</span>，通常以纯文本方式返回</span><br><span class="line"><span class="title function_">header</span>以及<span class="title function_">body</span>间以<span class="title function_">CRLF</span><span class="params">(\r\n)</span>分割</span><br></pre></td></tr></table></figure>
+<p>1、最基础的抓取网站内容</p>
+<p>使用python编写一个网络爬虫是非常简单的，如下例所示：</p>
+<figure class="highlight gradle"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> urllib2</span><br><span class="line">content = urllib2.urlopen(<span class="string">&#x27;http://armsword.com&#x27;</span>).<span class="keyword">read</span>()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<span id="more"></span>
+
+<p>但是实际工作中，这样肯定是不行的，你会遇到各种各样的问题，如下：</p>
+<ul>
+<li>网络出现错误，任何错误都可能。例如机器宕了，网线断了，域名出错了，网络超时了，页面没有了，网站跳转了，服务被禁了，主机负载不够了…</li>
+<li>服务器加上了限制，只让常见浏览器访问</li>
+<li>需要登录才能抓取数据</li>
+<li>IP被封掉或者IP访问次数受到限制</li>
+<li>服务器加上了防盗链的限制</li>
+<li>某些网站不管你HTTP请求里有没有Accept-Encoding头部，也不管你头部具体内容是什么，反正总给你发gzip后的内容</li>
+<li>URL链接千奇百怪，带汉字的也罢了，有的甚至还有回车换行</li>
+<li>某些网站HTTP头部里有一个Content-Type，网页里有好几个Content-Type，更过分的是，各个Content-Type还不一样，最过分的是，这些Content-Type可能都不是正文里使用的Content-Type，从而导致乱码</li>
+<li>需要抓取的数据很多，怎么提高抓取效率</li>
+<li>网站内容通过AJAX请求加载的</li>
+<li>需要验证码识别<br>至于怎么解决上述问题，我们一一道来。</li>
+</ul>
+<p>2、网络或网站出现错误等处理</p>
+<p>之前我搞过百度音乐的爬虫，因为当时百度音乐有个bug，就是可以任何人都下载百度音乐的无损、高品质音乐，我就写了个爬虫，开了几十个进程抓取下载地址（抓包解析JSON串数据）存储到数据库里，虽然百度无ip访问限制这些麻烦事，但是程序无任何错误处理的情况下，依然出现各自异常错误，所以我们只需要捕捉异常，处理异常就可以了。我们可以根据urlopen的返回值，读取它的HTTP状态码。除此之外，我们在urlopen的时候，也需要设置timeout参数，以保证处理好超时。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> urllib2</span><br><span class="line"><span class="keyword">import</span> socket</span><br><span class="line"></span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    f = urllib2.urlopen(<span class="string">&#x27;http://armsword&#x27;</span>, timeout = <span class="number">10</span>)</span><br><span class="line">    code = f.getcode()</span><br><span class="line">    <span class="keyword">if</span> code &lt; <span class="number">200</span> <span class="keyword">or</span> code &gt;= <span class="number">300</span>:</span><br><span class="line">    <span class="comment">#你自己的HTTP错误处理</span></span><br><span class="line">    <span class="keyword">except</span> Exception, e:</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">isinstance</span>(e, urllib2.HTTPError):</span><br><span class="line">            <span class="built_in">print</span> <span class="string">&#x27;http error: &#123;0&#125;&#x27;</span>.<span class="built_in">format</span>(e.code)</span><br><span class="line">        <span class="keyword">elif</span> <span class="built_in">isinstance</span>(e, urllib2.URLError) <span class="keyword">and</span> <span class="built_in">isinstance</span>(e.reason, socket.timeout):</span><br><span class="line">            <span class="built_in">print</span> <span class="string">&#x27;url error: socket timeout &#123;0&#125;&#x27;</span>.<span class="built_in">format</span>(e.__str__())</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="built_in">print</span> <span class="string">&#x27;error: &#x27;</span> + e.__str__()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>3、服务器做了限制</p>
+<p>3.1、防盗连限制</p>
+<p>某些站点有所谓的反盗链设置，其实说穿了很简单，就是检查你发送请求的header里面，referer站点是不是他自己，我们只要把headers的referer改成该网站即可，以V2EX的领取每日奖励地址为例：</p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">header</span> = &#123;<span class="string">&#x27;Referer&#x27;</span>:<span class="string">&#x27;http://www.v2ex.com/signin&#x27;</span>&#125;</span><br><span class="line"><span class="attr">req</span> = urllib2.Request(<span class="string">&#x27;http://www.v2ex.com&#x27;</span>,headers = header)</span><br><span class="line"><span class="attr">response</span> = urllib2.urlopen(url = req,timeout = <span class="number">10</span>).read</span><br><span class="line"><span class="comment">#response = urllib2.urlopen(req)).read()</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>3.2、限制浏览器登录，需伪装成浏览器</p>
+<p>某些网站做了限制，进制爬虫的访问，此时我们可以更改HTTP的header，与3.1相似：</p>
+<figure class="highlight sas"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">header = &#123;<span class="variable">&amp;quot</span>;User-Agent<span class="variable">&amp;quot</span>;:<span class="variable">&amp;quot</span>;Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36</span><br><span class="line">(KHTML, <span class="keyword">like</span> Gecko) Ubuntu Chromium/31.0.1650.63 Chrome/31.0.1650.63 Safari/537.36<span class="variable">&amp;quot</span>;&#125;</span><br><span class="line">req = urllib2.Request(url,headers=header)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>3.3、IP访问次数受到限制</p>
+<p>如果IP被封掉、或者访问次数受到限制，使用代理服务器比较有用，代理IP可以自己抓取一些代理网站的数据：</p>
+<figure class="highlight roboconf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> urllib2</span><br><span class="line">proxy_ip = urllib2.ProxyHandler(&#123;&#x27;<span class="attribute">http&#x27;</span>:&#x27;http://XX<span class="variable">.XX</span><span class="variable">.XX</span><span class="variable">.XX</span>:XXXX&#x27;&#125;) #XX为代理IP和端口</span><br><span class="line">opener = urllib2<span class="variable">.build_opener</span>(proxy_ip, urllib2<span class="variable">.HTTPHandler</span>)</span><br><span class="line">urllib2<span class="variable">.install_opener</span>(opener)</span><br><span class="line">content = urllib2<span class="variable">.urlopen</span>(&#x27;http://XXXX<span class="variable">.com</span>&#x27;)<span class="variable">.read</span>()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>4、需要登录才能抓取数据</p>
+<p>4.1、表单的处理</p>
+<p>抓包，Chrome或者Firefox+Httpfox浏览器插件就能办到，查看POST数据，模拟表单就可以了，这里不再细说，这里主要注意，在GET&#x2F;POST一些数据的时候，需要对GET&#x2F;POST的数据做些编码，即使用urlencode()，我们以北邮校园网关登录为例：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">postdata = &#123;</span><br><span class="line">    <span class="string">&#x27;DDDDD&#x27;</span>: <span class="built_in">uname</span>, <span class="comment">#用户名</span></span><br><span class="line">    <span class="string">&#x27;upass&#x27;</span>: u_pass, <span class="comment">#密码</span></span><br><span class="line">    <span class="string">&#x27;R1&#x27;</span>: 0, <span class="comment">#其他参数</span></span><br><span class="line">    <span class="string">&#x27;R2&#x27;</span>: 1,</span><br><span class="line">    <span class="string">&#x27;para&#x27;</span>: 00,</span><br><span class="line">    <span class="string">&#x27;0MKKey&#x27;</span>: 123456</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">en_url = urllib.urlencode(postdata)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>4.2、Cookie处理</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#获取一个cookie对象</span></span><br><span class="line">cookie = cookielib.CookieJar()</span><br><span class="line"><span class="comment">#构建cookie处理器</span></span><br><span class="line">cookie_p = urllib2.HTTPCookieProcessor(cookie)</span><br><span class="line"><span class="comment">#装载cookie</span></span><br><span class="line">opener = urllib2.build_opener(cookie_p)</span><br><span class="line"><span class="comment">#注意此处后面的install_opener(opener),安装不同的opener对象作为urlopen() 使用的全局URL opener</span></span><br><span class="line">urllib2.install_opener(opener)</span><br><span class="line">content = urllib2.urlopen(&#x27;http://armsword.com&#x27;).read()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>如果同时需要代理和Cookie，这样就可以：</p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">opener</span> = urllib2.build_opener(proxy_ip, cookie_p, urllib2.HTTPHandler)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>如果上面未使用install_opener(opener)，则使用：</p>
+<figure class="highlight abnf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">response</span> <span class="operator">=</span> opener.open(url).read()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>以V2EX每日签到为例，把上面的流程走一遍：</p>
+<figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#全局变量装载Cookie省略</span></span><br><span class="line">def login():</span><br><span class="line">    <span class="string">&#x27;&#x27;&#x27;</span></span><br><span class="line"><span class="string">    once值每次登录都不一样，在页面上可以看到</span></span><br><span class="line"><span class="string">    也必需有http header</span></span><br><span class="line"><span class="string">    &#x27;&#x27;&#x27;</span></span><br><span class="line">    req = urllib2.Request(url_login)</span><br><span class="line">    once = get_info(req,<span class="string">&#x27;name&#x27;</span>,<span class="string">&#x27;once&#x27;</span>)[<span class="string">&#x27;value&#x27;</span>] <span class="comment">#省略</span></span><br><span class="line">    postdata = &#123;</span><br><span class="line">        <span class="string">&#x27;u&#x27;</span>:username,</span><br><span class="line">        <span class="string">&#x27;p&#x27;</span>:password,</span><br><span class="line">        <span class="string">&#x27;once&#x27;</span>:once,</span><br><span class="line">        <span class="string">&#x27;next&#x27;</span>:<span class="string">&quot;/&quot;</span></span><br><span class="line"> &#125;</span><br><span class="line"></span><br><span class="line">header = &#123;<span class="string">&#x27;Host&#x27;</span>:<span class="string">&#x27;www.v2ex.com&#x27;</span>,<span class="string">&#x27;Origin&#x27;</span>:<span class="string">&#x27;http://www.v2ex.com&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;Referer&#x27;</span>:<span class="string">&#x27;http://www.v2ex.com/signin&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;User-Agent&#x27;</span>:&amp;quot;Mozilla<span class="regexp">/5.0 (X11; Linux i686) AppleWebKit/</span><span class="number">537.36</span></span><br><span class="line">    (KHTML, like Gecko) Ubuntu Chromium<span class="regexp">/32.0.1700.107 Chrome/</span><span class="number">32.0</span>.<span class="number">1700.107</span> Safari/<span class="number">537.36</span>&amp;quot;&#125;</span><br><span class="line"></span><br><span class="line">data = urllib.urlencode(postdata)</span><br><span class="line">req = urllib2.Request(url_login,data,header)</span><br><span class="line">response = opener.open(req)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>5、gzip&#x2F;deflate支持</p>
+<p>某些网站不管你请求头带不带Accept-Encoding:gzip，它返回的都是gzip压缩的内容，urlopen不会处理gzip压缩的内容，所以得到的就是乱码，以下为解决方法：</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">f = urllib2<span class="selector-class">.urlopen</span>(url)</span><br><span class="line">headers = f<span class="selector-class">.info</span>()</span><br><span class="line">rawdata = f<span class="selector-class">.read</span>()</span><br><span class="line"><span class="keyword">if</span> (<span class="string">&#x27;Content-Encoding&#x27;</span> <span class="keyword">in</span> headers and headers<span class="selector-attr">[<span class="string">&#x27;Content-Encoding&#x27;</span>]</span>) or \</span><br><span class="line">    (<span class="string">&#x27;content-encoding&#x27;</span> <span class="keyword">in</span> headers and headers<span class="selector-attr">[<span class="string">&#x27;content-encoding&#x27;</span>]</span>):</span><br><span class="line">    import gzip</span><br><span class="line">    import StringIO</span><br><span class="line">    data = StringIO<span class="selector-class">.StringIO</span>(rawdata)</span><br><span class="line">    gz = gzip<span class="selector-class">.GzipFile</span>(fileobj=data)</span><br><span class="line">    rawdata = gz<span class="selector-class">.read</span>()</span><br><span class="line">    gz<span class="selector-class">.close</span>()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>6、URL编码和网页编码处理<br>如果URL里含有中文，要对相应的中文进行编码，可以使用urllib.quote(‘要编码的字符串’)，如下所示：</p>
+<figure class="highlight livecodeserver"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">http</span>://www.google.com/<span class="comment">#newwindow=1&amp;amp;q=你好</span></span><br><span class="line">query = urllib.<span class="literal">quote</span>(<span class="string">&#x27;你好&#x27;</span>)</span><br><span class="line">url = <span class="string">&#x27;http://www.google.com/#newwindow=1&amp;amp;q=&#x27;</span>+query</span><br><span class="line">response = urllib.urlopen(url).<span class="built_in">read</span>()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>至于处理网页编码，按照一般浏览器的处理流程，判断网页的编码首先是根据HTTP服务器发过来的HTTP响应头部中Content-Type字段，例如text&#x2F;html; charset&#x3D;utf-8就表示这是一个HTML网页，使用的是utf8编码。如果HTTP头部中没有，或者网页内容的head区中有charset属性或者其http-equiv属性为Content-Type的meta元素，如果有charset属性，则直接读取这个属性，如果是后者，则读取这个元素的content属性。但是实际情况是许多网页不按照规矩出牌，首先，HTTP响应里不一定有Content-Type头部，其次某些网页里可能没有Content-Type或者有多个Content-Type(例如百度搜索的缓存页面)。所以，我的经验基本是自己多猜测几次吧。其实GBK、UTF-8占了绝大部分，使用xx.decode(‘gbk’,’ignore’).encode(‘utf-8’) （或相反）试试，其中ignore是指忽略非法字符。</p>
+<p>7、AJAX</p>
+<p>AJAX 是一种用于创建快速动态网页的技术。<br>通过在后台与服务器进行少量数据交换，AJAX 可以使网页实现异步更新。这意味着可以在不重新加载整个网页的情况下，对网页的某部分进行更新。<br>传统的网页（不使用 AJAX）如果需要更新内容，必需重载整个网页面。</p>
+<p>AJAX依然是HTTP请求，只是来自页面发起的另一个HTTP请求。我之前做百度音乐的时候，在chrome下的network选项分析每一个选项，找到对应的ajax数据，分析json，在正则、查找之类的。</p>
+<p>当然，也可以通过selenium、phantomjs、mechanize等模拟浏览器引擎构建一个真实的浏览器执行JS、渲染页面（在写这篇文章时，我还没用到过这些），这应该算是终极大招了吧。</p>
+<p>8、效率</p>
+<p>目前使用过多线程、多进程，多进程注意下僵尸进程。</p>
+<p>异步：用twisted进行异步I&#x2F;O抓取，tornado（如果拿到实习offer后，我可能会抽出几天时间学习这个，我感觉我应该学习下web编程，纠结了下flask还是tornado，其实无论哪个一周完全可以入门了，python你懂的。）</p>
+<p>9、验证码</p>
+<p>图像识别方面的知识，好吧，等我学会后再写吧。。。</p>
+<p>根据我的经验，网络爬虫里网络带宽是主要瓶颈，上文只说了抓取，其实网页抽取依然有很多知识要做的，我现在会的都是些皮毛，要学的还很多，等拿到dream 公司的实习offer后，有空继续折腾下，现在主要精力是弥补自己的一些知识缺点和面试长考的问题。</p>
+<p>参考链接：</p>
+<p><a href="http://blog.binux.me/2013/09/howto-crawl-web/">http://blog.binux.me/2013/09/howto-crawl-web/</a></p>
+<p><a href="http://blog.raphaelzhang.com/2012/03/issues-in-python-crawler/">http://blog.raphaelzhang.com/2012/03/issues-in-python-crawler/</a></p>
+<p><a href="http://yxmhero1989.blog.163.com/blog/static/112157956201311821444664/">http://yxmhero1989.blog.163.com/blog/static/112157956201311821444664/</a></p>
+
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2014/04/09/letter-combinations-of-a-phone-number/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          Letter Combinations of a Phone Number
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2014/03/07/linux-io-multiplexing/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Linux IO复用—select poll 和 epoll&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

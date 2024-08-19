@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>滴滴基于 Clickhouse 构建新一代日志存储系统 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="背景此前，滴滴日志主要存储于 ES 中。然而，ES 的分词、倒排和正排等功能导致其写入吞吐量存在明显瓶颈。此外，ES 需要存储原始文本、倒排索引和正排索引，这增加了存储成本，并对内存有较高要求。随着滴滴数据量的不断增长，ES 的性能已无法满足当前需求。 在追求降低成本和提高效率的背景下，我们开始寻求新的存储解决方案。经过研究，我们决定采用 CK 作为滴滴内部日志的存储支持。据了解，京东、携程、B站">
+<meta property="og:type" content="article">
+<meta property="og:title" content="滴滴基于 Clickhouse 构建新一代日志存储系统">
+<meta property="og:url" content="http://armsword.com/2024/03/05/Didi-builds-a-new-generation-of-log-storage-system-based-on-Clickhouse/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="背景此前，滴滴日志主要存储于 ES 中。然而，ES 的分词、倒排和正排等功能导致其写入吞吐量存在明显瓶颈。此外，ES 需要存储原始文本、倒排索引和正排索引，这增加了存储成本，并对内存有较高要求。随着滴滴数据量的不断增长，ES 的性能已无法满足当前需求。 在追求降低成本和提高效率的背景下，我们开始寻求新的存储解决方案。经过研究，我们决定采用 CK 作为滴滴内部日志的存储支持。据了解，京东、携程、B站">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2024/03/arch.png">
+<meta property="og:image" content="http://armsword.com/img/2024/03/cpu.png">
+<meta property="og:image" content="http://armsword.com/img/2024/03/grafana.png">
+<meta property="og:image" content="http://armsword.com/img/2024/03/ck.png">
+<meta property="article:published_time" content="2024-03-05T14:12:22.000Z">
+<meta property="article:modified_time" content="2024-03-05T14:27:26.000Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2024/03/arch.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-Didi-builds-a-new-generation-of-log-storage-system-based-on-Clickhouse" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      滴滴基于 Clickhouse 构建新一代日志存储系统
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2024/03/05/Didi-builds-a-new-generation-of-log-storage-system-based-on-Clickhouse/" class="article-date">
+  <time datetime="2024-03-05T14:12:22.000Z" itemprop="datePublished">2024-03-05</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>此前，滴滴日志主要存储于 ES 中。然而，ES 的分词、倒排和正排等功能导致其写入吞吐量存在明显瓶颈。此外，ES 需要存储原始文本、倒排索引和正排索引，这增加了存储成本，并对内存有较高要求。随着滴滴数据量的不断增长，ES 的性能已无法满足当前需求。</p>
+<p>在追求降低成本和提高效率的背景下，我们开始寻求新的存储解决方案。经过研究，我们决定采用 CK 作为滴滴内部日志的存储支持。据了解，京东、携程、B站等多家公司在业界的实践中也在尝试用 CK 构建日志存储系统。</p>
+<h2 id="挑战"><a href="#挑战" class="headerlink" title="挑战"></a>挑战</h2><p>面临的挑战主要来自下面三个方面：</p>
+<ul>
+<li>数据量大：每天会产生 PB 级别的日志数据，存储系统需要稳定地支撑 PB 级数据的实时写入和存储。</li>
+<li>查询场景多：在一个时间段内的等值查询、模糊查询及排序场景等，查询需要扫描的数据量较大且查询都需要在秒级返回。</li>
+<li>QPS 高：在 PB 级的数据量下，对 Trace 查询同时要满足高 QPS 的要求。</li>
+</ul>
+<h2 id="为什么选-Clickhouse"><a href="#为什么选-Clickhouse" class="headerlink" title="为什么选 Clickhouse"></a>为什么选 Clickhouse</h2><ul>
+<li>大数据量：CK 的分布式架构支持动态扩缩容，可支撑海量数据存储。</li>
+<li>写入性能：CK 的 MergeTree 表的写入速度在200MB&#x2F;s，具有很高吞吐，写入基本没有瓶颈。</li>
+<li>查询性能：CK 支持分区索引和排序索引，具有很高的检索效率，单机每秒可扫描数百万行的数据。</li>
+<li>存储成本：CK 基于列式存储，数据压缩比很高，同时基于HDFS做冷热分离，能够进一步地降低存储成本。</li>
+</ul>
+<h2 id="架构升级"><a href="#架构升级" class="headerlink" title="架构升级"></a>架构升级</h2><img src="/img/2024/03/arch.png" width = "100%" />
+
+<span id="more"></span>
+<p>旧的存储架构下需要将日志数据双写到 ES 和 HDFS 两个存储上，由ES提供实时的查询，Spark 来分析 HDFS 上的数据。这种设计要求用户维护两条独立的写入链路，导致资源消耗翻倍，且操作复杂性增加。</p>
+<p>在新升级的存储架构中，CK 取代了 ES 的角色，分别设有 Log 集群和 Trace 集群。Log 集群专门存储明细日志数据，而 Trace 集群则专注于存储 trace 数据。这两个集群在物理上相互隔离，有效避免了 log 的高消耗查询（如 like 查询）对 trace 的高 QPS 查询产生干扰。此外，独立的 Trace 集群有助于防止trace数据过度分散。</p>
+<p>日志数据通过 Flink 直接写入 Log 集群，并通过 Trace 物化视图从 log 中提取 trace 数据，然后利用分布式表的异步写入功能同步至 Trace 集群。这一过程不仅实现了 log 与 trace 数据的分离，还允许 Log 集群的后台线程定期将冷数据同步到 HDFS 中。</p>
+<p>新架构仅涉及单一写入链路，所有关于 log 数据冷存储至 HDFS 以及 log 与 trace 分离的处理均由 CK 完成，从而为用户屏蔽了底层细节，简化了操作流程。</p>
+<p>考虑到成本和日志数据特点，Log 集群和 Trace 集群均采用单副本部署模式。其中，最大的 Log 集群有300多个节点，Trace 集群有40多个节点。</p>
+<h2 id="存储设计"><a href="#存储设计" class="headerlink" title="存储设计"></a>存储设计</h2><p>存储设计是提升性能最关键的部分，只有经过优化的存储设计才能充分发挥 CK 强大的检索性能。借鉴时序数据库的理念，我们将 logTime 调整为以小时为单位进行取整，并在存储过程中按照小时顺序排列数据。这样，在进行其他排序键查询时，可以快速定位到所需的数据块。例如，查询一个小时内数据时，最多只需读取两个索引块，这对于处理海量日志检索至关重要。</p>
+<p>以下是我们根据日志查询特性和 CK 执行逻辑制定的存储设计方案，包括 Log 表、Trace 表和 Trace 索引表：</p>
+<h3 id="Log-表"><a href="#Log-表" class="headerlink" title="Log 表"></a>Log 表</h3><p>Log 表旨在为明细日志提供存储和查询服务，它位于 Log 集群中，并由 Flink 直接从 Pulsar 消费数据后写入。每个日志服务都对应一张 Log 表，因此整个 Log 集群可能包含数千张 Log 表。其中，最大的表每天可能会生成 PB 级别的数据。鉴于 Log 集群面临表数量众多、单表数据量大以及需要进行冷热数据分离等挑战，以下是针对 Log 表的设计思路：</p>
+<figure class="highlight n1ql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> TABLE ck_bamai_stream.cn_bmauto_local</span><br><span class="line">(</span><br><span class="line">    <span class="symbol">`logTime`</span> Int64 DEFAULT <span class="number">0</span>, -- <span class="built_in">log</span>打印的时间</span><br><span class="line">    <span class="symbol">`logTimeHour`</span> DateTime <span class="keyword">MATERIALIZED</span> toStartOfHour(toDateTime(logTime / <span class="number">1000</span>)), -- 将logTime向小时取整</span><br><span class="line">    <span class="symbol">`odinLeaf`</span> <span class="keyword">String</span> DEFAULT <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">    <span class="symbol">`uri`</span> LowCardinality(<span class="keyword">String</span>) DEFAULT <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">    <span class="symbol">`traceid`</span> <span class="keyword">String</span> DEFAULT <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">    <span class="symbol">`cspanid`</span> <span class="keyword">String</span> DEFAULT <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">    <span class="symbol">`dltag`</span> <span class="keyword">String</span> DEFAULT <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">    <span class="symbol">`spanid`</span> <span class="keyword">String</span> DEFAULT <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">    <span class="symbol">`message`</span> <span class="keyword">String</span> DEFAULT <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">    <span class="symbol">`otherColumn`</span> <span class="keyword">Map</span>&lt;<span class="keyword">String</span>,<span class="keyword">String</span>&gt;,</span><br><span class="line">    <span class="symbol">`_sys_insert_time`</span> DateTime <span class="keyword">MATERIALIZED</span> now()</span><br><span class="line">)</span><br><span class="line">ENGINE = MergeTree</span><br><span class="line"><span class="keyword">PARTITION</span> <span class="keyword">BY</span> toYYYYMMDD(logTimeHour)</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> (logTimeHour,odinLeaf,uri,traceid)</span><br><span class="line">TTL _sys_insert_time + toIntervalDay(<span class="number">7</span>),_sys_insert_time + toIntervalDay(<span class="number">3</span>) <span class="keyword">TO</span> VOLUME <span class="string">&#x27;hdfs&#x27;</span></span><br><span class="line">SETTINGS index_granularity = <span class="number">8192</span>,min_bytes_for_wide_part=<span class="number">31457280</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>分区键：根据查询特点，几乎所有的 sql 都只会查1小时的数据，但这里只能按天分区，小时分区导致 Part 过多及 HDFS 小文件过多的问题。</li>
+<li>排序键：为了快速定位到某一个小时的数据，基于 logTime 向小时取整物化了一个新的字段 logTimeHour，将 logTimeHour 作为第一排序键，这样就能将数据范围锁定在小时级别，由于大部分查询都会指定上 odinLeaf、uri、traceid，依据基数从小到大分别将其作为第二、三、四排序键，这样查询某个 traceid 的数据只需要读取少量的索引块，经过上述的设计所有的等值查询都能达到毫秒级。</li>
+<li>Map 列：引入了 Map 类型，实现动态的 Scheme，将不需要用来过滤的列统统放入 Map 中，这样能有效减少 Part 的文件数，避免 HDFS 上出现大量小文件。</li>
+</ul>
+<h3 id="Trace-表"><a href="#Trace-表" class="headerlink" title="Trace 表"></a>Trace 表</h3><p>Trace 表是用来提供 trace 相关的查询，这类查询对 QPS 要求很高，创建在 Trace 集群。数据来源于从 Log 表中提取的 trace 记录。Trace 表只会有一张，所有的 Log 表都会将 trace 记录提取到这张 Trace 表，实现的方式是 Log 表通过物化视图触发器跨集群将数据写到 Trace 表中。</p>
+<p>Trace 表的难点在于查询速度快且 QPS 高，以下是 Trace 表的设计思路：</p>
+<figure class="highlight n1ql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> TABLE ck_bamai_stream.trace_view</span><br><span class="line">(</span><br><span class="line">    <span class="symbol">`traceid`</span> <span class="keyword">String</span>,</span><br><span class="line">    <span class="symbol">`spanid`</span> <span class="keyword">String</span>,</span><br><span class="line">    <span class="symbol">`clientHost`</span> <span class="keyword">String</span>,</span><br><span class="line">    <span class="symbol">`logTimeHour`</span> DateTime,</span><br><span class="line">    <span class="symbol">`cspanid`</span> AggregateFunction(groupUniqArray, <span class="keyword">String</span>),</span><br><span class="line">    <span class="symbol">`appName`</span> SimpleAggregateFunction(<span class="keyword">any</span>, <span class="keyword">String</span>),</span><br><span class="line">    <span class="symbol">`logTimeMin`</span> SimpleAggregateFunction(<span class="built_in">min</span>, Int64),</span><br><span class="line">    <span class="symbol">`logTimeMax`</span> SimpleAggregateFunction(<span class="built_in">max</span>, Int64),</span><br><span class="line">    <span class="symbol">`dltag`</span> AggregateFunction(groupUniqArray, <span class="keyword">String</span>),</span><br><span class="line">    <span class="symbol">`uri`</span> AggregateFunction(groupUniqArray, <span class="keyword">String</span>),</span><br><span class="line">    <span class="symbol">`errno`</span> AggregateFunction(groupUniqArray, <span class="keyword">String</span>),</span><br><span class="line">    <span class="symbol">`odinLeaf`</span> SimpleAggregateFunction(<span class="keyword">any</span>, <span class="keyword">String</span>),</span><br><span class="line">    <span class="symbol">`extractLevel`</span> SimpleAggregateFunction(<span class="keyword">any</span>, <span class="keyword">String</span>)</span><br><span class="line">)</span><br><span class="line">ENGINE = AggregatingMergeTree</span><br><span class="line"><span class="keyword">PARTITION</span> <span class="keyword">BY</span> toYYYYMMDD(logTimeHour)</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> (logTimeHour, traceid, spanid, clientHost)</span><br><span class="line">TTL logTimeHour + toIntervalDay(<span class="number">7</span>)</span><br><span class="line">SETTINGS index_granularity = <span class="number">1024</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>AggregatingMergeTree：Trace 表采用了聚合表引擎，会按 traceid 进行聚合，能很大程度的聚合 trace 数据，压缩比在5:1，能极大地提升 Trace 表的检索速度。</li>
+<li>分区键和排序键：与 Log 的设计类似。</li>
+<li>index_granularity：这个参数是用来控制稀疏索引的粒度，默认是8192，减小这个参数是为了减少数据块中无效的数据扫描，加快 traceid 的检索速度。</li>
+</ul>
+<h3 id="Trace-索引表"><a href="#Trace-索引表" class="headerlink" title="Trace 索引表"></a>Trace 索引表</h3><p>Trace 索引表的主要作用是加快 order_id、driver_id、driver_phone 等字段查询 traceid 的速度。为此，我们给需要加速的字段创建了一个聚合物化视图，以提高查询速度。数据则是通过为 Log 表创建相应的物化视图触发器，将数据提取到 Trace 索引表中。</p>
+<p>以下是建立 Trace 索引表的语句：</p>
+<figure class="highlight n1ql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> TABLE orderid_traceid_index_view</span><br><span class="line">(</span><br><span class="line">    <span class="symbol">`order_id`</span> <span class="keyword">String</span>,</span><br><span class="line">    <span class="symbol">`traceid`</span> <span class="keyword">String</span>,</span><br><span class="line">    <span class="symbol">`logTimeHour`</span> DateTime</span><br><span class="line">)</span><br><span class="line">ENGINE = AggregatingMergeTree</span><br><span class="line"><span class="keyword">PARTITION</span> <span class="keyword">BY</span> logTimeHour</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> (order_id, traceid)</span><br><span class="line">TTL logTimeHour + toIntervalDay(<span class="number">7</span>)</span><br><span class="line">SETTINGS index_granularity = <span class="number">1024</span></span><br></pre></td></tr></table></figure>
+<p>存储设计的核心目标是提升查询性能。接下来，我将介绍从 ES 迁移至 CK 过程中，在这一架构下所面临的稳定性问题及其解决方法。</p>
+<h2 id="稳定性之路"><a href="#稳定性之路" class="headerlink" title="稳定性之路"></a>稳定性之路</h2><p>支撑日志场景对 CK 来说是非常大的挑战，面临庞大的写入流量及超大集群规模，经过一年的建设，我们能够稳定的支撑重点节假日的流量高峰，下面的篇幅主要是介绍了在支撑日志场景过程中，遇到的一些问题。</p>
+<h3 id="大集群小表数据碎片化问题"><a href="#大集群小表数据碎片化问题" class="headerlink" title="大集群小表数据碎片化问题"></a>大集群小表数据碎片化问题</h3><p>在 Log 集群中，90%的 Log 表流量低于10MB&#x2F;s。若将所有表的数据都写入数百个节点，会导致大量小表数据碎片化问题。这不仅影响查询性能，还会对整个集群性能产生负面影响，并为冷数据存储到 HDFS 带来大量小文件问题。</p>
+<p>为解决大规模集群带来的问题，我们根据表的流量大小动态分配写入节点。每个表分配的写入节点数量介于2到集群最大节点数之间，均匀分布在整个集群中。Flink 通过接口获取表的写入节点列表，并将数据写入相应的 CK 节点，有效解决了大规模集群数据分散的问题。</p>
+<h3 id="写入限流及写入性能提升"><a href="#写入限流及写入性能提升" class="headerlink" title="写入限流及写入性能提升"></a>写入限流及写入性能提升</h3><p>在滴滴日志场景中，晚高峰和节假日的流量往往会大幅增加。为避免高峰期流量过大导致集群崩溃，我们在 Flink 上实现了写入限流功能。该功能可动态调整每张表写入集群的流量大小。当流量超过集群上限时，我们可以迅速降低非关键表的写入流量，减轻集群压力，确保重保表的写入和查询不受影响。</p>
+<p>同时为了提升把脉的写入性能，我们基于 CK 原生 TCP 协议开发了 Native-connector。相比于 HTTP 协议，Native-connector 的网络开销更小。此外，我们还自定义了数据类型的序列化机制，使其比之前的 Parquet 类型更高效。启用 Native-connector 后，写入延迟率从之前的20%降至5%，整体写入性能提升了1.2倍。</p>
+<h2 id="HDFS-冷热分离的性能问题"><a href="#HDFS-冷热分离的性能问题" class="headerlink" title="HDFS 冷热分离的性能问题"></a>HDFS 冷热分离的性能问题</h2><p>用 HDFS 来存储冷数据，在使用的过程中出现以下问题：</p>
+<ul>
+<li>服务重启变得特别慢且 Sys cpu 被打满，原因是在服务重启的过程中需要并发的加载 HDFS 上 Part 的元数据，而 libhdfs3 库并发读 HDFS 的性能非常差，每当读到文件末尾都会抛出异常打印堆栈，产生了大量的系统调用。</li>
+<li>当写入历史分区的数据时，数据不会落盘，而是直接往 HDFS 上写，写入性能很差，并且直接写到 HDFS 的数据还需要拉回本地 merge，进一步降低了 merge 的性能。</li>
+<li>本地的 Part 路径和 HDFS 的路径是通过 uuid 来映射的，所有表的数据都是存储在 HDFS 的同一路径下，导致达到了 HDFS 目录文件数 100w 的限制。</li>
+<li>HDFS 上的 Part 文件路径映射关系是存储在本地的，如果出现节点故障，那么文件路径映射关系将会丢失，HDFS 上的数据丢失且无法被删除。</li>
+</ul>
+<p>为此我们对 HDFS 冷热分离功能进行了比较大的改造来解决上面的问题，解决 libhdfs3 库并发读 HDFS 的问题并在本地缓存 HDFS 的 Part 元数据文件，服务的启动速度由原来的1小时到1分钟。</p>
+<img src="/img/2024/03/cpu.png" width = "100%" />
+
+<p>同时禁止历史数据直接写 HDFS ，必须先写本地，merge 之后再上传到 HDFS ，最后对 HDFS 的存储路径进行改造。由原来数据只存储在一个目录下改为按 cluster&#x2F;shard&#x2F;database&#x2F;table&#x2F; 进行划分，并按表级别备份本地的路径映射关系到 HDFS。这样一来，当节点故障时，可以通过该备份恢复 HDFS 的数据。</p>
+<h2 id="收益"><a href="#收益" class="headerlink" title="收益"></a>收益</h2><p>在日志场景中，我们已经成功完成了从 ES 到 CK 的迁移。目前，CK 的日志集群规模已超过400个物理节点，写入峰值流量达到40+GB&#x2F;s，每日查询量约为1500万次，支持的 QPS 峰值约为200。相较于 ES，CK 的机器成本降低了30%。</p>
+<img src="/img/2024/03/grafana.png" width = "100%" />
+
+<p>查询速度相比 ES 提高了约4倍。下图展示了 bamailog 集群和 bamaitrace 集群的 P99 查询耗时情况，基本都在1秒以内。</p>
+<img src="/img/2024/03/ck.png" width = "100%" />
+
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>将日志从 ES 迁移至 CK 不仅可以显著降低存储成本，还能提供更快的查询体验。经过一年多的建设和优化，系统的稳定性和性能都有了显著提升。然而，在处理模糊查询时，集群的资源消耗仍然较大。未来，我们将继续探索二级索引、zstd 压缩以及存算分离等技术手段，以进一步提升日志检索性能。</p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8C%91%E6%88%98"><span class="toc-number">2.</span> <span class="toc-text">挑战</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%80%89-Clickhouse"><span class="toc-number">3.</span> <span class="toc-text">为什么选 Clickhouse</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9E%B6%E6%9E%84%E5%8D%87%E7%BA%A7"><span class="toc-number">4.</span> <span class="toc-text">架构升级</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AD%98%E5%82%A8%E8%AE%BE%E8%AE%A1"><span class="toc-number">5.</span> <span class="toc-text">存储设计</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Log-%E8%A1%A8"><span class="toc-number">5.1.</span> <span class="toc-text">Log 表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Trace-%E8%A1%A8"><span class="toc-number">5.2.</span> <span class="toc-text">Trace 表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Trace-%E7%B4%A2%E5%BC%95%E8%A1%A8"><span class="toc-number">5.3.</span> <span class="toc-text">Trace 索引表</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A8%B3%E5%AE%9A%E6%80%A7%E4%B9%8B%E8%B7%AF"><span class="toc-number">6.</span> <span class="toc-text">稳定性之路</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%A7%E9%9B%86%E7%BE%A4%E5%B0%8F%E8%A1%A8%E6%95%B0%E6%8D%AE%E7%A2%8E%E7%89%87%E5%8C%96%E9%97%AE%E9%A2%98"><span class="toc-number">6.1.</span> <span class="toc-text">大集群小表数据碎片化问题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%86%99%E5%85%A5%E9%99%90%E6%B5%81%E5%8F%8A%E5%86%99%E5%85%A5%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%87"><span class="toc-number">6.2.</span> <span class="toc-text">写入限流及写入性能提升</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#HDFS-%E5%86%B7%E7%83%AD%E5%88%86%E7%A6%BB%E7%9A%84%E6%80%A7%E8%83%BD%E9%97%AE%E9%A2%98"><span class="toc-number">7.</span> <span class="toc-text">HDFS 冷热分离的性能问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%94%B6%E7%9B%8A"><span class="toc-number">8.</span> <span class="toc-text">收益</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">9.</span> <span class="toc-text">总结</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2024/05/06/Reading-Notes-on-36-Practical-Lectures-on-Technical-Management/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          读《技术管理实战36讲》
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2024/01/17/my-experiences-in-leading-a-team/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">关于做好技术团队管理的几点心得&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

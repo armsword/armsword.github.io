@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Letter Combinations of a Phone Number - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="由于这个月还没写博客，找道题应付下吧，主要原因是自己现在太忙了，得准备找工作啊，唉，弱的惨不忍睹。好吧，不抱怨了，进入正题，LeetCode上面的一道题，题目描述为： Given a digit string, return all possible letter combinations that the number could represent. A mapping of digit to">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Letter Combinations of a Phone Number">
+<meta property="og:url" content="http://armsword.com/2014/04/09/letter-combinations-of-a-phone-number/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="由于这个月还没写博客，找道题应付下吧，主要原因是自己现在太忙了，得准备找工作啊，唉，弱的惨不忍睹。好吧，不抱怨了，进入正题，LeetCode上面的一道题，题目描述为： Given a digit string, return all possible letter combinations that the number could represent. A mapping of digit to">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2014/04/200px-Telephone-keypad2.svg_.png">
+<meta property="og:image" content="http://armsword.com/img/2014/04/Combo.jpg">
+<meta property="article:published_time" content="2014-04-09T08:54:14.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.279Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2014/04/200px-Telephone-keypad2.svg_.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-letter-combinations-of-a-phone-number" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Letter Combinations of a Phone Number
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/04/09/letter-combinations-of-a-phone-number/" class="article-date">
+  <time datetime="2014-04-09T08:54:14.000Z" itemprop="datePublished">2014-04-09</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">算法/数据结构</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>由于这个月还没写博客，找道题应付下吧，主要原因是自己现在太忙了，得准备找工作啊，唉，弱的惨不忍睹。好吧，不抱怨了，进入正题，<a href="http://oj.leetcode.com/problems/letter-combinations-of-a-phone-number/">LeetCode</a>上面的一道题，题目描述为：</p>
+<p>Given a digit string, return all possible letter combinations that the number could represent.</p>
+<p>A mapping of digit to letters (just like on the telephone buttons) is given below.</p>
+<p><img src="/img/2014/04/200px-Telephone-keypad2.svg_.png"></p>
+<pre>**Input:**Digit string "23"
+**Output:** ["ad", "ae", "af", "bd", "be", "bf", "cd", "ce", "cf"].
+**
+Note:**
+Although the above answer is in lexicographical order, your answer could be in any order you want.</pre>
+<p>其实就是组合问题，如下图所示：<br><img src="/img/2014/04/Combo.jpg"></p>
+<p>如图所示，遍历完 1，2，3，就把a,d (g,h,i)遍历完了，之后回溯到e，就是个DFS搞定。</p>
+<span id="more"></span>
+
+
+<figure class="highlight sas"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;iostream&gt;;</span><br><span class="line">#include &lt;vector&gt;;</span><br><span class="line">#include &lt;string&gt;;</span><br><span class="line"></span><br><span class="line">using namespace std;</span><br><span class="line">class Solution</span><br><span class="line">&#123;</span><br><span class="line">public:</span><br><span class="line">    vector<span class="variable">&amp;lt</span>;string<span class="variable">&amp;gt</span>; letterCombinations(string digits)</span><br><span class="line">    &#123;</span><br><span class="line">        int len = digits.size();</span><br><span class="line">        result.clear();</span><br><span class="line">        num[2] = <span class="variable">&amp;quot</span>;abc<span class="variable">&amp;quot</span>;;</span><br><span class="line">        num[3] = <span class="variable">&amp;quot</span>;def<span class="variable">&amp;quot</span>;;</span><br><span class="line">        num[4] = <span class="variable">&amp;quot</span>;ghi<span class="variable">&amp;quot</span>;;</span><br><span class="line">        num[5] = <span class="variable">&amp;quot</span>;jkl<span class="variable">&amp;quot</span>;;</span><br><span class="line">        num[6] = <span class="variable">&amp;quot</span>;mno<span class="variable">&amp;quot</span>;;</span><br><span class="line">        num[7] = <span class="variable">&amp;quot</span>;pqrs<span class="variable">&amp;quot</span>;;</span><br><span class="line">        num[8] = <span class="variable">&amp;quot</span>;tuv<span class="variable">&amp;quot</span>;;</span><br><span class="line">        num[9] = <span class="variable">&amp;quot</span>;wxyz<span class="variable">&amp;quot</span>;;</span><br><span class="line">        solve(digits,0,len);</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;  </span><br><span class="line"></span><br><span class="line">    void solve(string <span class="variable">&amp;amp</span>;digits,int i,int len)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span>(i == len)</span><br><span class="line">        &#123;</span><br><span class="line">            str[len] = <span class="string">&#x27;&amp;#92;&amp;#48;&#x27;</span>;</span><br><span class="line">            string temp = str;</span><br><span class="line">            result.push_back(temp);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        unsigned int j;</span><br><span class="line">        int <span class="keyword">index</span> = digits[i] - <span class="string">&#x27;0&#x27;</span>;</span><br><span class="line">        for(j = 0; j <span class="variable">&amp;lt</span>; num[<span class="keyword">index</span>].size(); j++)</span><br><span class="line">        &#123;</span><br><span class="line">            str[i] = num[<span class="keyword">index</span>][j];</span><br><span class="line">            solve(digits,i+1,len);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">private:</span><br><span class="line">    vector<span class="variable">&amp;lt</span>;string<span class="variable">&amp;gt</span>; result;</span><br><span class="line">    string num[10];</span><br><span class="line">    char str[1000];</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">int mai<span class="meta">n</span>()</span><br><span class="line">&#123;</span><br><span class="line">    Solution solution;</span><br><span class="line">    string p;</span><br><span class="line">    p = <span class="variable">&amp;quot</span>;23<span class="variable">&amp;quot</span>;;</span><br><span class="line">    vector<span class="variable">&amp;lt</span>;string<span class="variable">&amp;gt</span>; p1;</span><br><span class="line">    p1 = solution.letterCombinations(p);</span><br><span class="line">    vector<span class="variable">&amp;lt</span>;string<span class="variable">&amp;gt</span>;::iterator iter;</span><br><span class="line"></span><br><span class="line">    for(iter=p1.begi<span class="meta">n</span>();iter != p1.<span class="keyword">end</span>();iter++)</span><br><span class="line">    &#123;</span><br><span class="line">        cout<span class="variable">&amp;lt</span>;<span class="variable">&amp;lt</span>;<span class="comment">*iter&amp;lt;</span><span class="variable">&amp;lt</span>;endl;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> 0;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>最近开始集中精力做OJ了，唯一的感觉就是自己好弱，算法准备的有点晚了，有点找不上工作的节奏。算法也不是一朝一夕就能提高的，自己好好努力吧，即使实习拿不到dream offer，到正式找工作（9月份）还有时间努力，集中精力弥补自己弱点就可以了。</p>
+
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2014/04/20/redis-dict-analyze/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          Redis里dict源码剖析
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2014/03/31/python-in-crawler/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">使用python编写简单网络爬虫技巧总结&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

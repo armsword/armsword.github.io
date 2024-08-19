@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Presto集群内存不足时保护机制 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="为了防止集群里节点OOM，Presto有个循环线程来获取当前集群节点和集群整体内存占用情况。通过这篇文章：Presto内存管理相关参数设置  我们知道Presto里分为RESERVED_POOL和GENERAL_POOL。 判断节点是否阻塞（内存不足）如果使用RESERVED_POOL（意思是说最大SQL使用这个POOL），那判断集群内存超出内存的方法就是： 1、RESERVED_POOL内存被S">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Presto集群内存不足时保护机制">
+<meta property="og:url" content="http://armsword.com/2020/02/18/presto-memory-kill-policy/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="为了防止集群里节点OOM，Presto有个循环线程来获取当前集群节点和集群整体内存占用情况。通过这篇文章：Presto内存管理相关参数设置  我们知道Presto里分为RESERVED_POOL和GENERAL_POOL。 判断节点是否阻塞（内存不足）如果使用RESERVED_POOL（意思是说最大SQL使用这个POOL），那判断集群内存超出内存的方法就是： 1、RESERVED_POOL内存被S">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-02-18T14:28:21.000Z">
+<meta property="article:modified_time" content="2023-12-26T11:37:33.000Z">
+<meta property="article:author" content="armsword">
+<meta property="article:tag" content="Presto">
+<meta name="twitter:card" content="summary">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-presto-memory-kill-policy" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Presto集群内存不足时保护机制
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2020/02/18/presto-memory-kill-policy/" class="article-date">
+  <time datetime="2020-02-18T14:28:21.000Z" itemprop="datePublished">2020-02-18</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>为了防止集群里节点OOM，Presto有个循环线程来获取当前集群节点和集群整体内存占用情况。通过这篇文章：<a href="http://armsword.com/2019/11/13/the-configuration-settings-of-presto-memory-management/">Presto内存管理相关参数设置</a>  我们知道Presto里分为RESERVED_POOL和GENERAL_POOL。</p>
+<h2 id="判断节点是否阻塞（内存不足）"><a href="#判断节点是否阻塞（内存不足）" class="headerlink" title="判断节点是否阻塞（内存不足）"></a>判断节点是否阻塞（内存不足）</h2><p>如果使用RESERVED_POOL（意思是说最大SQL使用这个POOL），那判断集群内存超出内存的方法就是：</p>
+<p>1、RESERVED_POOL内存被SQL占用了</p>
+<p>2、GENERAL_POOL里有被阻塞的Node</p>
+<p>因为RESERVED_POOL会导致内存浪费，我们集群配置参数没有使用这个POOL，只使用了GENERAL_POOL，所以只需要查看下GENERAL_POOL是怎么判断节点是否Block住的。</p>
+<figure class="highlight less"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">if</span> (poolInfo.<span class="built_in">getFreeBytes</span>() + poolInfo.<span class="built_in">getReservedRevocableBytes</span>() &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="selector-tag">blockedNodes</span>++;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>getReservedRevocableBytes 这个是用于获取spill到磁盘的内存，目前我们集群是不允许内存Spill到磁盘的，因为Presto面向的是ad-hoc场景，要求是快，如果说需要spill到磁盘，那spark是一个更好的选择，且早期版本Presto spill到磁盘之前测试过稳定性比较差，场景也比较少。</p>
+<p>所以就判断GENERAL_POOL里是否还有剩余内存，如果小于等于0，那就表示该节点是个Block状态。</p>
+<span id="more"></span>
+
+<h2 id="Kill策略"><a href="#Kill策略" class="headerlink" title="Kill策略"></a>Kill策略</h2><p>把所有query遍历一遍，如果查询有RESOURCE_OVERCOMMIT标志，且内存溢出了，那就把带有此标志的SQL Kill掉。</p>
+<figure class="highlight stata"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (resourceOvercommit &amp;&amp; outOfMemory) &#123;</span><br><span class="line">    <span class="comment">// If a query has requested resource overcommit, only kill it if the cluster has run out of memory</span></span><br><span class="line">    DataSize <span class="keyword">memory</span> = succinctBytes(getQueryMemoryReservation(<span class="keyword">query</span>));</span><br><span class="line">    <span class="keyword">query</span>.fail(new PrestoException(CLUSTER_OUT_OF_MEMORY,</span><br><span class="line">       <span class="keyword">format</span>(<span class="string">&quot;The cluster is out of memory and %s=true, so this query was killed. It was using %s of memory&quot;</span>, RESOURCE_OVERCOMMIT, <span class="keyword">memory</span>)));</span><br><span class="line">    queryKilled = true;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>如果没有RESOURCE_OVERCOMMIT标志，那就看看内存是否超过集群允许的内存：</p>
+<figure class="highlight pf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">if (!resourceOvercommit) &#123;</span><br><span class="line">    long <span class="keyword">user</span>MemoryLimit = <span class="keyword">min</span>(<span class="keyword">max</span>QueryMemory.<span class="keyword">to</span>Bytes(), getQueryMaxMemory(query.getSession()).<span class="keyword">to</span>Bytes());</span><br><span class="line">    if (<span class="keyword">user</span>MemoryReservation &gt; <span class="keyword">user</span>MemoryLimit) &#123;</span><br><span class="line">        query.fail(exceededGlobalUserLimit(succinctBytes(<span class="keyword">user</span>MemoryLimit)));</span><br><span class="line">        queryKilled = true;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    // enforce <span class="keyword">global</span> total memory <span class="keyword">limit</span> if system pool is disabled</span><br><span class="line">    long totalMemoryLimit = <span class="keyword">min</span>(<span class="keyword">max</span>QueryTotalMemory.<span class="keyword">to</span>Bytes(), getQueryMaxTotalMemory(query.getSession()).<span class="keyword">to</span>Bytes());</span><br><span class="line">    if (!isLegacySystemPoolEnabled &amp;&amp; totalMemoryReservation &gt; totalMemoryLimit) &#123;</span><br><span class="line">        query.fail(exceededGlobalTotalLimit(succinctBytes(totalMemoryLimit)));</span><br><span class="line">        queryKilled = true;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>由上面我们可以知道，想让上述配置生效，query.max-memory需要配置合理的值，比如我们有5台Worker，每台Worker最大允许的内存为10G（超过10GB，每台Worker会自动Kill掉SQL），那此集群允许的最大内存为5*10G &#x3D; 50GB，如果你配置query.max-memory（maxQueryMemory）100GB，那上面的逻辑将不会走，导致此逻辑失效。</p>
+<p>同时，如果发现集群有节点已经OOM了，但是过了5S，依然没有SQL被Kill掉，那就会使用以下触发Presto SQL Kill策略，一共2种策略，query.low-memory-killer.policy指定：</p>
+<figure class="highlight haxe"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="title class_"><span class="keyword">class</span> <span class="title">LowMemoryKillerPolicy</span></span></span><br><span class="line"><span class="title class_"></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">String</span> NONE = <span class="string">&quot;none&quot;</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">String</span> TOTAL_RESERVATION = <span class="string">&quot;total-reservation&quot;</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">String</span> TOTAL_RESERVATION_ON_BLOCKED_NODES = <span class="string">&quot;total-reservation-on-blocked-nodes&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>total-reservation表示杀掉集群中占有内存最大的SQL，total-reservation-on-blocked-nodes表示杀死在内存不足（阻塞）的节点上使用最多内存的查询。</p>
+<p>假如我们通过RESOURCE_GROUP限制集群的并发大小为10，单个节点最大内存为10，集群允许的最大内存少于100GB，那此配置集群肯定不会出现OOM现象（不考虑内存泄露问题），但是这样的话，会导致资源利用率不够，所以线上一般会配置并发数 * 单机最大内存远大于集群允许的最大内存，这就指望LowMemoryKillerPolicy能帮助我们Kill掉内存占用最大的SQL。但是实际上依然会出现Worker OOM情况，此时一般思路：</p>
+<p>1、dmesg -T查看系统日志，确定是操作系统触发的OOM还是JVM OOM，如果是操作系统触发的OOM，可能堆外内存或Presto内存泄露会导致这个问题，但是更多情况下需要确定下Presto节点是否有其他服务，一般情况下是其他服务内存突然增大，导致系统内存不够。</p>
+<p>2、配置是否正确，是否限制了单机最大内存，是否限制了集群最大内存且小于单机最大内存 * 集群节点数，是否配置了LowMemoryKillerPolicy。</p>
+<p>3、如果上面配置都正确，需要考虑2个问题，1）什么原因没有触发LowMemoryKillerPolicy，可以将判断节点阻塞（内存不足）的逻辑变的更严格点，因为不是个实时过程。2）结点是否有内存泄露情况。</p>
+<p>从上面可以看出Presto内存管理比较粗暴，内存不够就杀掉SQL，而其他一些引擎做法就比较细腻些，SQL会一直Block住，直到有可用内存为止，不过Presto是面向ad-hoc场景，这种内存管理方法更简单有效吧。</p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%A4%E6%96%AD%E8%8A%82%E7%82%B9%E6%98%AF%E5%90%A6%E9%98%BB%E5%A1%9E%EF%BC%88%E5%86%85%E5%AD%98%E4%B8%8D%E8%B6%B3%EF%BC%89"><span class="toc-number">1.</span> <span class="toc-text">判断节点是否阻塞（内存不足）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kill%E7%AD%96%E7%95%A5"><span class="toc-number">2.</span> <span class="toc-text">Kill策略</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Presto/" rel="tag">Presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2020/04/08/presto-scheduling-task/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          Presto调度task选择Worker方法
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/11/13/the-configuration-settings-of-presto-memory-management/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Presto内存管理相关参数设置&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

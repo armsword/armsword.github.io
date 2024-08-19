@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>一些常见的搜索查询树优化方法 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="搜索引擎服务收到一个Query后，一般引擎这边是这么搞得，解析语法，生成后缀表达式，即查询搜索树（Search Tree）。搜索查询树负责求交、求并和过滤。所以这个地方也是性能关键点。所以在解析语法后，一般要做查询搜索树优化，减少求交，求并和过滤操作的次数，以此来提高搜索服务的QPS和查询Latency。 因为同事在负责新实时索引的性能优化，我正好负责将全量索引格式迁移到新实时索引上面，即实时索引">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一些常见的搜索查询树优化方法">
+<meta property="og:url" content="http://armsword.com/2016/10/12/optimize-query-search-tree/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="搜索引擎服务收到一个Query后，一般引擎这边是这么搞得，解析语法，生成后缀表达式，即查询搜索树（Search Tree）。搜索查询树负责求交、求并和过滤。所以这个地方也是性能关键点。所以在解析语法后，一般要做查询搜索树优化，减少求交，求并和过滤操作的次数，以此来提高搜索服务的QPS和查询Latency。 因为同事在负责新实时索引的性能优化，我正好负责将全量索引格式迁移到新实时索引上面，即实时索引">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2016/10/and.png">
+<meta property="og:image" content="http://armsword.com/img/2016/10/and_opt.png">
+<meta property="og:image" content="http://armsword.com/img/2016/10/OR.png">
+<meta property="og:image" content="http://armsword.com/img/2016/10/or_opt.png">
+<meta property="og:image" content="http://armsword.com/img/2016/10/mix.png">
+<meta property="og:image" content="http://armsword.com/img/2016/10/mix_opt.png">
+<meta property="article:published_time" content="2016-10-12T11:33:21.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.285Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2016/10/and.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-optimize-query-search-tree" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      一些常见的搜索查询树优化方法
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2016/10/12/optimize-query-search-tree/" class="article-date">
+  <time datetime="2016-10-12T11:33:21.000Z" itemprop="datePublished">2016-10-12</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/">搜索引擎</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>搜索引擎服务收到一个Query后，一般引擎这边是这么搞得，解析语法，生成后缀表达式，即查询搜索树（Search Tree）。搜索查询树负责求交、求并和过滤。所以这个地方也是性能关键点。所以在解析语法后，一般要做查询搜索树优化，减少求交，求并和过滤操作的次数，以此来提高搜索服务的QPS和查询Latency。</p>
+<p>因为同事在负责新实时索引的性能优化，我正好负责将全量索引格式迁移到新实时索引上面，即实时索引的代码即支持全量索引也支持实时索引，减少运维和代码维护成本。我在查阅代码的同事，顺便与同事沟通了一些优化方法，进入全量索引代码里发现老的全量索引里已经有一些优化方法了，这些方法应该是市面上常见的方法，多数人也是应该知道的，这里记录下吧。主流优化操作主要包括以下四种：</p>
+<h3 id="全AND操作"><a href="#全AND操作" class="headerlink" title="全AND操作"></a>全AND操作</h3><p>如果父子节点都是AND，则可以合并，如（A &amp; B）&amp;  (C &amp; D)，优化后为 A &amp; B &amp; C &amp; D ，能提早发现交为空，并退出，如下图所示。</p>
+<span id="more"></span>
+
+<img src="/img/2016/10/and.png" width = "67%" />
+优化后为：
+<img src="/img/2016/10/and_opt.png" width = "67%" />
+
+<h3 id="全OR操作"><a href="#全OR操作" class="headerlink" title="全OR操作"></a>全OR操作</h3><p>如果父子节点都是OR，则可以合并。如 （A | B）| (C | D)，优化后为 A | B | C | D，能提早发现为满并退出。如下图所示：<br><img src="/img/2016/10/OR.png" width = "67%" /><br>优化后为：<br><img src="/img/2016/10/or_opt.png" width = "67%" /></p>
+<h3 id="将子节点的OR上提"><a href="#将子节点的OR上提" class="headerlink" title="将子节点的OR上提"></a>将子节点的OR上提</h3><p>如 (A | B) &amp; (C &amp;D)，优化后为 A |(B &amp; C | D)，查找次数减少。<br><img src="/img/2016/10/mix.png" width = "67%" /><br>优化后为：<br><img src="/img/2016/10/mix_opt.png" width = "67%" /></p>
+<h3 id="按照Doc数量排序"><a href="#按照Doc数量排序" class="headerlink" title="按照Doc数量排序"></a>按照Doc数量排序</h3><p>如 A &amp; B &amp; C，可以按照Doc数量排序后查询，Sum(A) &lt; Sum(B) &lt; Sum(C)，则A &amp; B &amp; C可以尽早发现为空并退出。</p>
+<p>当然查询搜索树优化不止这么些方法，比如之前就知道可以使用WAND提升长Query的检索速度，很久没看了，细节记不清了，就不说了。以后需要的时候再研究下。</p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%A8AND%E6%93%8D%E4%BD%9C"><span class="toc-number">1.</span> <span class="toc-text">全AND操作</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%A8OR%E6%93%8D%E4%BD%9C"><span class="toc-number">2.</span> <span class="toc-text">全OR操作</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B0%86%E5%AD%90%E8%8A%82%E7%82%B9%E7%9A%84OR%E4%B8%8A%E6%8F%90"><span class="toc-number">3.</span> <span class="toc-text">将子节点的OR上提</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8C%89%E7%85%A7Doc%E6%95%B0%E9%87%8F%E6%8E%92%E5%BA%8F"><span class="toc-number">4.</span> <span class="toc-text">按照Doc数量排序</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2016/10/29/minder/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          Minder：一个分布式启停进程服务
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2016/09/10/a-high-performace-and-thread-safe-cpp-log-lib/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">dlog:高性能线程安全的C++日志库&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

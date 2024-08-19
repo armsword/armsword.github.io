@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Category: Database - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="若飞,armsword,搜索引擎,OLAP,Elasticsearch,Presto,Clickhouse,Milvus">
+<meta property="og:type" content="website">
+<meta property="og:title" content="armsword&#39;blog">
+<meta property="og:url" content="http://armsword.com/categories/Database/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="若飞,armsword,搜索引擎,OLAP,Elasticsearch,Presto,Clickhouse,Milvus">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><% switch (type) {
+    case 'archive':
+    var last;
+    page.posts.each(function(post, i){
+    var year = post.date.year();
+    if (last != year){
+      if (last != null){ %>
+        </div></section>
+      <% }
+      last = year; %>
+      <section class="archives-wrap">
+        <div class="archive-year-wrap">
+          <a href="<%- url_for('archives/' + year) %>" class="archive-year"><%= year %></a>
+        </div>
+        <div class="archives">
+    <% } %>
+    <%- partial('archive-post', {post: post, archive: true}) %>
+  <% });
+    if (page.posts.length){ %>
+    </div></section>
+  <% }
+    if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+  case 'category': %>
+    <section class="archives-wrap">
+    <div class="archive-category-wrap">
+      <span class="archive-category"><%= page.category %></span>
+    </div>
+    <div class="archives">
+    <% page.posts.each(function (post, i) { %>
+      <%- partial('archive-post', {post: post, archive: false}) %>
+    <% }); %>
+    </div></section>
+    <% if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+  case 'tag': %>
+    <section class="archives-wrap">
+    <div class="archive-tag-wrap">
+      <span class="archive-tag">#<%= page.tag %></span>
+    </div>
+    <div class="archives">
+    <% page.posts.each(function (post, i) { %>
+      <%- partial('archive-post', {post: post, archive: false}) %>
+    <% }); %>
+    </div></section>
+    <% if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+  default:
+    page.posts.each(function(post){ %>
+      <%- partial('article', {post: post, index: true}) %>
+    <% })
+    if (page.total > 1){ %>
+      <nav id="page-nav">
+        <%- paginator({
+          prev_text: '&laquo; ' + __('nav.prev'),
+          next_text: __('nav.next') + ' &raquo;'
+        }) %>
+      </nav>
+    <% }
+    break;
+} %></section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

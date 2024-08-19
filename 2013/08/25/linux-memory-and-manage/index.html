@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>linux内存空间分配和内存管理 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="前段时间把《程序员的自我修养–链接、装载与库》这本书看完了，期间有些地方不是太明白，当时网络搜索了下，今天把当时看到的东西摘抄下，基本文中大部分内容都是拷贝下面提到的参考链接里的东西，自己在组织下，以备以后需要时查看。 地址分为三类，逻辑地址，线性地址和物理地址。 在《深入理解linux内核》中其把地址分为三类：逻辑地址（汇编语言中操作数地址或指令的地址，对于80x86的CPU，逻辑地址是段+段内">
+<meta property="og:type" content="article">
+<meta property="og:title" content="linux内存空间分配和内存管理">
+<meta property="og:url" content="http://armsword.com/2013/08/25/linux-memory-and-manage/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="前段时间把《程序员的自我修养–链接、装载与库》这本书看完了，期间有些地方不是太明白，当时网络搜索了下，今天把当时看到的东西摘抄下，基本文中大部分内容都是拷贝下面提到的参考链接里的东西，自己在组织下，以备以后需要时查看。 地址分为三类，逻辑地址，线性地址和物理地址。 在《深入理解linux内核》中其把地址分为三类：逻辑地址（汇编语言中操作数地址或指令的地址，对于80x86的CPU，逻辑地址是段+段内">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2013/08/201382501.jpg">
+<meta property="og:image" content="http://armsword.com/img/2013/08/20138250121.jpg">
+<meta property="og:image" content="http://armsword.com/img/2013/08/2013825013.jpg">
+<meta property="og:image" content="http://armsword.com/img/2013/08/2013825014.jpg">
+<meta property="og:image" content="http://armsword.com/img/2013/08/2013825015.png">
+<meta property="og:image" content="http://armsword.com/img/2013/08/2013825016.jpg">
+<meta property="og:image" content="http://armsword.com/img/2013/08/2013825017.jpg">
+<meta property="og:image" content="http://armsword.com/img/2013/08/20130825018.jpg">
+<meta property="og:image" content="http://armsword.com/img/2013/08/20130825019.jpg">
+<meta property="article:published_time" content="2013-08-25T14:58:28.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.293Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2013/08/201382501.jpg">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-linux-memory-and-manage" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      linux内存空间分配和内存管理
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2013/08/25/linux-memory-and-manage/" class="article-date">
+  <time datetime="2013-08-25T14:58:28.000Z" itemprop="datePublished">2013-08-25</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>前段时间把《程序员的自我修养–链接、装载与库》这本书看完了，期间有些地方不是太明白，当时网络搜索了下，今天把当时看到的东西摘抄下，基本文中大部分内容都是拷贝下面提到的参考链接里的东西，自己在组织下，以备以后需要时查看。</p>
+<p>地址分为三类，逻辑地址，线性地址和物理地址。</p>
+<p>在《深入理解linux内核》中其把地址分为三类：逻辑地址（汇编语言中操作数地址或指令的地址，对于80x86的CPU，逻辑地址是段+段内偏移地址）、线性地址（也叫虚拟地址）和物理地址。但在Stott Maxwell的《Linux Core Kernel Commentrary》中确是这样分的：逻辑地址（也叫虚拟地址）、线性地址和物理地址。按照386CPU总设计师John Crowford的解释，虚拟地址是保护模式下段和段内偏移量组成的地址，而逻辑地址就是代码段内偏移量，或称进程的逻辑地址。其实对于linux来说，这三种说法都没错，由于linux下并不主张将程序分段，而是主张分页，所以即使是在80x86的体系结构下，段的基地址也是0。因此逻辑地址、线性地址、虚拟地址在linux中其实是相同的。所以对于linux下的ELF可执行文件来说，代码段的起始地址0x08048000既是逻辑地址，也是线性地址也是虚拟地址。</p>
+<p>1.X86的物理地址空间布局</p>
+<p><img src="/img/2013/08/201382501.jpg"><br>以x86_32，4G RAM为例：</p>
+<span id="more"></span>
+
+<p>物理地址空间的顶部以下一段空间，被PCI设备的I&#x2F;O内存映射占据，它们的大小和布局由PCI(Peripheral Component Interconnect,一种连接电子计算机主板和外部设备的总线标准)规范所决定。640K~1M这段地址空间被BIOS和VGA(Video Graphics Array,视频传输标准)适配器所占据。</p>
+<p>由于这两段地址空间的存在，导致相应的RAM空间不能被CPU所寻址(当CPU访问该段地址时，北桥会自动将目的物理地址“路由”到相应的I&#x2F;O设备上，不会发送给RAM)，从而形成RAM空洞。</p>
+<p>Linux内核是以物理页面(也称为PAGE FRAME)为单位管理物理内存的(X86机器中一个页面的大小默认为4KB)，为了方便的记录每个物理页面的信息，Linux定义了page结构体，位于include&#x2F;linux&#x2F;mm_types.h<br>Linux系统在初始化时，会根据实际的物理内存的大小，为每个物理页面创建一个page对象，所有的page对象构成一个mem_map数组。进一步，针对不同的用途，Linux内核将所有的物理页面划分到3类内存管理区中，如图，分别为ZONE_DMA，ZONE_NORMAL，ZONE_HIGHMEM。</p>
+<p>ZONE_DMA的范围是0~16M，该区域的物理页面专门供I&#x2F;O设备的DMA(Direct Memory Access，直接内存存取)使用。之所以需要单独管理DMA的物理页面，是因为DMA使用物理地址访问内存，不经过MMU，并且需要连续的缓冲区，所以为了能够提供物理上连续的缓冲区，必须从物理地址空间专门划分一段区域用于DMA。</p>
+<p>ZONE_NORMAL的范围是16M~896M，该区域的物理页面是内核能够直接使用的。</p>
+<p>ZONE_HIGHMEM的范围是896M~结束，该区域即为高端内存，内核不能直接使用。</p>
+<p>2.linux虚拟地址内核空间分布</p>
+<p><img src="/img/2013/08/20138250121.jpg"></p>
+<p>在kernel image下面有16M的内核空间用于DMA操作。位于内核空间高端的128M地址主要由3部分组成，分别为vmalloc area，persistent kernel mapping(持久化内核映射区)，tempoary kernel mapping(临时内核映射区)。</p>
+<p>由于ZONE_NORMAL和内核线性空间存在直接映射关系，所以内核会将频繁使用的数据如kernel代码、GDT、IDT、PGD、mem_map数组等放在ZONE_NORMAL里。而将用户数据、页表(PT)等不常用数据放在ZONE_ HIGHMEM里，只在要访问这些数据时才建立映射关系(kmap())。比如，当内核要访问I&#x2F;O设备存储空间时，就使用ioremap()将位于物理地址高端的mmio区内存映射到内核空间的vmalloc area中，在使用完之后便断开映射关系。</p>
+<p>3.linux虚拟地址用户空间分布</p>
+<p><img src="/img/2013/08/2013825013.jpg"></p>
+<p>用户进程的代码区一般从虚拟地址空间的0x08048000开始，这是为了便于检查空指针。代码区之上便是数据区，未初始化数据区，堆区，栈区，以及参数、全局环境变量。</p>
+<p>4.linux虚拟地址与物理地址映射的关系 [内核访问物理地址]</p>
+<p><img src="/img/2013/08/2013825014.jpg"></p>
+<p>Linux将4G的线性地址空间分为2部分，0<del>3G为user space，3G</del>4G为kernel space。</p>
+<p>由于开启了分页机制，内核想要访问物理地址空间的话，必须先建立映射关系，然后通过虚拟地址来访问。为了能够访问所有的物理地址空间，就要将全部物理地址空间映射到1G的内核线性空间中，这显然不可能。于是，内核将0~896M的物理地址空间一对一映射到自己的线性地址空间中，这样它便可以随时访问ZONE_DMA和ZONE_NORMAL里的物理页面；此时内核剩下的128M线性地址空间不足以完全映射所有的ZONE_HIGHMEM，Linux采取了动态映射的方法，即按需的将ZONE_HIGHMEM里的物理页面映射到kernel space的最后128M线性地址空间里，使用完之后释放映射关系，以供其它物理页面映射。虽然这样存在效率的问题，但是内核毕竟可以正常的访问所有的物理地址空间了。</p>
+<p>5.linux内存管理</p>
+<p>Linux采用了分页的内存管理机制。由于x86体系的分页机制是基于分段机制的，因此，为了使用分页机制，分段机制是无法避免的。为了降低复杂性，Linux内核将所有段的基址都设为0，段限长设为4G，只是在段类型和段访问权限上有所区分，并且Linux内核和所有进程共享1个GDT(全局描述符表)，不使用LDT(局部描述符表即系统中所有的段描述符都保存在同一个GDT中)，这是为了应付CPU的分段机制所能做的最少工作。</p>
+<p>Linux内存管理机制可以分为3个层次，从下而上依次为物理内存的管理、页表的管理、虚拟内存的管理。</p>
+<p>当开启分段分页机制时，典型的x86寻址过程为：</p>
+<p><img src="/img/2013/08/2013825015.png"></p>
+<p>内存寻址的工作是由Linux内核和MMU共同完成的，其中Linux内核负责cr3，gdtr等寄存器的设置，页表的维护，页面的管理，MMU则进行具体的映射工作。</p>
+<p>物理内存主要包括：物理页面分配和物理页面回收，当空闲物理页面不足时，就需要从inactive_clean_list队列中选择某些物理页面插入空闲队列中，如果仍然不足，就需要把某些物理页面里的内容写回到磁盘交换文件里，腾出物理页面。</p>
+<p><img src="/img/2013/08/2013825016.jpg"></p>
+<p>页表管理：</p>
+<p>为了保持兼容性，Linux最多支持4级页表，而在x86上，实际只用了其中的2级页表，即PGD（页全局目录表）和PT(页表)，中间的PUD和PMD所占的位长都是0，因此对于x86的MMU是不可见的。</p>
+<p><img src="/img/2013/08/2013825017.jpg"></p>
+<p>6.linux中可执行程序与虚拟地址空间的映射关系</p>
+<p>虚拟内存区域(VMA，Virtual Memory Area)是Linux中进程虚拟地址空间中的一个段，在Windows里面叫虚拟段。当操作系统创建线程后，会在进程相应的数据结构中设置一个.text段的VMA，它在虚拟空间中的地址为0x08048000~0x08049000，它对应ELF文件中的偏移为0的.text。由于linux下的ELF可执行文件会有很多个段(section)，所以如果把每个section都映射为一个VMA，那么没有一个页大小的段(section)也会被映射为一个页的VMA，这样就浪费了物理空间，由于不足会用0补充。故ELF有一个装载的段（segment)，与前面的段(section)不同，前面的段(section)主要用于链接，而段(segment)主要用于装载进内存。可以通过段（section）的权限来合并，如以代码段为代表的权限为可读可执行权限；以数据段和BSS段为代表的权限为可读可写的段；以只读数据为代表的权限为只读权限。</p>
+<p>ELF与Linux进程虚拟空间映射关系如下：</p>
+<p><img src="/img/2013/08/20130825018.jpg"></p>
+<p>7.可执行文件的装载过程</p>
+<p>一、进程的建立</p>
+<p>(1)创建一个独立的虚拟地址空间</p>
+<p>(2)读取可执行文件头，并且建立虚拟空间与可执行文件的映射关系</p>
+<p>(3)将CPU的指令寄存器设置成可执行文件的入口地址，启动运行。</p>
+<p>二、页错误</p>
+<p>上面的步骤执行完以后，其实可执行文件的真正指令和数据都没有载入到内存中。操作系统只是通过可执行文件头部的信息建立起可执行文件和进程虚存之间的映射关系而已。假设在上面的例子中，程序的入口地址为0X08048000，即刚好是.text段的起始地址。当CPU开始打算执行这个地址的指令时，发现0X08048000~0X08049000是个空白页，于是它就认为这是个页错误（Page Fault）。CPU将控制器交给操作系统，操作系统有专门的页错误处理例程来处理这种情况。这时候我们装载过程的第二步建立的数据结构起到了很关键的作用，操作系统将查询这个数据结构，然后找到空页面所在的VMA，计算出相应的页面在可执行文件中的偏移，然后在物理内存中分配一个物理页面，将进程中该虚拟页与分配的物理页之间建立映射关系，然后把控制权再还给进程，进程从刚才页错误的位置重新开始执行。随着进程的执行，页错误也会不断地产生，操作系统也会为进程分配相应的物理页面来满足进程执行的需求。当然有可能进程所需要的内存会超过可用的内存数量，特别是在有多个进程同时执行的时候，这时候操作系统就需要精心组织和分配物理内存，甚至有时候将分配给进程的物理内存暂时收回等等，这就涉及了操作系统的虚拟存储管理。</p>
+<p><img src="/img/2013/08/20130825019.jpg"></p>
+<p>参考资料：</p>
+<p><a href="http://www.cnblogs.com/chengxuyuancc/archive/2013/04/17/3026920.html">http://www.cnblogs.com/chengxuyuancc/archive/2013/04/17/3026920.html</a>（绝大部分拷贝此链接资料）</p>
+<p><a href="http://www.cnblogs.com/zszmhd/archive/2012/08/29/2661461.html">http://www.cnblogs.com/zszmhd/archive/2012/08/29/2661461.html</a></p>
+<p>《程序员的自我修养–装载、链接与库》</p>
+
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2013/09/26/lru-cache/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          实现一个LRU Cache
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2013/08/04/redis-source/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">准备看下Redis的源代码&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

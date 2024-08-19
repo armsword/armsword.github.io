@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>写了一个Chrome插件 - 百度无损音乐下载插件 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="1、之前是从http:&#x2F;&#x2F;music.baidu.com&#x2F; 入手的，现在发现从此处入手已经找不到方法了。由于我又不是太懂JS语法，于是用了几十分钟，没分析到地址放弃。 2、灵光一闪，从http:&#x2F;&#x2F;fm.baidu.com&#x2F; 入手，在Chrome下抓包，细心分析后，果然发现蜘丝马迹，如下图所示：  见左图那个灰色的链接，我们打开[链接](http:&#x2F;&#x2F;music.baidu.com&#x2F;data&#x2F;mu">
+<meta property="og:type" content="article">
+<meta property="og:title" content="写了一个Chrome插件 - 百度无损音乐下载插件">
+<meta property="og:url" content="http://armsword.com/2015/01/31/baidu-lossless-music-downloader/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="1、之前是从http:&#x2F;&#x2F;music.baidu.com&#x2F; 入手的，现在发现从此处入手已经找不到方法了。由于我又不是太懂JS语法，于是用了几十分钟，没分析到地址放弃。 2、灵光一闪，从http:&#x2F;&#x2F;fm.baidu.com&#x2F; 入手，在Chrome下抓包，细心分析后，果然发现蜘丝马迹，如下图所示：  见左图那个灰色的链接，我们打开[链接](http:&#x2F;&#x2F;music.baidu.com&#x2F;data&#x2F;mu">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2014/08/20140809213933.png">
+<meta property="og:image" content="http://armsword.com/img/2014/08/20140809214133.png">
+<meta property="og:image" content="http://armsword.com/img/2014/08/20140809214532.png">
+<meta property="og:image" content="http://armsword.com/img/2014/08/20140809214749.png">
+<meta property="og:image" content="http://armsword.com/img/2015/01/20150101.png">
+<meta property="og:image" content="http://armsword.com/img/2015/01/20150102.jpg">
+<meta property="article:published_time" content="2015-01-31T12:39:13.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.295Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2014/08/20140809213933.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-baidu-lossless-music-downloader" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      写了一个Chrome插件 - 百度无损音乐下载插件
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2015/01/31/baidu-lossless-music-downloader/" class="article-date">
+  <time datetime="2015-01-31T12:39:13.000Z" itemprop="datePublished">2015-01-31</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Web-Script/">Web/Script</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>1、之前是从<a href="http://music.baidu.com/">http://music.baidu.com/</a> 入手的，现在发现从此处入手已经找不到方法了。由于我又不是太懂JS语法，于是用了几十分钟，没分析到地址放弃。</p>
+<p>2、灵光一闪，从<a href="http://fm.baidu.com/">http://fm.baidu.com/</a> 入手，在Chrome下抓包，细心分析后，果然发现蜘丝马迹，如下图所示：</p>
+<p><img src="/img/2014/08/20140809213933.png"></p>
+<p>见左图那个灰色的链接，我们打开[链接](<a href="http://music.baidu.com/data/music/fmlink?songIds=1181294,291890,620023,7329389,448152,7325038,2119209,309877">http://music.baidu.com/data/music/fmlink?songIds=1181294,291890,620023,7329389,448152,7325038,2119209,309877</a>,     7331713,2121730&amp;type&#x3D;mp3&amp;rate&#x3D;320&amp;callback&#x3D;jQuery1102037159983557648957_1407590773561&amp;_&#x3D;1407590773570                                  “百度无损音乐下载方法”)看下，嘿，发现了许多歌曲信息哦，如下图所示：</p>
+<span id="more"></span>
+
+<p><img src="/img/2014/08/20140809214133.png"></p>
+<p>由于是FM，所以songIDs有一大串，咱们试试构造下，以黑蝙蝠中队为例，其有三种音乐格式，第一种是可以直接下载的，第二三种是收费的：</p>
+<p><img src="/img/2014/08/20140809214532.png"></p>
+<p>我们构造下不同格式的音乐试试看，以无损音乐flac格式和921kbps为例：</p>
+<p>构造的链接为：[<a href="http://music.baidu.com/data/music/fmlink?songIds=966991&amp;type=flac&amp;rate=921%5D">http://music.baidu.com/data/music/fmlink?songIds=966991&amp;type=flac&amp;rate=921]</a>(<a href="http://music.baidu.com/data/music/fmlink">http://music.baidu.com/data/music/fmlink</a>?           songIds&#x3D;966991&amp;type&#x3D;mp3&amp;rate&#x3D;921)</p>
+<p><img src="/img/2014/08/20140809214749.png"><br>将songLink后的地址格式化为正常网页地址，如下所示：<br><a href="http://yinyueshiting.baidu.com/data2/music/33809115/966991111600921.flac?xcode=a6ed00d30421e9bebbbef0f52f4938299d0fba1db032ff5f">http://yinyueshiting.baidu.com/data2/music/33809115/966991111600921.flac?xcode=a6ed00d30421e9bebbbef0f52f4938299d0fba1db032ff5f</a><br>下载下，发现可以正常下载，28.8M，flac格式的无损音乐。</p>
+<p>所以，超高&#x2F;无损音乐下载方法就是：<br>将此链接的：<br>[<a href="http://music.baidu.com/data/music/fmlink?songIds=966991&amp;type=flac&amp;rate=921%5D">http://music.baidu.com/data/music/fmlink?songIds=966991&amp;type=flac&amp;rate=921]</a>(<a href="http://music.baidu.com/data/music/fmlink?songIds=966991">http://music.baidu.com/data/music/fmlink?songIds=966991</a>&amp;      type&#x3D;flac&amp;rate&#x3D;921 “百度无损音乐下载方法教程”)<br>songIds、type、rate改完你想下载的音乐就可以了。</p>
+<p>如果只想下载无损音乐flac格式的（前提条件是百度下载里包含无损格式），这样就可以了，只需要更改歌曲songIds。<br><a href="http://music.baidu.com/data/music/fmlink?songIds=966991&amp;type=flac" title="百度音乐下载方法">http://music.baidu.com/data/music/fmlink?songIds=966991&amp;type=flac</a></p>
+<p>用了2-3天时间，学了下前端开发方面的基础知识，没怎么看教程，就是想实现某些功能或者遇到问题就去搜索解决，遇到了一些坑，但是收获也挺大的，于是随手写了个Chrome插件，可用来下载百度无损音乐的，比较简单，原理如上。</p>
+<h3 id="程序地址"><a href="#程序地址" class="headerlink" title="程序地址"></a>程序地址</h3><p><a href="https://github.com/armsword/BDMusicDownloader/blob/master/BDMusicDownloader.zip?raw=true">点击下载插件</a></p>
+<h3 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a>使用方法</h3><p>本插件支持Chrome浏览器和UC桌面浏览器，其他Webkit内核的浏览器应该也支持，但是我没做测试。</p>
+<h4 id="Linux系统下安装方法"><a href="#Linux系统下安装方法" class="headerlink" title="Linux系统下安装方法"></a>Linux系统下安装方法</h4><p>Linux下直接<a href="https://github.com/armsword/BDMusicDownloader/blob/master/BDMusicDownloader.zip?raw=true">下载</a>此插件，之后解压后，在BDMusicDownloader文件夹下发现一个src.crx文件，将其拖入到Chrome浏览器-设置-扩展程序界面即可，当打开如以 <a href="http://music.baidu.com/song/">http://music.baidu.com/song/</a> 开头的链接时，即下载音乐地址，会自动弹出插件，点击下载即可。如图所示：<br><img src="/img/2015/01/20150101.png"></p>
+<h3 id="Windows下安装方法"><a href="#Windows下安装方法" class="headerlink" title="Windows下安装方法"></a>Windows下安装方法</h3><p>从程序地址里下载安装插件，解压文件夹，注意，因为Chrome在Win下的安全限制，所以此文件夹不能删除，之后同上所示，但不是拖入src.crx文件，而是选中开发者模式-加载正在开发的插件-BDMusicDownloader，之后选中src文件，打开即可。如图以UC桌面浏览器为例：<br><img src="/img/2015/01/20150102.jpg"></p>
+<p>说句题外话，UC桌面浏览器真的还蛮好用的，支持Chrome插件（废话，使用的都是同一个内核），但是自带科学上网，打开Github速度就挺快的，推荐使用。</p>
+<h3 id="需要改进的地方"><a href="#需要改进的地方" class="headerlink" title="需要改进的地方"></a>需要改进的地方</h3><p>因为我前端经验太少，所以一些小细节没处理好，比如当音乐名字太长时，样式就比较难看了。因我忙着在回家前要把孙钟秀的《操作系统教程》读完，并且之前部门给我的入职前作业我还没完成，所以不打算再做太多修改了，感兴趣的东西可以帮忙修改下。</p>
+<h2 id="源码地址"><a href="#源码地址" class="headerlink" title="源码地址"></a>源码地址</h2><p><a href="https://github.com/armsword/BDMusicDownloader">https://github.com/armsword/BDMusicDownloader</a></p>
+<p>代码已注释，有时间和感兴趣的同学，可以帮忙优化下界面。</p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%A8%8B%E5%BA%8F%E5%9C%B0%E5%9D%80"><span class="toc-number">1.</span> <span class="toc-text">程序地址</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95"><span class="toc-number">2.</span> <span class="toc-text">使用方法</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Linux%E7%B3%BB%E7%BB%9F%E4%B8%8B%E5%AE%89%E8%A3%85%E6%96%B9%E6%B3%95"><span class="toc-number">2.1.</span> <span class="toc-text">Linux系统下安装方法</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Windows%E4%B8%8B%E5%AE%89%E8%A3%85%E6%96%B9%E6%B3%95"><span class="toc-number">3.</span> <span class="toc-text">Windows下安装方法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9C%80%E8%A6%81%E6%94%B9%E8%BF%9B%E7%9A%84%E5%9C%B0%E6%96%B9"><span class="toc-number">4.</span> <span class="toc-text">需要改进的地方</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%BA%90%E7%A0%81%E5%9C%B0%E5%9D%80"><span class="toc-number"></span> <span class="toc-text">源码地址</span></a>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2015/03/02/several-realization-of-hash-algorithm/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          几种Hash算法的实现
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2015/01/26/jwsmtp-analyse/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">jwSMTP源码剖析&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Elasticsearch集群JVM coredump问题排查 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="前言好几年前的文章了，之前排查问题，随手写的，但是发现其他团队人遇到类似问题没有思路，所以还是发出来，给大家一起解决问题的思路。 问题描述ES集群磁盘报警，发现&#x2F;home&#x2F;coresave&#x2F; core文件导致根目录磁盘被打满，删除core文件恢复，已知这个集群新上线了jdk 17 zgc，排查下jvm为啥core。而jvm core一般有以下几个原因：资源超了（内存、">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Elasticsearch集群JVM coredump问题排查">
+<meta property="og:url" content="http://armsword.com/2023/12/06/resolve-es-JVM-coredump/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="前言好几年前的文章了，之前排查问题，随手写的，但是发现其他团队人遇到类似问题没有思路，所以还是发出来，给大家一起解决问题的思路。 问题描述ES集群磁盘报警，发现&#x2F;home&#x2F;coresave&#x2F; core文件导致根目录磁盘被打满，删除core文件恢复，已知这个集群新上线了jdk 17 zgc，排查下jvm为啥core。而jvm core一般有以下几个原因：资源超了（内存、">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2023/12/core.png">
+<meta property="og:image" content="http://armsword.com/img/2023/12/meminfo.png">
+<meta property="og:image" content="http://armsword.com/img/2023/12/thread.png">
+<meta property="og:image" content="http://armsword.com/img/2023/12/vma_begin.png">
+<meta property="og:image" content="http://armsword.com/img/2023/12/vma_end.png">
+<meta property="og:image" content="http://armsword.com/img/2023/12/java_heap.png">
+<meta property="og:image" content="http://armsword.com/img/2023/12/lucene.png">
+<meta property="article:published_time" content="2023-12-06T08:38:57.000Z">
+<meta property="article:modified_time" content="2023-12-06T09:26:31.000Z">
+<meta property="article:author" content="armsword">
+<meta property="article:tag" content="Elasticsearch">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2023/12/core.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-resolve-es-JVM-coredump" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Elasticsearch集群JVM coredump问题排查
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2023/12/06/resolve-es-JVM-coredump/" class="article-date">
+  <time datetime="2023-12-06T08:38:57.000Z" itemprop="datePublished">2023-12-06</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>好几年前的文章了，之前排查问题，随手写的，但是发现其他团队人遇到类似问题没有思路，所以还是发出来，给大家一起解决问题的思路。</p>
+<h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>ES集群磁盘报警，发现&#x2F;home&#x2F;coresave&#x2F; core文件导致根目录磁盘被打满，删除core文件恢复，已知这个集群新上线了jdk 17 zgc，排查下jvm为啥core。而jvm core一般有以下几个原因：资源超了（内存、线程数，vma数等），jvm bug（比如指令集）</p>
+<h2 id="排查过程"><a href="#排查过程" class="headerlink" title="排查过程"></a>排查过程</h2><p>先去elasticsearch根目录查看core日志，即hs_err_pid_xxx.log，内容如下：<br><img src="/img/2023/12/core.png" alt="core日志文件"><br>看core原因是因为资源不足（不一定是内存）导致的问题，jdk 17 zgc core后，fatal error 原因与g1 有明显不同，突然不知道怎么去排查了，研究下，思路如下。资源不足原因我们可以在hs_err.log里查看具体的原因，步骤如下：</p>
+<h3 id="1、先排查meminfo，看下机器内存情况"><a href="#1、先排查meminfo，看下机器内存情况" class="headerlink" title="1、先排查meminfo，看下机器内存情况"></a>1、先排查meminfo，看下机器内存情况</h3><span id="more"></span>
+<p><img src="/img/2023/12/meminfo.png" alt="meminfo信息"><br>通过上面的MemAvailable可以判断，机器内存是足够的，core与机器内存没关系。</p>
+<h3 id="2、判断是否是线程数超了"><a href="#2、判断是否是线程数超了" class="headerlink" title="2、判断是否是线程数超了"></a>2、判断是否是线程数超了</h3><p><img src="/img/2023/12/thread.png" alt="Thread信息"></p>
+<figure class="highlight elixir"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">user<span class="variable">@hostname</span><span class="symbol">:/data0/elasticsearch</span><span class="variable">$ </span>grep <span class="string">&quot;JavaThread&quot;</span> hs_err_pid314151.log | wc -l</span><br><span class="line"><span class="number">599</span></span><br></pre></td></tr></table></figure>
+<p>查看线程数，可以看到线程数只有599个，而jvm线程最大值是 1&#x2F;2 max_map_count （vma最大值）</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">user<span class="variable">@hostname</span><span class="symbol">:/data0/elasticsearch</span><span class="variable">$ </span>cat /<span class="built_in">proc</span>/sys/vm/max_map_count</span><br><span class="line"><span class="number">262144</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="3、判断是否是虚拟内存块（vma）超了"><a href="#3、判断是否是虚拟内存块（vma）超了" class="headerlink" title="3、判断是否是虚拟内存块（vma）超了"></a>3、判断是否是虚拟内存块（vma）超了</h3><p>搜索Dynamic libraries，查看这个区域的个数，每一行是一个vma<br><img src="/img/2023/12/vma_begin.png" alt="vma_begin"><br><img src="/img/2023/12/vma_end.png" alt="vma_end"></p>
+<p>可以看到末值减去初值 &#x3D; 288011 - 25866  &#x3D;  212645 超过了vma的最大值 262144。<br>所以jvm core掉的原因是因为vma不够了。</p>
+<h2 id="问题追踪"><a href="#问题追踪" class="headerlink" title="问题追踪"></a>问题追踪</h2><p>那为什么vma 不够了，查看了下vma：<br><img src="/img/2023/12/java_heap.png" alt="java_heap"><br>发现多了很多（12W个）&#x2F;memfd:java_heap (deleted) vma，搜索发现下zgc引入的内存管理的东西，在g1里是没有这个东西的，导致直接多了12W个vma。另一方面，集群3台机器，但是一台机器故障，数据迁移导致集群的索引文件数太多，如下:<br><img src="/img/2023/12/lucene.png" alt="lucene"></p>
+<h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h2><p>1、修改 &#x2F;proc&#x2F;sys&#x2F;vm&#x2F;max_map_count 值，值扩大一倍。</p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E6%8F%8F%E8%BF%B0"><span class="toc-number">2.</span> <span class="toc-text">问题描述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8E%92%E6%9F%A5%E8%BF%87%E7%A8%8B"><span class="toc-number">3.</span> <span class="toc-text">排查过程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81%E5%85%88%E6%8E%92%E6%9F%A5meminfo%EF%BC%8C%E7%9C%8B%E4%B8%8B%E6%9C%BA%E5%99%A8%E5%86%85%E5%AD%98%E6%83%85%E5%86%B5"><span class="toc-number">3.1.</span> <span class="toc-text">1、先排查meminfo，看下机器内存情况</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%E3%80%81%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E6%98%AF%E7%BA%BF%E7%A8%8B%E6%95%B0%E8%B6%85%E4%BA%86"><span class="toc-number">3.2.</span> <span class="toc-text">2、判断是否是线程数超了</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3%E3%80%81%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E6%98%AF%E8%99%9A%E6%8B%9F%E5%86%85%E5%AD%98%E5%9D%97%EF%BC%88vma%EF%BC%89%E8%B6%85%E4%BA%86"><span class="toc-number">3.3.</span> <span class="toc-text">3、判断是否是虚拟内存块（vma）超了</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E8%BF%BD%E8%B8%AA"><span class="toc-number">4.</span> <span class="toc-text">问题追踪</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95"><span class="toc-number">5.</span> <span class="toc-text">解决方法</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Elasticsearch/" rel="tag">Elasticsearch</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2024/01/17/my-experiences-in-leading-a-team/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          关于做好技术团队管理的几点心得
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2023/08/11/didi-es-zstd/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">如何让ES低成本、高性能？滴滴落地ZSTD压缩算法的实践分享&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

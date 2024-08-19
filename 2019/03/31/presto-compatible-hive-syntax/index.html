@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Presto兼容Hive SQL的一些改造工作 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="前言Presto是一款优秀的分布式SQL查询引擎，适用于即席查询和报表分析等业务，其使用了ANSI SQL语法和语义，使用标准是SQL-92和SQL:2016。但是因为很多业务方一直使用Hive离线引擎来做SQL分析，而Hive使用类似SQL的语法（HQL）。为了使用户能平滑的将业务迁移到Presto上或者能让SQL同时跑到Presto及Hive引擎上，我们对Presto语法及一些算子等做了二次兼">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Presto兼容Hive SQL的一些改造工作">
+<meta property="og:url" content="http://armsword.com/2019/03/31/presto-compatible-hive-syntax/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="前言Presto是一款优秀的分布式SQL查询引擎，适用于即席查询和报表分析等业务，其使用了ANSI SQL语法和语义，使用标准是SQL-92和SQL:2016。但是因为很多业务方一直使用Hive离线引擎来做SQL分析，而Hive使用类似SQL的语法（HQL）。为了使用户能平滑的将业务迁移到Presto上或者能让SQL同时跑到Presto及Hive引擎上，我们对Presto语法及一些算子等做了二次兼">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-03-31T08:23:32.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.284Z">
+<meta property="article:author" content="armsword">
+<meta property="article:tag" content="presto">
+<meta name="twitter:card" content="summary">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-presto-compatible-hive-syntax" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Presto兼容Hive SQL的一些改造工作
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2019/03/31/presto-compatible-hive-syntax/" class="article-date">
+  <time datetime="2019-03-31T08:23:32.000Z" itemprop="datePublished">2019-03-31</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Presto是一款优秀的分布式SQL查询引擎，适用于即席查询和报表分析等业务，其使用了ANSI SQL语法和语义，使用标准是SQL-92和SQL:2016。但是因为很多业务方一直使用Hive离线引擎来做SQL分析，而Hive使用类似SQL的语法（HQL）。为了使用户能平滑的将业务迁移到Presto上或者能让SQL同时跑到Presto及Hive引擎上，我们对Presto语法及一些算子等做了二次兼容开发，来最大限度降低用户迁移成本。接下来我们介绍下我们的主要兼容工作。</p>
+<h2 id="一、权限认证"><a href="#一、权限认证" class="headerlink" title="一、权限认证"></a>一、权限认证</h2><p>Presto默认如果使用Password，那么必须使用Kerberos协议。因为公司离线数据没有Kerberos协议，所以我们改进了权限认证机制，与离线复用一套权限机制，用户只需要去离线申请权限，指定用户名和密码，即可查询Presto引擎和访问离线数据，并且提供了以下几种方式访问公司Presto，且与公司离线权限体系打通，分别为JDBC、Cli、Go、Python、R、NodeJS。</p>
+<h2 id="二、行为修改"><a href="#二、行为修改" class="headerlink" title="二、行为修改"></a>二、行为修改</h2><h3 id="整数相除返回浮点数"><a href="#整数相除返回浮点数" class="headerlink" title="整数相除返回浮点数"></a>整数相除返回浮点数</h3><p>Presto整数相除沿用了Java整数相除的特性，我们需要修改函数算子行为，如IntegerOperators，将divide相关的函数修改为返回浮点数结果。比如：</p>
+<span id="more"></span>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">presto:<span class="keyword">default</span><span class="operator">&gt;</span> <span class="keyword">select</span> <span class="number">5</span><span class="operator">/</span><span class="number">2</span>;</span><br><span class="line"> _col0</span><br><span class="line"> <span class="comment">-------</span></span><br><span class="line">    <span class="number">2.5</span></span><br><span class="line">(<span class="number">1</span> <span class="type">row</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="类型隐式转换"><a href="#类型隐式转换" class="headerlink" title="类型隐式转换"></a>类型隐式转换</h3><p>Presto类型比较与Java一样，使用的是强类型，即int与varchar是无法比较的，但是Hive是支持隐式转换的，所以这种隐式类型转换的问题，用户遇到的比较多。我们做了修改，在对应的算子里，添加了新的语义行为，事例如下：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">presto:<span class="keyword">default</span><span class="operator">&gt;</span> <span class="keyword">select</span> <span class="string">&#x27;1&#x27;</span> <span class="operator">&gt;</span> <span class="number">2</span>;</span><br><span class="line"> _col0</span><br><span class="line"> <span class="comment">-------</span></span><br><span class="line">  <span class="literal">false</span></span><br><span class="line"> (<span class="number">1</span> <span class="type">row</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="过滤表达式隐式转换"><a href="#过滤表达式隐式转换" class="headerlink" title="过滤表达式隐式转换"></a>过滤表达式隐式转换</h3><p>大量的SQL，where条件里会带有比较语句，可能会出现int与varchar比较的场景，所以我们做了过滤表达式隐式转换，方法是在ExpressionAnalyzer里通过visitComparisonExpression来cast左右表达式为同一类型。</p>
+<h3 id="Array-Functions兼容"><a href="#Array-Functions兼容" class="headerlink" title="Array Functions兼容"></a>Array Functions兼容</h3><p>主要与Hive保持兼容，做了如下修改：</p>
+<ul>
+<li>array index从0开始<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">presto:<span class="keyword">default</span><span class="operator">&gt;</span> <span class="keyword">select</span> <span class="keyword">array</span>[<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>][<span class="number">0</span>];</span><br><span class="line"> _col0</span><br><span class="line"> <span class="comment">-------</span></span><br><span class="line">      <span class="number">1</span></span><br><span class="line">(<span class="number">1</span> <span class="type">row</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure></li>
+<li>超过下标最大值时返回NULL</li>
+</ul>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">presto:<span class="keyword">default</span><span class="operator">&gt;</span> <span class="keyword">select</span> <span class="keyword">array</span>[<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>][<span class="number">4</span>];</span><br><span class="line"> _col0</span><br><span class="line"> <span class="comment">-------</span></span><br><span class="line">  <span class="keyword">NULL</span></span><br><span class="line">(<span class="number">1</span> <span class="type">row</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="substr兼容"><a href="#substr兼容" class="headerlink" title="substr兼容"></a>substr兼容</h3><ul>
+<li>下标从0开始</li>
+</ul>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">presto:<span class="keyword">default</span><span class="operator">&gt;</span> <span class="keyword">select</span> substr(<span class="string">&#x27;123&#x27;</span>,<span class="number">0</span>,<span class="number">2</span>);</span><br><span class="line">_col0</span><br><span class="line"> <span class="comment">-------</span></span><br><span class="line">  <span class="number">12</span></span><br><span class="line">(<span class="number">1</span> <span class="type">row</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="in-操作符可包含字符串"><a href="#in-操作符可包含字符串" class="headerlink" title="in 操作符可包含字符串"></a>in 操作符可包含字符串</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">presto:default&gt; <span class="keyword">select</span> <span class="built_in">id</span> from <span class="built_in">test</span> <span class="built_in">where</span> <span class="built_in">id</span> <span class="keyword">in</span> (<span class="string">&#x27;1001&#x27;</span>,1002) <span class="built_in">limit</span> 1;</span><br><span class="line">_col0</span><br><span class="line"> -------</span><br><span class="line">  1001</span><br><span class="line">(1 row)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="sum-支持字符串相加"><a href="#sum-支持字符串相加" class="headerlink" title="sum 支持字符串相加"></a>sum 支持字符串相加</h3><p>sum的参数包含字符串时，可进行计算, 即 select sum(id) from test; 如果id为varchar也可以进行计算了。</p>
+<h3 id="JOIN条件隐式转换"><a href="#JOIN条件隐式转换" class="headerlink" title="JOIN条件隐式转换"></a>JOIN条件隐式转换</h3><p>实现了StatementRewrite子类，通过visit JOIN来获得左右表达式进行cast，因为一些财务业务涉及到大精度问题，所以将精度范围改为DECIMAL(38,10)。</p>
+<h3 id="cast"><a href="#cast" class="headerlink" title="cast"></a>cast</h3><p>因为Presto字符串类型为varchar，Hive为String，所以支持了cast as string语法，事例：</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">presto:<span class="literal">default</span>&gt; <span class="function"><span class="keyword">select</span> <span class="title">cast</span> (<span class="params"><span class="number">1</span> <span class="keyword">as</span> <span class="built_in">string</span></span>)</span>;</span><br><span class="line"> _col0</span><br><span class="line"> -------</span><br><span class="line">  <span class="number">1</span></span><br><span class="line">(<span class="number">1</span> row)</span><br></pre></td></tr></table></figure>
+
+<h2 id="三、新的语法支持"><a href="#三、新的语法支持" class="headerlink" title="三、新的语法支持"></a>三、新的语法支持</h2><h3 id="操作符"><a href="#操作符" class="headerlink" title="&amp; 操作符"></a>&amp; 操作符</h3><p>SqlBase.g4文件里添加新的 &amp; 语法，然后实现对应的Operator。事例为：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">presto:<span class="keyword">default</span><span class="operator">&gt;</span> <span class="keyword">select</span> <span class="number">1</span> <span class="operator">&amp;</span> <span class="number">3</span>;</span><br><span class="line"> _col0</span><br><span class="line"> <span class="comment">-------</span></span><br><span class="line">      <span class="number">1</span></span><br><span class="line">(<span class="number">1</span> <span class="type">row</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="rlike"><a href="#rlike" class="headerlink" title="rlike"></a>rlike</h3><p>与like相似，实现了rlike，比如查询select id from test rlike ‘xxx’; 目前还有部分功能需要完善。</p>
+<h2 id="四、UDF"><a href="#四、UDF" class="headerlink" title="四、UDF"></a>四、UDF</h2><p>UDF除了添加了一些特殊业务的UDF外，比如isInPolygon多边形计算，安全函数等，还添加了一些常用的Hive UDF，分别为：</p>
+<h4 id="字符串相关"><a href="#字符串相关" class="headerlink" title="字符串相关"></a>字符串相关</h4><ul>
+<li>md5</li>
+<li>concat_ws</li>
+<li>nvl</li>
+<li>json</li>
+</ul>
+<h3 id="日期相关"><a href="#日期相关" class="headerlink" title="日期相关"></a>日期相关</h3><ul>
+<li>unix_timestamp</li>
+<li>fromUtcTimestamp</li>
+<li>toUtcTimestamp</li>
+<li>dateSub</li>
+<li>diffDate</li>
+</ul>
+<h3 id="int-bigint函数"><a href="#int-bigint函数" class="headerlink" title="int&#x2F;bigint函数"></a>int&#x2F;bigint函数</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">presto:<span class="keyword">default</span><span class="operator">&gt;</span> <span class="keyword">select</span> <span class="type">int</span>(<span class="number">2.1</span>);</span><br><span class="line"> _col0</span><br><span class="line"> <span class="comment">-------</span></span><br><span class="line">      <span class="number">2</span></span><br><span class="line">(<span class="number">1</span> <span class="type">row</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>等等，具体想查看udf是否支持，可以直接操作连接Presto，如查询md5函数：</p>
+<figure class="highlight asciidoc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">presto:default&gt; select md5(<span class="emphasis">&#x27;1&#x27;</span>);</span><br><span class="line"><span class="section">_col0</span></span><br><span class="line"><span class="section">----------------------------------</span></span><br><span class="line">c4ca4238a0b923820dcc509a6f75849b</span><br><span class="line">(1 row)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>有结果即表示支持该函数。</p>
+<h2 id="五、其他兼容"><a href="#五、其他兼容" class="headerlink" title="五、其他兼容"></a>五、其他兼容</h2><h3 id="Hive视图"><a href="#Hive视图" class="headerlink" title="Hive视图"></a>Hive视图</h3><p>在visitTable里获得table信息，判断是否是视图，如果是视图，那么获取原始SQL查询，递归调用Analyze。</p>
+<h3 id="插入数据临时文件目录"><a href="#插入数据临时文件目录" class="headerlink" title="插入数据临时文件目录"></a>插入数据临时文件目录</h3><p>由于涉及到权限问题，insert数据时，用户临时数据插入到临时目录会没有权限，所以修改了可配置临时文件插入目录参数。</p>
+<h3 id="支持可读取Hive递归子分区"><a href="#支持可读取Hive递归子分区" class="headerlink" title="支持可读取Hive递归子分区"></a>支持可读取Hive递归子分区</h3><p>正常表存储格式为 &#x2F;table&#x2F;partition&#x2F;file，这种数据是可以正常访问的，但是如果数据存储格式为 &#x2F;table&#x2F;partition&#x2F;directory&#x2F;file 时，Presto访问时返回数据为空。而Hive里面的解决方法为请求时添加以下参数：</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">set</span> hive.mapred.supports.<span class="attribute">subdirectories</span>=<span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line"><span class="built_in">set</span> mapreduce.input.fileinputformat.input.dir.<span class="attribute">recursive</span>=<span class="literal">true</span>;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>我们设置了参数，让默认即可递归子目录，参数为：</p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">hive.recursive-directories</span>=<span class="literal">true</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="Key-not-present-in-map"><a href="#Key-not-present-in-map" class="headerlink" title="Key not present in map"></a>Key not present in map</h3><p>Presto在处理MAP时，当KEY 不存在时，会报错，而Hive返回NULL，通过Presto内部参数解决：</p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">deprecated.legacy-map-subscript</span>=<span class="literal">true</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>当然整体兼容Hive并不止这些，比如函数兼容类似Java里面的多态，需要找到合适的函数；还有least&#x2F;greast等函数支持，还有一些函数null处理问题，太细节了，这里就不一一介绍了。由于Hive兼容是一个任重而道远的事情，这里还是推荐用户最好使用ANSI SQL以及管理好自己数据，这以后无论迁移还是使用，都会方便不少，减少不必要的麻烦。</p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E6%9D%83%E9%99%90%E8%AE%A4%E8%AF%81"><span class="toc-number">2.</span> <span class="toc-text">一、权限认证</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E8%A1%8C%E4%B8%BA%E4%BF%AE%E6%94%B9"><span class="toc-number">3.</span> <span class="toc-text">二、行为修改</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%95%B4%E6%95%B0%E7%9B%B8%E9%99%A4%E8%BF%94%E5%9B%9E%E6%B5%AE%E7%82%B9%E6%95%B0"><span class="toc-number">3.1.</span> <span class="toc-text">整数相除返回浮点数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%B1%BB%E5%9E%8B%E9%9A%90%E5%BC%8F%E8%BD%AC%E6%8D%A2"><span class="toc-number">3.2.</span> <span class="toc-text">类型隐式转换</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%87%E6%BB%A4%E8%A1%A8%E8%BE%BE%E5%BC%8F%E9%9A%90%E5%BC%8F%E8%BD%AC%E6%8D%A2"><span class="toc-number">3.3.</span> <span class="toc-text">过滤表达式隐式转换</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Array-Functions%E5%85%BC%E5%AE%B9"><span class="toc-number">3.4.</span> <span class="toc-text">Array Functions兼容</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#substr%E5%85%BC%E5%AE%B9"><span class="toc-number">3.5.</span> <span class="toc-text">substr兼容</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#in-%E6%93%8D%E4%BD%9C%E7%AC%A6%E5%8F%AF%E5%8C%85%E5%90%AB%E5%AD%97%E7%AC%A6%E4%B8%B2"><span class="toc-number">3.6.</span> <span class="toc-text">in 操作符可包含字符串</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#sum-%E6%94%AF%E6%8C%81%E5%AD%97%E7%AC%A6%E4%B8%B2%E7%9B%B8%E5%8A%A0"><span class="toc-number">3.7.</span> <span class="toc-text">sum 支持字符串相加</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#JOIN%E6%9D%A1%E4%BB%B6%E9%9A%90%E5%BC%8F%E8%BD%AC%E6%8D%A2"><span class="toc-number">3.8.</span> <span class="toc-text">JOIN条件隐式转换</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#cast"><span class="toc-number">3.9.</span> <span class="toc-text">cast</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E6%96%B0%E7%9A%84%E8%AF%AD%E6%B3%95%E6%94%AF%E6%8C%81"><span class="toc-number">4.</span> <span class="toc-text">三、新的语法支持</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%93%8D%E4%BD%9C%E7%AC%A6"><span class="toc-number">4.1.</span> <span class="toc-text">&amp; 操作符</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#rlike"><span class="toc-number">4.2.</span> <span class="toc-text">rlike</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81UDF"><span class="toc-number">5.</span> <span class="toc-text">四、UDF</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AD%97%E7%AC%A6%E4%B8%B2%E7%9B%B8%E5%85%B3"><span class="toc-number">5.0.1.</span> <span class="toc-text">字符串相关</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%97%A5%E6%9C%9F%E7%9B%B8%E5%85%B3"><span class="toc-number">5.1.</span> <span class="toc-text">日期相关</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#int-bigint%E5%87%BD%E6%95%B0"><span class="toc-number">5.2.</span> <span class="toc-text">int&#x2F;bigint函数</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E5%85%B6%E4%BB%96%E5%85%BC%E5%AE%B9"><span class="toc-number">6.</span> <span class="toc-text">五、其他兼容</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Hive%E8%A7%86%E5%9B%BE"><span class="toc-number">6.1.</span> <span class="toc-text">Hive视图</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8F%92%E5%85%A5%E6%95%B0%E6%8D%AE%E4%B8%B4%E6%97%B6%E6%96%87%E4%BB%B6%E7%9B%AE%E5%BD%95"><span class="toc-number">6.2.</span> <span class="toc-text">插入数据临时文件目录</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%94%AF%E6%8C%81%E5%8F%AF%E8%AF%BB%E5%8F%96Hive%E9%80%92%E5%BD%92%E5%AD%90%E5%88%86%E5%8C%BA"><span class="toc-number">6.3.</span> <span class="toc-text">支持可读取Hive递归子分区</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Key-not-present-in-map"><span class="toc-number">6.4.</span> <span class="toc-text">Key not present in map</span></a></li></ol></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/09/18/solve-presto-system-load-too-high/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          Presto System load过高问题调研
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2018/08/11/the-basic-concepts-of-presto/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Presto的一些基本概念&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

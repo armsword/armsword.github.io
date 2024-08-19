@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Redis里dict源码剖析 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Redis全名叫做Remote Dictionary Server，从全称就可以看出dict是Redis里重要的数据结构，看了下dict.c里的源码，简单分析下。 dict.c主要是实现了哈希功能，实际上实现哈希（字典）常见的方法有几种： &lt;1&gt;比如我们数据结构课上学的数组和链表法，但是这种方法适用于元素个数不多的情况下 &lt;2&gt;使用复杂的平衡树(B-等等)，性能比较不错，比">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis里dict源码剖析">
+<meta property="og:url" content="http://armsword.com/2014/04/20/redis-dict-analyze/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="Redis全名叫做Remote Dictionary Server，从全称就可以看出dict是Redis里重要的数据结构，看了下dict.c里的源码，简单分析下。 dict.c主要是实现了哈希功能，实际上实现哈希（字典）常见的方法有几种： &lt;1&gt;比如我们数据结构课上学的数组和链表法，但是这种方法适用于元素个数不多的情况下 &lt;2&gt;使用复杂的平衡树(B-等等)，性能比较不错，比">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2014/04/2014042001.png">
+<meta property="article:published_time" content="2014-04-20T15:07:52.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.283Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2014/04/2014042001.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-redis-dict-analyze" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Redis里dict源码剖析
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/04/20/redis-dict-analyze/" class="article-date">
+  <time datetime="2014-04-20T15:07:52.000Z" itemprop="datePublished">2014-04-20</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C-C/">C/C++</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Redis全名叫做Remote Dictionary Server，从全称就可以看出dict是Redis里重要的数据结构，看了下dict.c里的源码，简单分析下。</p>
+<p>dict.c主要是实现了哈希功能，实际上实现哈希（字典）常见的方法有几种：</p>
+<p>&lt;1&gt;比如我们数据结构课上学的数组和链表法，但是这种方法适用于元素个数不多的情况下</p>
+<p>&lt;2&gt;使用复杂的平衡树(B-等等)，性能比较不错，比如MySQL里的索引就使用了这种方法</p>
+<p>&lt;3&gt;哈希表，兼顾了高效和简单性，Redis选择了这种方法。</p>
+<p>我们就解读下dict.c里源码里的数据结构吧，我们知道hash表的性能由hash表的大小和解决冲突的方法决定。Redis里使用了两个哈希表(ht[0])和哈希表(ht[1])，hash[0]是字典主要使用的hash表，而hash[1]主要对0号哈希表进行rehash时才使用。读者可能不明白这个地方啥意思？其实就是，程序每次申请几个字节（默认为4字节），当key&#x2F;value数量达到规定时，程序申请的4字节就翻一倍（这里使用了慢迁移），那什么时候rehash呢？我们知道size &#x3D;&#x3D; used（根据下面的dictht结构体）时，达到最理想状态，所以当used&#x2F;size &gt; 1时，就进行rehash。我们先看看dict.h里定义的几个结构体吧：</p>
+<span id="more"></span>
+
+<p>dict:</p>
+<figure class="highlight verilog"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> dict &#123;</span><br><span class="line">    dictType *<span class="keyword">type</span>;  <span class="comment">//哈希表节点指针数组(俗称桶，bucket)hash表的类型，可以是string，list等</span></span><br><span class="line">    <span class="keyword">void</span> *privdata; <span class="comment">//该hash表的一些private数据</span></span><br><span class="line">    dictht ht[<span class="number">2</span>];</span><br><span class="line">    <span class="keyword">int</span> rehashidx; <span class="comment">/* rehashidx记录的实际上是rehash进行到的索引，比如如果rehash进行到第10个元素，那么rehashidx的值就为9。如果没有在进行rehash，rehashidex的值就为-1.*/</span></span><br><span class="line">    <span class="keyword">int</span> iterators; <span class="comment">/* number of iterators currently running */</span></span><br><span class="line">&#125; dict;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>dictType:</p>
+<figure class="highlight angelscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//每种hash table的类型，里面既有成员函数，又有成员变量，模拟的C++类，每个函数带有的privdata均为预留参数</span></span><br><span class="line"><span class="keyword">typedef</span> struct dictType &#123;</span><br><span class="line">    unsigned <span class="built_in">int</span> (*hashFunction)(<span class="keyword">const</span> <span class="built_in">void</span> *key); <span class="comment">//要采用的hash函数</span></span><br><span class="line">    <span class="built_in">void</span> *(*keyDup)(<span class="built_in">void</span> *privdata, <span class="keyword">const</span> <span class="built_in">void</span> *key); <span class="comment">//对key进行拷贝</span></span><br><span class="line">    <span class="built_in">void</span> *(*valDup)(<span class="built_in">void</span> *privdata, <span class="keyword">const</span> <span class="built_in">void</span> *obj); <span class="comment">//对value进行拷贝</span></span><br><span class="line">    <span class="built_in">int</span> (*keyCompare)(<span class="built_in">void</span> *privdata, <span class="keyword">const</span> <span class="built_in">void</span> *key1, <span class="keyword">const</span> <span class="built_in">void</span> *key2); <span class="comment">//key比较器</span></span><br><span class="line">    <span class="built_in">void</span> (*keyDestructor)(<span class="built_in">void</span> *privdata, <span class="built_in">void</span> *key); <span class="comment">//销毁key，一般为释放空间</span></span><br><span class="line">    <span class="built_in">void</span> (*valDestructor)(<span class="built_in">void</span> *privdata, <span class="built_in">void</span> *obj); <span class="comment">//销毁value，一般为释放空间</span></span><br><span class="line">&#125; dictType;</span><br></pre></td></tr></table></figure>
+<p>dictht:</p>
+<figure class="highlight arduino"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* This is our hash table structure. Every dictionary has two of this as we</span></span><br><span class="line"><span class="comment"> * implement incremental rehashing, for the old to the new table. */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="title class_">dictht</span> &#123;</span><br><span class="line">    dictEntry **table; <span class="comment">//hash表中的数据，以key/value形式，通过单链表保存</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> size; <span class="comment">//桶个数</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> sizemask; <span class="comment">//size - 1，方便定位</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> used; <span class="comment">//实际保存的元素数</span></span><br><span class="line">&#125; dictht;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>dictEntry:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//hash表中每一项key/value，若key的映射值，以单链表的形式保存</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="title class_">dictEntry</span> &#123;</span><br><span class="line">    <span class="type">void</span> *key;</span><br><span class="line">    <span class="keyword">union</span> &#123;</span><br><span class="line">        <span class="type">void</span> *val;</span><br><span class="line">        <span class="type">uint64_t</span> u64;</span><br><span class="line">        <span class="type">int64_t</span> s64;</span><br><span class="line">    &#125; v;</span><br><span class="line">    <span class="keyword">struct</span> <span class="title class_">dictEntry</span> *next;</span><br><span class="line">&#125; dictEntry;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>dict.h一共有这四种结构，每个结构体里的每个变量的用途，我都已经注释出来。</p>
+<p>根据程序分析出整个字典结构如图所示（此时的状态为dictadd，且未出现rehash和rehash也未在进行中）：<br><img src="/img/2014/04/2014042001.png"></p>
+<p>我们之后再说下程序的执行流程吧：</p>
+<p>首先是dict初始化，init_hash_dict –&gt; dictCreate –&gt; _dictInit –&gt; _dictRest</p>
+<p>上面流程代码都很简单，就是把dict结构体和dictht里面的数据都初始化。</p>
+<p>然后是添加键值到字典，这个地方比较难懂，也是重点，因为它包括的操作比较多，分为三种情况：</p>
+<p>&lt;1&gt;如果字典为未初始化（也即字典的0号哈希表的table属性为空），那么程序需要对0号哈希表进行初始化。</p>
+<p>&lt;2&gt;如果在插入时发生了键碰撞，处理碰撞，链表法</p>
+<p>&lt;3&gt;如果插入新元素使得字典满足了rehash条件，那么启动相应的rehash程序(used &#x2F; size &gt; 1)。</p>
+<p>这里有个需要注意的地方，如果rehash正在进行中(ht[0]数据–&gt;ht[1])，那么选择ht[1]作为新键值对的添加目标，否则ht[0]作为新键值对的添加目标。</p>
+<p>本来想长篇大论呢，但是学校网速真的是太卡了，不写了，看看其他的吧。</p>
+<p>参考资料：</p>
+<p><a href="http://origin.redisbook.com/en/latest/">《Redis设计与实现》</a></p>
+
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2014/05/18/light-cgi-server/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          写了一个简单的CGI Server
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2014/04/09/letter-combinations-of-a-phone-number/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Letter Combinations of a Phone Number&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

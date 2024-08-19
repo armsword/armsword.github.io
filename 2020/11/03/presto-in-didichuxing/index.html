@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Presto 在滴滴的探索和实践 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Presto 简介简介Presto是Facebook 开源的 MPP (Massive Parallel Processing) SQL 引擎，其理念来源于一个叫 Volcano 的并行数据库，该数据库提出了一个并行执行 SQL 的模型，它被设计为用来专门进行高速、实时的数据分析。Presto是一个SQL计算引擎，分离计算层和存储层，其不存储数据，通过Connector SPI实现对各种数据源（S">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Presto 在滴滴的探索和实践">
+<meta property="og:url" content="http://armsword.com/2020/11/03/presto-in-didichuxing/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="Presto 简介简介Presto是Facebook 开源的 MPP (Massive Parallel Processing) SQL 引擎，其理念来源于一个叫 Volcano 的并行数据库，该数据库提出了一个并行执行 SQL 的模型，它被设计为用来专门进行高速、实时的数据分析。Presto是一个SQL计算引擎，分离计算层和存储层，其不存储数据，通过Connector SPI实现对各种数据源（S">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2020/11/%E6%9E%B6%E6%9E%84.png">
+<meta property="og:image" content="http://armsword.com/img/2020/11/%E5%9C%BA%E6%99%AF.png">
+<meta property="og:image" content="http://armsword.com/img/2020/11/%E8%A7%84%E6%A8%A1.png">
+<meta property="og:image" content="http://armsword.com/img/2020/11/%E5%A2%9E%E9%95%BF.png">
+<meta property="og:image" content="http://armsword.com/img/2020/11/deploy.png">
+<meta property="og:image" content="http://armsword.com/img/2020/11/%E6%8E%A5%E5%85%A5.png">
+<meta property="og:image" content="http://armsword.com/img/2020/11/time.png">
+<meta property="og:image" content="http://armsword.com/img/2020/11/sql.png">
+<meta property="og:image" content="http://armsword.com/img/2020/11/%E5%85%BC%E5%AE%B9.png">
+<meta property="og:image" content="http://armsword.com/img/2020/11/druid.png">
+<meta property="og:image" content="http://armsword.com/img/2020/11/pod.png">
+<meta property="og:image" content="http://armsword.com/img/2020/11/query.png">
+<meta property="og:image" content="http://armsword.com/img/2020/11/oom.png">
+<meta property="og:image" content="http://armsword.com/img/2020/11/flame.png">
+<meta property="og:image" content="http://armsword.com/img/2020/11/performance.png">
+<meta property="og:image" content="http://armsword.com/img/2020/11/%E9%AB%98%E6%80%A7%E8%83%BD.png">
+<meta property="og:image" content="http://armsword.com/img/2020/11/cpu.png">
+<meta property="og:image" content="http://armsword.com/img/2020/11/cpu_low.png">
+<meta property="article:published_time" content="2020-11-03T07:59:12.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.292Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2020/11/%E6%9E%B6%E6%9E%84.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-presto-in-didichuxing" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Presto 在滴滴的探索和实践
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2020/11/03/presto-in-didichuxing/" class="article-date">
+  <time datetime="2020-11-03T07:59:12.000Z" itemprop="datePublished">2020-11-03</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Presto-简介"><a href="#Presto-简介" class="headerlink" title="Presto 简介"></a>Presto 简介</h2><h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>Presto是Facebook 开源的 MPP (Massive Parallel Processing) SQL 引擎，其理念来源于一个叫 Volcano 的并行数据库，该数据库提出了一个并行执行 SQL 的模型，它被设计为用来专门进行高速、实时的数据分析。Presto是一个SQL计算引擎，分离计算层和存储层，其不存储数据，通过Connector SPI实现对各种数据源（Storage）的访问。</p>
+<h3 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h3><img src="/img/2020/11/架构.png" width = "71%" />
+
+<p>Presto沿用了通用的Master-Slave架构，一个Coordinator，多个Worker。Coordinator负责解析SQL语句，生成执行计划，分发执行任务给Worker节点执行；Worker节点负责实际执行查询任务。Presto提供了一套Connector接口，用于读取元信息和原始数据，Presto 内置有多种数据源，如 Hive、MySQL、Kudu、Kafka 等。同时，Presto 的扩展机制允许自定义 Connector，从而实现对定制数据源的查询。假如配置了Hive Connector，需要配置一个Hive MetaStore服务为Presto提供Hive元信息，Worker节点通过Hive Connector与HDFS交互，读取原始数据。</p>
+<h3 id="实现低延时原理"><a href="#实现低延时原理" class="headerlink" title="实现低延时原理"></a>实现低延时原理</h3><p>Presto是一个交互式查询引擎，我们最关心的是Presto实现低延时查询的原理，以下几点是其性能脱颖而出的主要原因。</p>
+<ul>
+<li>完全基于内存的并行计算</li>
+<li>流水线</li>
+<li>本地化计算</li>
+<li>动态编译执行计划</li>
+<li>小心使用内存和数据结构</li>
+<li>GC控制</li>
+<li>无容错</li>
+</ul>
+<h2 id="Presto-在滴滴的应用"><a href="#Presto-在滴滴的应用" class="headerlink" title="Presto 在滴滴的应用"></a>Presto 在滴滴的应用</h2><h3 id="业务场景"><a href="#业务场景" class="headerlink" title="业务场景"></a>业务场景</h3><ul>
+<li>Hive SQL查询加速</li>
+<li>数据平台Ad-Hoc查询</li>
+<li>报表（BI报表、自定义报表）</li>
+<li>活动营销</li>
+<li>数据质量检测</li>
+<li>资产管理</li>
+<li>固定数据产品</li>
+</ul>
+<span id="more"></span>
+
+<img src="/img/2020/11/场景.png" width = "71%" />
+
+<h3 id="业务规模"><a href="#业务规模" class="headerlink" title="业务规模"></a>业务规模</h3><img src="/img/2020/11/规模.png" width = "71%" />
+
+<h3 id="业务增长"><a href="#业务增长" class="headerlink" title="业务增长"></a>业务增长</h3><img src="/img/2020/11/增长.png" width = "71%" />
+
+<h3 id="集群部署"><a href="#集群部署" class="headerlink" title="集群部署"></a>集群部署</h3><img src="/img/2020/11/deploy.png" width = "71%" />
+
+<p>目前Presto分为混合集群和高性能集群，如上图所示，混合集群共用HDFS集群，与离线Hadoop大集群混合部署，为了防止集群内大查询影响小查询， 而单独搭建集群会导致集群太多，维护成本太高，我们通过指定Label来做到物理集群隔离（详细后文会讲到）。而高性能集群，HDFS是单独部署的，且可以访问Druid， 使Presto 具备查询实时数据和离线数据能力。</p>
+<h3 id="接入方式"><a href="#接入方式" class="headerlink" title="接入方式"></a>接入方式</h3><ul>
+<li>二次开发了JDBC、Go、Python、Cli、R、NodeJs 、HTTP等多种接入方式，打通了公司内部权限体系，让业务方方便快捷的接入 Presto 的，满足了业务方多种技术栈的接入需求。</li>
+<li>Presto 接入了查询路由 Gateway，Gateway会智能选择合适的引擎，用户查询优先请求Presto，如果查询失败，会使用Spark查询，如果依然失败，最后会请求Hive。在Gateway层，我们做了一些优化来区分大查询、中查询及小查询，对于查询时间小于3分钟的，我们即认为适合Presto查询，比如通过HBO（基于历史的统计信息）及JOIN数量来区分查询大小，架构图见：</li>
+</ul>
+<img src="/img/2020/11/接入.png" width = "71%" />
+
+<h2 id="引擎迭代"><a href="#引擎迭代" class="headerlink" title="引擎迭代"></a>引擎迭代</h2><img src="/img/2020/11/time.png" width = "71%" />
+
+<p>我们从2017年09月份开始调研Presto，经历过0.192、0.215，共发布56次版本。而在19年初（0.215版本是社区分家版本），Presto社区分家，分为两个项目，叫PrestoDB和PrestoSQL，两者都成立了自己的基金会。我们决定升级到PrestoSQL 最新版本（340版本）原因是：</p>
+<ul>
+<li>PrestoSQL社区活跃度更高，PR和用户问题能够及时回复</li>
+<li>PrestoDB主要主力还是Facebook维护，以其内部需求为主</li>
+<li>PrestoDB未来方向主要是ETL相关的，我们有Spark兜底，ETL功能依赖Spark、Hive</li>
+</ul>
+<h2 id="引擎改进"><a href="#引擎改进" class="headerlink" title="引擎改进"></a>引擎改进</h2><p>在滴滴内部，Presto主要用于Ad-Hoc查询及Hive SQL查询加速，为了方便用户能尽快将SQL迁移到Presto引擎上，且提高Presto引擎查询性能，我们对Presto做了大量二次开发。同时，因为使用Gateway，即使SQL查询出错，SQL也会转发到Spark及Hive上，所以我们没有使用Presto的Spill to Disk功能。这样一个纯内存SQL引擎在使用过程中会遇到很多稳定问题，我们在解决这些问题时，也积累了很多经验，下面将一一介绍：</p>
+<h3 id="1、Hive-SQL兼容"><a href="#1、Hive-SQL兼容" class="headerlink" title="1、Hive SQL兼容"></a>1、Hive SQL兼容</h3><p>18年上半年，Presto刚起步，滴滴内部很多用户不愿意迁移业务，主要是因为Presto是ANSI SQL，与HiveQL差距较大，且查询结果也会出现结果不一致问题，迁移成本比较高，为了方便Hive用户能顺利迁移业务，我们对Presto做了Hive SQL兼容。而在技术选型时，我们没有在Presto上层，即没有在Gateway这层做SQL兼容，主要是因为开发量较大，且UDF相关的开发和转换成本太高，另外就是需要多做一次SQL解析，查询性能会受到影响，同时增加了Hive Metastore的请求次数，当时Hive Metastore的压力比较大，考虑到成本和稳定性，我们最后选择在Presto引擎层上兼容。</p>
+<img src="/img/2020/11/sql.png" width = "71%" />
+
+<p>主要工作：</p>
+<ul>
+<li>隐式类型转换</li>
+<li>语义兼容</li>
+<li>语法兼容</li>
+<li>支持Hive视图</li>
+<li>Parquet HDFS文件读取支持</li>
+<li>大量UDF支持</li>
+<li>其他</li>
+</ul>
+<p>Hive SQL兼容，我们迭代了三个大版本，目前线上SQL通过率97% ~ 99%。而业务从Spark&#x2F;Hive迁移到Presto后，查询性能平均提升30% ~ 50%，甚至一些场景提升10倍，Ad-Hoc场景共节省80%机器资源。下图是线上Presto集群的SQL查询通过率及失败原因占比，’null’ 表示查询成功的SQL，其他表示错误原因：<br><img src="/img/2020/11/兼容.png" width = "71%" /></p>
+<h3 id="2、物理资源隔离"><a href="#2、物理资源隔离" class="headerlink" title="2、物理资源隔离"></a>2、物理资源隔离</h3><p>上文说到，对性能要求高的业务与大查询业务方混合跑，查询性能容易受到影响，只有单独搭建集群。而单独搭建集群导致Presto集群太多，维护成本太高。因为目前我们Presto Coordinator还没有遇到瓶颈，大查询主要影响Worker性能，比如一条大SQL导致Worker CPU打满，导致其他业务方SQL查询变慢。所以我们修改调度模块，让Presto支持可以动态打Label，动态调度指定的 Label 机器。如下图所示：</p>
+<img src="/img/2020/11/druid.png" width = "71%" />
+
+<p>根据不同的业务划分不同的label，通过配置文件配置业务方指定的label和其对应的机器列表，Coordinator会加载配置，在内存里维护集群label信息，同时如果配置文件里label信息变动，Coordinator会定时更新label信息，这样调度时根据SQL指定的label信息来获取对应的Worker机器，如指定label A时，那调度机器里只选择Worker A 和 Worker B 即可。这样就可以做到让机器物理隔离了，对性能要求高的业务查询既有保障了。</p>
+<h3 id="3、Druid-Connector"><a href="#3、Druid-Connector" class="headerlink" title="3、Druid Connector"></a>3、Druid Connector</h3><p>使用 Presto + HDFS 有一些痛点：</p>
+<ul>
+<li>latency高，QPS较低 </li>
+<li>不能查实时数据，如果有实时数据需求，需要再构建一条实时数据链路，增加了系统的复杂性</li>
+<li>要想获得极限性能，必须与HDFS DataNode 混部，且DataNode使用高级硬件，有自建HDFS的需求，增加了运维的负担</li>
+</ul>
+<p>所以我们在0.215版本实现了Presto on Druid Connector，此插件有如下优点：</p>
+<ul>
+<li>结合 Druid 的预聚合、计算能力（过滤聚合）、Cache能力，提升Presto性能（RT与QPS）</li>
+<li>让 Presto 具备查询 Druid 实时数据能力</li>
+<li>为Druid提供全面的SQL能力支持，扩展Druid数据的应用场景</li>
+<li>通过Druid Broker获取Druid元数据信息</li>
+<li>从Druid Historical直接获取数据</li>
+<li>实现了Limit下推、Filter下推、Project下推及Agg下推</li>
+</ul>
+<p>在PrestoSQL 340版本，社区也实现了Presto on Druid Connector，但是此Connector是通过JDBC实现的，缺点比较明显：</p>
+<ul>
+<li>无法划分多个Split，查询性能差</li>
+<li>请求查询Broker，之后再查询Historical，多一次网络通信</li>
+<li>对于一些场景，如大量Scan场景，会导致Broker OOM</li>
+<li>Project及Agg下推支持不完善</li>
+</ul>
+<p>详细架构图见：<br><img src="/img/2020/11/pod.png" width = "80%" /></p>
+<p>使用了Presto on Druid后，一些场景，性能提升4~5倍。</p>
+<h3 id="4、易用性建设"><a href="#4、易用性建设" class="headerlink" title="4、易用性建设"></a>4、易用性建设</h3><p>为了支持公司的几个核心数据平台，包括：数梦、提取工具、数易及特征加速及各种散户，我们对Presto做了很多二次开发，包括权限管理、语法支持等，保证了业务的快速接入。主要工作：</p>
+<ul>
+<li>租户与权限<ul>
+<li>与内部Hadoop打通，使用HDFS SIMPLE协议做认证</li>
+<li>使用Ranger做鉴权，解析SQL使Presto拥有将列信息传递给下游的能力，提供用户名+数据库名&#x2F;表名&#x2F;列名，四元组的鉴权能力，同时提供多表同时鉴权的能力</li>
+<li>用户指定用户名做鉴权和认证，大账号用于读写HDFS数据</li>
+<li>支持视图、表别名鉴权</li>
+</ul>
+</li>
+<li>语法拓展</li>
+<li>支持add partition</li>
+<li>支持数字开头的表</li>
+<li>支持数字开头的字段</li>
+<li>特性增强</li>
+<li>insert数据时，将插入数据的总行数写入HMS，为业务方提供毫秒级的元数据感知能力</li>
+<li>支持查询进度滚动更新，提升了用户体验</li>
+<li>支持查询可以指定优先级，为用户不同等级的业务提供了优先级控制的能力</li>
+<li>修改通信协议，支持业务方可以传达自定义信息，满足了用户的日志审计需要等</li>
+<li>支持DeprecatedLzoTextInputFormat格式</li>
+<li>支持读HDFS Parquet文件路径</li>
+</ul>
+<h3 id="5、稳定性建设"><a href="#5、稳定性建设" class="headerlink" title="5、稳定性建设"></a>5、稳定性建设</h3><p>Presto在使用过程中会遇到很多稳定性问题，比如Coordinator OOM，Worker Full GC等，为了解决和方便定位这些问题，首先我们做了监控体系建设，主要包括：</p>
+<ul>
+<li>通过Presto Plugin实现日志审计功能</li>
+<li>通过JMX获取引擎指标将监控信息写入Ganglia</li>
+<li>将日志审计采集到HDFS和ES；统一接入运维监控体系，将所有指标发到 Kafka；</li>
+<li>Presto UI改进：可以查看Worker信息，可以查看Worker死活信息</li>
+</ul>
+<p>通过以上功能，在每次出现稳定性问题时，方便我们及时定位问题，包括指标查看及SQL回放等，如下图所示，可以查看某集群的成功及失败SQL数，我们可以通过定义查询失败率来触发报警：</p>
+<img src="/img/2020/11/query.png" width = "80%" />
+
+<p>在Presto交流社区，Presto的稳定性问题困扰了很多Presto使用者，包括Coordinator和Worker挂掉，集群运行一段时间后查询性能变慢等。我们在解决这些问题时积累了很多经验，这里说下解决思路和方法。<br>根据职责划分，Presto分为Coordinator和Worker模块，Coordinator主要负责SQL解析、生成查询计划、Split调度及查询状态管理等，所以当Coordinator遇到OOM或者Coredump时，获取元信息及生成Splits是重点怀疑的地方。而内存问题，推荐使用MAT分析具体原因。如下图是通过MAT分析，得出开启了FileSystem Cache，内存泄漏导致 OOM。</p>
+<img src="/img/2020/11/oom.png" width = "80%" />
+
+<p>这里我们总结了Coordinator常见的问题和解决方法：</p>
+<ul>
+<li>使用HDFS FileSystem Cache导致内存泄漏，解决方法禁止FileSystem Cache，后续Presto自己维护了FileSystem Cache</li>
+<li>Jetty导致堆外内存泄漏，原因是Gzip导致了堆外内存泄漏，升级Jetty版本解决</li>
+<li>Splits太多，无可用端口，TIME_WAIT太高，修改TCP参数解决</li>
+<li>JVM Coredump，显示”unable to create new native thread”，通过修改pid_max及max_map_count解决</li>
+<li>Presto内核Bug，查询失败的SQL太多，导致Coordinator内存泄漏，社区已修复</li>
+</ul>
+<p>而Presto Worker主要用于计算，性能瓶颈点主要是内存和CPU。内存方面通过三种方法来保障和查找问题：</p>
+<ul>
+<li>通过Resource Group控制业务并发，防止严重超卖</li>
+<li>通过JVM调优，解决一些常见内存问题，如Young GC Exhausted</li>
+<li>善用MAT工具，发现内存瓶颈</li>
+</ul>
+<p>而Presto Worker常会遇到查询变慢问题，两方面原因，一是确定是否开启了Swap内存，当Free内存不足时，使用Swap会严重影响查询性能。第二是CPU问题，解决此类问题，要善用Perf工具，多做Perf来分析CPU为什么不在干活，看CPU主要在做什么，是GC问题还是JVM Bug。如下图所示，为线上Presto集群触发了JVM Bug，导致运行一段时间后查询变慢，重启后恢复，Perf后找到原因，分析JVM代码，可通过JVM调优或升级JVM版本解决：</p>
+<img src="/img/2020/11/flame.png" width = "80%" />
+
+<p>这里我们也总结了Worker常见的问题和解决方法：</p>
+<ul>
+<li>Sys load过高，导致业务查询性能影响很大，研究jvm原理，通过参数（-XX:PerMethodRecompilationCutoff&#x3D;10000 及 -XX:PerBytecodeRecompilationCutoff&#x3D;10000）解决，也可升级最新JVM解决</li>
+<li>Worker查询hang住问题，原因HDFS客户端存在bug，当Presto与HDFS混部署，数据和客户端在同一台机器上时，短路读时一直wait锁，导致查询Hang住超时，Hadoop社区已解决</li>
+<li>超卖导致Worker Young GC Exhausted，优化GC参数，如设置-XX:G1ReservePercent&#x3D;25 及 -XX:InitiatingHeapOccupancyPercent&#x3D;15</li>
+<li>ORC太大，导致Presto读取ORC Stripe Statistics出现OOM，解决方法是限制ProtoBuf报文大小，同时协助业务方合理数据治理</li>
+<li>修改Presto内存管理逻辑，优化Kill策略，保障当内存不够时，Presto Worker不会OOM，只需要将大查询Kill掉，后续熔断机制会改为基于JVM，类似ES的熔断器，比如95% JVM 内存时，Kill掉最大SQL</li>
+</ul>
+<h3 id="6、引擎优化及调研"><a href="#6、引擎优化及调研" class="headerlink" title="6、引擎优化及调研"></a>6、引擎优化及调研</h3><p>作为一个Ad-Hoc引擎，Presto查询性能越快，用户体验越好，为了提高Presto的查询性能，在Presto on Hive场景，我们做了很多引擎优化工作，主要工作：</p>
+<ul>
+<li>某业务集群进行了JVM调优，将Ref Proc由单线程改为并行执行，普通查询由30S~1分钟降低为3-4S，性能提升10倍+</li>
+<li>ORC数据优化，将指定string字段添加了布隆过滤器，查询性能提升20-30%，针对一些业务做了调优</li>
+<li>数据治理和小文件合并，某业务方查询性能由20S降低为10S，性能提升一倍，且查询性能稳定</li>
+<li>ORC格式性能优化，查询耗时减少5%</li>
+<li>分区裁剪优化，解决指定分区但获取所有分区元信息问题，减少了HMS的压力</li>
+<li>下推优化，实现了Limit、Filter、Project、Agg下推到存储层</li>
+</ul>
+<p>18年我们为了提高Presto查询性能，也调研了一些技术方案，包括Presto on Alluxio和Presto on Carbondata，但是这2种方案最后都被舍弃了，原因是：</p>
+<ul>
+<li>Presto on Alluxio查询性能提升35%，但是内存占用和性能提升不成正比，所以我们放弃了Presto on Alluxio，后续可能会对一些性能要求敏感的业务使用</li>
+<li>Presto on Carbondata是在18年8月份测试的，当时的版本，Carbondata稳定性较差，性能没有明显优势，一些场景ORC更快，所以我们没有再继续跟踪调研Presto on Carbondata。因为滴滴有专门维护Druid的团队，所以我们对接了Presto on Druid，一些场景性能提升4~5倍，后续我们会更多关注Presto on Clickhouse及Presto on Elasticsearch</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过以上工作，滴滴Presto逐渐接入公司各大数据平台，并成为了公司首选Ad-Hoc查询引擎及Hive SQL加速引擎，下图可以看到某产品接入后的性能提升：<br><img src="/img/2020/11/performance.png" width = "80%" /></p>
+<p>上图可以看到大约2018年10月该平台开始接入Presto，查询耗时TP50性能提升了10+倍，由400S降低到31S。且在任务数逐渐增长的情况下，查询耗时保证稳定不变。<br>而高性能集群，我们做了很多稳定性和性能优化工作，保证了平均查询时间小于2S。如下图所示：</p>
+<img src="/img/2020/11/高性能.png" width = "80%" />
+
+<h2 id="展望"><a href="#展望" class="headerlink" title="展望"></a>展望</h2><p>Presto主要应用场景是Ad-Hoc查询，所以其高峰期主要在白天，如下图所示，是网约车业务下午12-16点的查询，可以看到平均CPU使用率在40%以上。</p>
+<img src="/img/2020/11/cpu.png" width = "80%" />
+
+<p>但是如果看最近一个月的CPU使用率会发现，平均CPU使用率比较低，且波峰在白天10~18点，晚上基本上没有查询，CPU使用率不到5%。如下图所示：</p>
+<img src="/img/2020/11/cpu_low.png" width = "80%" />
+
+<p>所以，解决晚上资源浪费问题是我们今后需要解决的难题。<br>同时，为了不与开源社区脱节，我们打算升级PrestoDB 0.215到PrestoSQL 340版本，届时会把我们的Presto on Druid代码开源出来，回馈社区。</p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Presto-%E7%AE%80%E4%BB%8B"><span class="toc-number">1.</span> <span class="toc-text">Presto 简介</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AE%80%E4%BB%8B"><span class="toc-number">1.1.</span> <span class="toc-text">简介</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9E%B6%E6%9E%84"><span class="toc-number">1.2.</span> <span class="toc-text">架构</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0%E4%BD%8E%E5%BB%B6%E6%97%B6%E5%8E%9F%E7%90%86"><span class="toc-number">1.3.</span> <span class="toc-text">实现低延时原理</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Presto-%E5%9C%A8%E6%BB%B4%E6%BB%B4%E7%9A%84%E5%BA%94%E7%94%A8"><span class="toc-number">2.</span> <span class="toc-text">Presto 在滴滴的应用</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%9A%E5%8A%A1%E5%9C%BA%E6%99%AF"><span class="toc-number">2.1.</span> <span class="toc-text">业务场景</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%9A%E5%8A%A1%E8%A7%84%E6%A8%A1"><span class="toc-number">2.2.</span> <span class="toc-text">业务规模</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%9A%E5%8A%A1%E5%A2%9E%E9%95%BF"><span class="toc-number">2.3.</span> <span class="toc-text">业务增长</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2"><span class="toc-number">2.4.</span> <span class="toc-text">集群部署</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8E%A5%E5%85%A5%E6%96%B9%E5%BC%8F"><span class="toc-number">2.5.</span> <span class="toc-text">接入方式</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BC%95%E6%93%8E%E8%BF%AD%E4%BB%A3"><span class="toc-number">3.</span> <span class="toc-text">引擎迭代</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BC%95%E6%93%8E%E6%94%B9%E8%BF%9B"><span class="toc-number">4.</span> <span class="toc-text">引擎改进</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81Hive-SQL%E5%85%BC%E5%AE%B9"><span class="toc-number">4.1.</span> <span class="toc-text">1、Hive SQL兼容</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%E3%80%81%E7%89%A9%E7%90%86%E8%B5%84%E6%BA%90%E9%9A%94%E7%A6%BB"><span class="toc-number">4.2.</span> <span class="toc-text">2、物理资源隔离</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3%E3%80%81Druid-Connector"><span class="toc-number">4.3.</span> <span class="toc-text">3、Druid Connector</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4%E3%80%81%E6%98%93%E7%94%A8%E6%80%A7%E5%BB%BA%E8%AE%BE"><span class="toc-number">4.4.</span> <span class="toc-text">4、易用性建设</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5%E3%80%81%E7%A8%B3%E5%AE%9A%E6%80%A7%E5%BB%BA%E8%AE%BE"><span class="toc-number">4.5.</span> <span class="toc-text">5、稳定性建设</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6%E3%80%81%E5%BC%95%E6%93%8E%E4%BC%98%E5%8C%96%E5%8F%8A%E8%B0%83%E7%A0%94"><span class="toc-number">4.6.</span> <span class="toc-text">6、引擎优化及调研</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">5.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B1%95%E6%9C%9B"><span class="toc-number">6.</span> <span class="toc-text">展望</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2020/12/10/solve-presto-jvm-coredump/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          Presto Master JVM Core问题调研
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2020/06/23/jetty-cause-presto-memory-leak/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Jetty导致Presto堆外内存泄露的排查过程&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

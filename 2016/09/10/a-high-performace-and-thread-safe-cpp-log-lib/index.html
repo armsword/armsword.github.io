@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>dlog:高性能线程安全的C++日志库 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="打算闲暇时光写点靠谱的东西比如名字服务、KV存储等基础服务类软件，所以周末就先从封装一些基础库开始。上周末写了个C++日志库，支持多线程，性能也还不错，今天就做了下测试和修改了下bug。这里说下该库的使用方法，以及实现思路以及一些性能调优方法。欢迎交流和指教。 源码地址https:&#x2F;&#x2F;github.com&#x2F;armsword&#x2F;dlog 编译执行build.sh，在上层目录里会生成build文件，测试">
+<meta property="og:type" content="article">
+<meta property="og:title" content="dlog:高性能线程安全的C++日志库">
+<meta property="og:url" content="http://armsword.com/2016/09/10/a-high-performace-and-thread-safe-cpp-log-lib/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="打算闲暇时光写点靠谱的东西比如名字服务、KV存储等基础服务类软件，所以周末就先从封装一些基础库开始。上周末写了个C++日志库，支持多线程，性能也还不错，今天就做了下测试和修改了下bug。这里说下该库的使用方法，以及实现思路以及一些性能调优方法。欢迎交流和指教。 源码地址https:&#x2F;&#x2F;github.com&#x2F;armsword&#x2F;dlog 编译执行build.sh，在上层目录里会生成build文件，测试">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2016-09-10T13:53:09.000Z">
+<meta property="article:modified_time" content="2023-12-26T11:34:16.000Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-a-high-performace-and-thread-safe-cpp-log-lib" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      dlog:高性能线程安全的C++日志库
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2016/09/10/a-high-performace-and-thread-safe-cpp-log-lib/" class="article-date">
+  <time datetime="2016-09-10T13:53:09.000Z" itemprop="datePublished">2016-09-10</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>打算闲暇时光写点靠谱的东西比如名字服务、KV存储等基础服务类软件，所以周末就先从封装一些基础库开始。上周末写了个C++日志库，支持多线程，性能也还不错，今天就做了下测试和修改了下bug。这里说下该库的使用方法，以及实现思路以及一些性能调优方法。欢迎交流和指教。</p>
+<h3 id="源码地址"><a href="#源码地址" class="headerlink" title="源码地址"></a>源码地址</h3><p><a href="https://github.com/armsword/dlog">https://github.com/armsword/dlog</a></p>
+<h3 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h3><p>执行build.sh，在上层目录里会生成build文件，测试的可执行文件在release&#x2F;bin目录下。</p>
+<span id="more"></span>
+
+<h3 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a>使用方法</h3><p>将etc文件下的dlog.json扔到可执行文件的当前目录（当然只要能让可执行文件找到dlog.json即可），每个函数包含logger文件夹下的Log.h头文件，在主函数里调用DLOG_INIT初始化一次，之后在每个需要打印log的文件里调用DLOG_LOG即可。<br>如实例所示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;dlog/logger/Log.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> dlog::logger;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="built_in">DLOG_INIT</span>();</span><br><span class="line">    </span><br><span class="line">    <span class="built_in">DLOG_LOG</span>(WARN, <span class="string">&quot;test the log level using log lib!&quot;</span>);</span><br><span class="line">    <span class="built_in">DLOG_LOG</span>(DEBUG, <span class="string">&quot;Hello World, %d&quot;</span>,<span class="number">2016</span>);</span><br><span class="line">    <span class="built_in">DLOG_LOG</span>(INFO, <span class="string">&quot;test Log C/C++ lib&quot;</span>);</span><br><span class="line">    <span class="built_in">DLOG_LOG</span>(ERROR, <span class="string">&quot;Hello everyone, this is my blog: http://armsword.com/; Welcome to visit it,Thank you!&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="输出样例"><a href="#输出样例" class="headerlink" title="输出样例"></a>输出样例</h3><p>目录名：dlog.log.20160911.0<br>日志内容：</p>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-attr">[2016-09-11 15:05:30.510]</span> <span class="selector-attr">[WARN]</span> <span class="selector-attr">[4246443808]</span> <span class="selector-attr">[/home/Github/dlog/example/LogTest.cpp:8]</span> <span class="selector-attr">[main]</span> test the log level using log lib!</span><br><span class="line"><span class="selector-attr">[2016-09-11 15:05:30.510]</span> <span class="selector-attr">[DEBUG]</span> <span class="selector-attr">[4246443808]</span> <span class="selector-attr">[/home/Github/dlog/example/LogTest.cpp:9]</span> <span class="selector-attr">[main]</span> Hello World, <span class="number">2016</span></span><br><span class="line"><span class="selector-attr">[2016-09-11 15:05:30.510]</span> <span class="selector-attr">[INFO]</span> <span class="selector-attr">[4246443808]</span> <span class="selector-attr">[/home/Github/dlog/example/LogTest.cpp:10]</span> <span class="selector-attr">[main]</span> test Log C/C++ lib</span><br><span class="line"><span class="selector-attr">[2016-09-11 15:05:30.510]</span> <span class="selector-attr">[ERROR]</span> <span class="selector-attr">[4246443808]</span> <span class="selector-attr">[/home/Github/dlog/example/LogTest.cpp:11]</span> <span class="selector-attr">[main]</span> Hello everyone, this is my blog: http://armsword.com/; Welcome <span class="selector-tag">to</span> visit it,Thank you!</span><br></pre></td></tr></table></figure>
+
+<h3 id="该日志库功能"><a href="#该日志库功能" class="headerlink" title="该日志库功能"></a>该日志库功能</h3><ul>
+<li>包含四种日志级别，分别为WARN、DEBUG、INFO、ERROR，日志级别大小依次递增</li>
+<li>可配置输出日志路径</li>
+<li>可配置输出日志前缀</li>
+<li>可定义输出的日志级别，默认DEBUG</li>
+<li>可定义日志文件切分大小</li>
+<li>支持多线程程序</li>
+<li>可定义日志往磁盘刷新的方式</li>
+<li>支持每天切换新的日志文件</li>
+<li>支持log文件被删除时，从新建立日志文件</li>
+</ul>
+<h3 id="dlog-json配置"><a href="#dlog-json配置" class="headerlink" title="dlog.json配置"></a>dlog.json配置</h3><figure class="highlight jboss-cli"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;log_path&quot;</span>: <span class="string">&quot;./log&quot;</span>,    <span class="string">//</span> 日志路径</span><br><span class="line">    <span class="string">&quot;log_prefix&quot;</span>: <span class="string">&quot;dlog&quot;</span>,   <span class="string">//</span> 日志前缀</span><br><span class="line">    <span class="string">&quot;log_level&quot;</span>: <span class="string">&quot;DEBUG&quot;</span>,   <span class="string">//</span> 输出日志级别，DEBUG表示大于等于DEBUG级别的日志都打印</span><br><span class="line">    <span class="string">&quot;max_file_size&quot;</span>: 200,   <span class="string">//</span> 日志切分大小，单位m</span><br><span class="line">    <span class="string">&quot;async_flush&quot;</span>: <span class="literal">true</span>     <span class="string">//</span> 日志往磁盘刷新方式，<span class="literal">true</span>表示异步，<span class="literal">false</span>表示同步，建议选择<span class="literal">true</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="性能"><a href="#性能" class="headerlink" title="性能"></a>性能</h3><p>在测试机上测试了下机器的硬盘真实io写速度</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">time dd <span class="attribute">if</span>=/dev/zero <span class="attribute">of</span>=test.dbf <span class="attribute">bs</span>=8k <span class="attribute">count</span>=300000 <span class="attribute">oflag</span>=direct</span><br><span class="line">记录了300000+0 的读入</span><br><span class="line">记录了300000+0 的写出</span><br><span class="line">2457600000字节(2.5 GB)已复制，38.0385 秒，64.6 MB/秒</span><br><span class="line"></span><br><span class="line">注：<span class="attribute">oflag</span>=direct 表示使用DirectIO方式，不使用文件系统的buffer等</span><br></pre></td></tr></table></figure>
+<p>而我用dlog写入3.5G（1000W条数据），用时大约51、52s，计算下来，写速度大约69M&#x2F;s，与上面测试的磁盘io数据64.6 MB&#x2F;s比起来，性能还算不错（因为cache问题，要比裸写磁盘性能要好），当然由于时间问题，我测试还不够充分，以后有机会继续优化下再测试看下。</p>
+<h3 id="一些性能调优技巧"><a href="#一些性能调优技巧" class="headerlink" title="一些性能调优技巧"></a>一些性能调优技巧</h3><ul>
+<li>为了避免锁竞争，使用了一种更为高效的线程局部存储方法，就是使用关键字__thread来定义变量，__thread是GCC内置的线程局部存储设施(Thread-Local Storage)，凡是带有__thread的变量，每个线程都拥有该变量的一份拷贝，且互不干扰。</li>
+<li>使用likely，unlikely来提高CPU分支预测正确率来提高性能。我们定义likely、unlikely如下：<figure class="highlight scss"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-id">#define</span> <span class="built_in">likely</span>(x) <span class="built_in">__builtin_expect</span>((x), <span class="number">1</span>)</span><br><span class="line"><span class="selector-id">#define</span> <span class="built_in">unlikely</span>(x) <span class="built_in">__builtin_expect</span>((x), <span class="number">0</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+其中__builtin_expect是gcc提供的函数。顾名思义，likely表示这件事很大概率会发生 ：）</li>
+<li>使用loop线程来判断文件是否需要切分（打开新的fd），并且open、close这种费时操作，只在loop线程里完成，不阻塞log输出线程（一些小技巧保证线程安全）。</li>
+</ul>
+<p>本日志库主要是为了满足个人需求，当然即使公司业务，没特殊需求的话也足够用了，所以并没有写的像log4j或者log4cxx那么复杂，但即便如此该日志库还有一些提高空间，等我有空再继续优化下，欢迎交流和指教，谢谢。</p>
+<h3 id="致谢"><a href="#致谢" class="headerlink" title="致谢"></a>致谢</h3><p>因为很久没用Cmake了（之前在阿里用ascons），基本上都忘光了。并且阿里的一些经验使我比较在意代码目录的组织方式，搜索后发现一篇文章讲Cmake非常不错，作者很用心，非常感谢。</p>
+<p><a href="http://hahack.com/codes/cmake/">Cmake入门实战</a></p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%BA%90%E7%A0%81%E5%9C%B0%E5%9D%80"><span class="toc-number">1.</span> <span class="toc-text">源码地址</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BC%96%E8%AF%91"><span class="toc-number">2.</span> <span class="toc-text">编译</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95"><span class="toc-number">3.</span> <span class="toc-text">使用方法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BE%93%E5%87%BA%E6%A0%B7%E4%BE%8B"><span class="toc-number">4.</span> <span class="toc-text">输出样例</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AF%A5%E6%97%A5%E5%BF%97%E5%BA%93%E5%8A%9F%E8%83%BD"><span class="toc-number">5.</span> <span class="toc-text">该日志库功能</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#dlog-json%E9%85%8D%E7%BD%AE"><span class="toc-number">6.</span> <span class="toc-text">dlog.json配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%80%A7%E8%83%BD"><span class="toc-number">7.</span> <span class="toc-text">性能</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%80%E4%BA%9B%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E6%8A%80%E5%B7%A7"><span class="toc-number">8.</span> <span class="toc-text">一些性能调优技巧</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%87%B4%E8%B0%A2"><span class="toc-number">9.</span> <span class="toc-text">致谢</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2016/10/12/optimize-query-search-tree/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          一些常见的搜索查询树优化方法
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2016/08/17/earlybird/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Earlybird:Twitter实时搜索引擎&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

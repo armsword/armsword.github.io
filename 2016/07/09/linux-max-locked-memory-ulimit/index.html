@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>浅谈Linux ulimit以及max memory locked - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="刚入职，我在索引这个组，需要熟悉下之前的搜索索引模块的代码，以便后续开发。我在新申请的测试机器上编译代码部署索引这个模块就报错了。定位出现问题的地方，代码大致流程是这样子的： 12345678910if (conf-&gt;use_memlock_for_mmap) &#123;    &#x2F;&#x2F; add MAP_LOCKED to lock the buffer    attr_hash &#x3D; (Att">
+<meta property="og:type" content="article">
+<meta property="og:title" content="浅谈Linux ulimit以及max memory locked">
+<meta property="og:url" content="http://armsword.com/2016/07/09/linux-max-locked-memory-ulimit/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="刚入职，我在索引这个组，需要熟悉下之前的搜索索引模块的代码，以便后续开发。我在新申请的测试机器上编译代码部署索引这个模块就报错了。定位出现问题的地方，代码大致流程是这样子的： 12345678910if (conf-&gt;use_memlock_for_mmap) &#123;    &#x2F;&#x2F; add MAP_LOCKED to lock the buffer    attr_hash &#x3D; (Att">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2016-07-09T13:39:42.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.288Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-linux-max-locked-memory-ulimit" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      浅谈Linux ulimit以及max memory locked
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2016/07/09/linux-max-locked-memory-ulimit/" class="article-date">
+  <time datetime="2016-07-09T13:39:42.000Z" itemprop="datePublished">2016-07-09</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>刚入职，我在索引这个组，需要熟悉下之前的搜索索引模块的代码，以便后续开发。我在新申请的测试机器上编译代码部署索引这个模块就报错了。定位出现问题的地方，代码大致流程是这样子的：</p>
+<figure class="highlight gcode"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> <span class="comment">(conf-&gt;use_memlock_for_mmap)</span> &#123;</span><br><span class="line">    <span class="comment">// add MAP_LOCKED to lock the buffer</span></span><br><span class="line"></span><br><span class="line">    attr_hash = <span class="comment">(AttrIndexInfo*)</span>mmap<span class="comment">(NULL, fsize, PROT_WRITE | PROT_READ, MAP_SHARED | MAP_LOCKED, fd, 0)</span>;</span><br><span class="line"></span><br><span class="line">&#125; else &#123;</span><br><span class="line"></span><br><span class="line">    attr_hash = <span class="comment">(AttrIndexInfo*)</span>mmap<span class="comment">(NULL, fsize, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0)</span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>而参数里配置了use_memlock_for_mmap 选项，于是代码就走到第一个mmap逻辑处。</p>
+<p>使用ulimit -a查看下系统属性：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[armsword<span class="meta">@search</span>-querybs1 ~]$ ulimit -a</span><br><span class="line">core file <span class="title function_">size</span>          <span class="params">(blocks, -c)</span> <span class="number">4194304</span></span><br><span class="line">data seg <span class="title function_">size</span>           <span class="params">(kbytes, -d)</span> unlimited</span><br><span class="line">scheduling <span class="title function_">priority</span>             <span class="params">(-e)</span> <span class="number">0</span></span><br><span class="line">file <span class="title function_">size</span>               <span class="params">(blocks, -f)</span> unlimited</span><br><span class="line">pending <span class="title function_">signals</span>                 <span class="params">(-i)</span> <span class="number">256726</span></span><br><span class="line">max locked <span class="title function_">memory</span>       <span class="params">(kbytes, -l)</span> <span class="number">64</span></span><br><span class="line">max memory <span class="title function_">size</span>         <span class="params">(kbytes, -m)</span> unlimited</span><br><span class="line">open <span class="title function_">files</span>                      <span class="params">(-n)</span> <span class="number">1000000</span></span><br><span class="line">pipe <span class="title function_">size</span>            <span class="params">(<span class="number">512</span> bytes, -p)</span> <span class="number">8</span></span><br><span class="line">POSIX message <span class="title function_">queues</span>     <span class="params">(bytes, -q)</span> <span class="number">819200</span></span><br><span class="line">real-time <span class="title function_">priority</span>              <span class="params">(-r)</span> <span class="number">0</span></span><br><span class="line">stack <span class="title function_">size</span>              <span class="params">(kbytes, -s)</span> <span class="number">10240</span></span><br><span class="line">cpu <span class="title function_">time</span>               <span class="params">(seconds, -t)</span> unlimited</span><br><span class="line">max user <span class="title function_">processes</span>              <span class="params">(-u)</span> <span class="number">102400</span></span><br><span class="line">virtual <span class="title function_">memory</span>          <span class="params">(kbytes, -v)</span> unlimited      （注：相当于limits.conf中的as和cgroup中的memory.limit_in_bytes.）</span><br><span class="line">file <span class="title function_">locks</span>                      <span class="params">(-x)</span> unlimited</span><br></pre></td></tr></table></figure>
+
+<span id="more"></span>
+
+<p>我们知道索引程序在启动时候，需要加载倒排&#x2F;正排等索引原文件，这些文件是比较大的，几十G或者过百G也是可能的，但是系统下的max locked memory对应值是64k，而mmap选项也设置了MAP_LOCKED选项，此选项的意思就是lock一段地址范围内已map的内存，相应的数据在unlock之前一直存在于物理内存中，不会被回收。对于应用程序来说，可以将内存中一些对程序性能影响较大的数据lock起来，避免非预期的页面回收或者换入&#x2F;换出引起性能波动。所以将max locked memory设置为unlimited就解决问题。</p>
+<p>linux系统提供了以下几个系统调用用于内存的lock和unlock。</p>
+<figure class="highlight arcade"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">mlock/munlock：lock/unlock一段地址范围内已<span class="built_in">map</span>的内存</span><br><span class="line"></span><br><span class="line">mlockall/munlockall：lock进程虚拟地址空间内已<span class="built_in">map</span>的内存，还可以选择对于此后新<span class="built_in">map</span>的空间是否自动lock</span><br><span class="line"></span><br><span class="line">mmap使用MAP_LOCKED选项时表示在mmap的同时，对相应地址范围进行mlock</span><br></pre></td></tr></table></figure>
+
+<p>一般情况下，我们使用ulimit多用于提高性能，最常用的地方就是设置打开文件描述符的数量，web服务器等需要大量的文件句柄，一旦开太小，比如默认1024，在句柄使用完毕的时候，系统就频繁出现emfile错误，这时候系统很容易陷入不可用。但是如果设定太大了，又会有这样的副作用。很多服务器程序是事件派遣的，比如说用epoll，程序在启动的时候通常会根据最大的文件句柄数来预留内部的slot，一个slot貌似要占用几K的资源，如果你设定文件句柄数目太大，就可能无端的浪费了几百M内存。所以要设置一个合适的值有利于提高程序性能。</p>
+<p>ulimit 用于限制 shell 启动进程所占用的资源，支持以下各种类型的限制，具体楼上已列出，注意下H&#x2F;S选项的意义，</p>
+<p>-H 设置硬资源限制，硬资源限制用于控制软限制。限定一旦设置只有root用户可以增加硬限制，普通用户只能减少自己的硬限制大小。<br>-S 设置弹性资源限制，弹性限制用于限制具体的用户或者进程。设置后普通用户可以增加，但是不能超过硬限制大小。<br>如果不指定-S或者-H，那么弹性资源限制和硬限制将同时设置。</p>
+<p>作为临时限制，ulimit 可以作用于通过使用其命令登录的 shell 会话，在会话终止时便结束限制，并不影响于其他 shell 会话。而对于长期的固定限制，修改 &#x2F;etc&#x2F;security&#x2F;limits.conf 文件即可。</p>
+
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2016/08/10/find-socket-bug-in-proxy/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          记一次线上Bug的查找过程和思路
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2015/03/02/several-realization-of-hash-algorithm/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">几种Hash算法的实现&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

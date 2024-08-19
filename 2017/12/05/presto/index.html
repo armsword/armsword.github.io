@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>分布式SQL查询引擎Presto原理介绍 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="前言我们实时引擎组新引入了一款分布式SQL查询引擎，名字叫Presto，目前已经调研和测试了2个月了，并且期间某平台也从impala平台迁入到了Presto平台，查询性能有了2-3倍的提升（各种原因导致），所以本文将结合作者这段时间的测试和调研研究，来揭开Presto的神秘面纱。 Presto是神马Presto是由Facebook开发的一个分布式SQL查询引擎， 它被设计为用来专门进行高速、实时的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="分布式SQL查询引擎Presto原理介绍">
+<meta property="og:url" content="http://armsword.com/2017/12/05/presto/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="前言我们实时引擎组新引入了一款分布式SQL查询引擎，名字叫Presto，目前已经调研和测试了2个月了，并且期间某平台也从impala平台迁入到了Presto平台，查询性能有了2-3倍的提升（各种原因导致），所以本文将结合作者这段时间的测试和调研研究，来揭开Presto的神秘面纱。 Presto是神马Presto是由Facebook开发的一个分布式SQL查询引擎， 它被设计为用来专门进行高速、实时的">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2017/12/1.jpg">
+<meta property="og:image" content="http://armsword.com/img/2017/12/2.jpg">
+<meta property="og:image" content="http://armsword.com/img/2017/12/3.jpg">
+<meta property="og:image" content="http://armsword.com/img/2017/12/4.jpg">
+<meta property="og:image" content="http://armsword.com/img/2017/12/5.jpg">
+<meta property="article:published_time" content="2017-12-05T03:31:11.000Z">
+<meta property="article:modified_time" content="2023-12-26T11:35:00.000Z">
+<meta property="article:author" content="armsword">
+<meta property="article:tag" content="presto">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2017/12/1.jpg">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-presto" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      分布式SQL查询引擎Presto原理介绍
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2017/12/05/presto/" class="article-date">
+  <time datetime="2017-12-05T03:31:11.000Z" itemprop="datePublished">2017-12-05</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>我们实时引擎组新引入了一款分布式SQL查询引擎，名字叫Presto，目前已经调研和测试了2个月了，并且期间某平台也从impala平台迁入到了Presto平台，查询性能有了2-3倍的提升（各种原因导致），所以本文将结合作者这段时间的测试和调研研究，来揭开Presto的神秘面纱。</p>
+<h2 id="Presto是神马"><a href="#Presto是神马" class="headerlink" title="Presto是神马"></a>Presto是神马</h2><p>Presto是由Facebook开发的一个分布式SQL查询引擎， 它被设计为用来专门进行高速、实时的数据分析。它的产生是为了解决Hive的MapReduce模型太慢以及不能通过BI或Dashboards直接展现HDFS数据等问题。Presto是一个纯粹的计算引擎，它不存储数据，其通过Connector获取第三方Storage服务的数据。</p>
+<h2 id="历史"><a href="#历史" class="headerlink" title="历史"></a>历史</h2><ul>
+<li>2012年秋季，Facebook启动Presto项目</li>
+<li>2013年冬季，Presto开源</li>
+<li>2017年11月，11888 commits，203 releases，198 contributors</li>
+</ul>
+<h2 id="功能和优点"><a href="#功能和优点" class="headerlink" title="功能和优点"></a>功能和优点</h2><ul>
+<li>Ad-hoc，期望查询时间秒级或几分钟</li>
+<li>比Hive快10倍</li>
+<li>支持多数据源，如Hive、Kafka、MySQL、MonogoDB、Redis、JMX等，也可自己实现Connector</li>
+<li>Client Protocol: HTTP+JSON, support various languages(Python, Ruby, PHP, Node.js Java)</li>
+<li>支持JDBC&#x2F;ODBC连接</li>
+<li>ANSI SQL，支持窗口函数，join，聚合，复杂查询等</li>
+</ul>
+<h2 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h2><ul>
+<li>Master-Slave架构</li>
+<li>三个模块</li>
+<li>Coordinator、Discovery Service、Worker</li>
+<li>Connector</li>
+</ul>
+<span id="more"></span>
+
+<p>Presto沿用了通用的Master-Slave架构，Coordinator即Presto的Master，Worker即其Slave，Discovery Service就是用来保存Worker结点信息的，通过HTTP协议通信，而Connector用于获取第三方存储的Metadata及原始数据等。</p>
+<p>Coordinator负责解析SQL语句，生成执行计划，分发执行任务给Worker节点执行；Worker节点负责实际执行查询任务。Worker节点启动后向Discovery Server服务注册，Coordinator从Discovery Server获得可以正常工作的Worker节点。假如配置了Hive Connector，需要配置一个Hive MetaStore服务为Presto提供Hive元信息，Worker节点与HDFS交互读取数据。</p>
+<h2 id="部署方式"><a href="#部署方式" class="headerlink" title="部署方式"></a>部署方式</h2><p>Presto常见的部署方式如下图所示：<br><img src="/img/2017/12/1.jpg">	<br>Coordinator与Discovery Server耦合在一起混合部署，然后部署多台Worker。然而这个有个问题，就是Coordinator存在单点问题，我们目前线上使用ip漂移的方法（网卡绑定多ip）。如下图所示：<br><img src="/img/2017/12/2.jpg" width = "71%" />		</p>
+<h2 id="查询流程"><a href="#查询流程" class="headerlink" title="查询流程"></a>查询流程</h2><p><img src="/img/2017/12/3.jpg">	</p>
+<h3 id="整体查询流程为"><a href="#整体查询流程为" class="headerlink" title="整体查询流程为"></a>整体查询流程为</h3><ul>
+<li>Client使用HTTP协议发送一个query请求。</li>
+<li>通过Discovery Server发现可用的Server。</li>
+<li>Coordinator构建查询计划（Connector插件提供Metadata）</li>
+<li>Coordinator向workers发送任务</li>
+<li>Worker通过Connector插件读取数据</li>
+<li>Worker在内存里执行任务（Worker是纯内存型计算引擎）</li>
+<li>Worker将数据返回给Coordinator，之后再Response Client</li>
+</ul>
+<h2 id="SQL执行流程"><a href="#SQL执行流程" class="headerlink" title="SQL执行流程"></a>SQL执行流程</h2><p><img src="/img/2017/12/4.jpg">	<br>当Coordinator收到一个Query，其SQL执行流程如上图所示。SQL通过Anltr3解析为AST（抽象语法树），然后通过Connector获取原始数据的Metadata信息，这里会有一些优化，比如缓存Metadata信息等，根据Metadata信息生成逻辑计划，然后会依次生成分发计划和执行计划，在执行计划里需要去Discovery里获取可用的node列表，然后根据一定的策略，将这些计划分发到指定的Worker机器上，Worker机器再分别执行。</p>
+<h2 id="与Hive比较"><a href="#与Hive比较" class="headerlink" title="与Hive比较"></a>与Hive比较</h2><p><img src="/img/2017/12/5.jpg">	<br>上图显示了MapReduce与Presto的执行过程的不同点，MR每个操作要么需要写磁盘，要么需要等待前一个stage全部完成才开始执行，而Presto将SQL转换为多个stage，每个stage又由多个tasks执行，每个tasks又将分为多个split。所有的task是并行的方式进行允许，stage之间数据是以pipeline形式流式的执行，数据之间的传输也是通过网络以Memory-to-Memory的形式进行，没有磁盘io操作。这也是Presto性能比Hive快很多倍的决定性原因。</p>
+<h2 id="实现低延时的原理"><a href="#实现低延时的原理" class="headerlink" title="实现低延时的原理"></a>实现低延时的原理</h2><ul>
+<li>完全基于内存的并行计算</li>
+<li>流水线</li>
+<li>本地化计算</li>
+<li>动态编译执行计划</li>
+<li>小心使用内存和数据结构</li>
+<li>类BlinkDB的近似查询</li>
+<li>GC控制</li>
+</ul>
+<p>当然其优化方法也包括了一些传统的SQL优化原理，关于这些优化细节等后续文章详细介绍。</p>
+<h2 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h2><p>前面介绍了Presto的各种优点，其实其也有一些缺点，主要缺点为以下三条：</p>
+<ul>
+<li>No fault tolerance；当一个Query分发到多个Worker去执行时，当有一个Worker因为各种原因查询失败，那么Master会感知到，整个Query也就查询失败了，而Presto并没有重试机制，所以需要用户方实现重试机制。</li>
+<li>Memory Limitations for aggregations, huge joins；比如多表join需要很大的内存，由于Presto是纯内存计算，所以当内存不够时，Presto并不会将结果dump到磁盘上，所以查询也就失败了，但最新版本的Presto已支持写磁盘操作，这个待后续测试和调研。</li>
+<li>MPP(Massively Parallel Processing )架构；这个并不能说其是一个缺点，因为MPP架构就是解决大量数据分析而产生的，但是其缺点也很明显，假如我们访问的是Hive数据源，如果其中一台Worke由于load问题，数据处理很慢，那么整个查询都会受到影响，因为上游需要等待上游结果。<br>这篇文章就先介绍这里吧，后续会陆续更新一系列Presto相关的文章，欢迎关注。</li>
+</ul>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><p><a href="https://tech.meituan.com/presto.html">https://tech.meituan.com/presto.html</a></p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Presto%E6%98%AF%E7%A5%9E%E9%A9%AC"><span class="toc-number">2.</span> <span class="toc-text">Presto是神马</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8E%86%E5%8F%B2"><span class="toc-number">3.</span> <span class="toc-text">历史</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%9F%E8%83%BD%E5%92%8C%E4%BC%98%E7%82%B9"><span class="toc-number">4.</span> <span class="toc-text">功能和优点</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9E%B6%E6%9E%84"><span class="toc-number">5.</span> <span class="toc-text">架构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%83%A8%E7%BD%B2%E6%96%B9%E5%BC%8F"><span class="toc-number">6.</span> <span class="toc-text">部署方式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E8%AF%A2%E6%B5%81%E7%A8%8B"><span class="toc-number">7.</span> <span class="toc-text">查询流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%95%B4%E4%BD%93%E6%9F%A5%E8%AF%A2%E6%B5%81%E7%A8%8B%E4%B8%BA"><span class="toc-number">7.1.</span> <span class="toc-text">整体查询流程为</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#SQL%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="toc-number">8.</span> <span class="toc-text">SQL执行流程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8EHive%E6%AF%94%E8%BE%83"><span class="toc-number">9.</span> <span class="toc-text">与Hive比较</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0%E4%BD%8E%E5%BB%B6%E6%97%B6%E7%9A%84%E5%8E%9F%E7%90%86"><span class="toc-number">10.</span> <span class="toc-text">实现低延时的原理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BC%BA%E7%82%B9"><span class="toc-number">11.</span> <span class="toc-text">缺点</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E9%93%BE%E6%8E%A5"><span class="toc-number">12.</span> <span class="toc-text">参考链接</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2018/05/22/the-memory-management-and-tuning-experience-of-presto/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          Presto内存管理原理和调优
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2017/01/16/distributed-solutions-for-search-engines/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">说说常见搜索引擎的分布式解决方法&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

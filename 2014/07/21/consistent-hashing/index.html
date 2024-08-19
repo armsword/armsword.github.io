@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>一致性哈希算法 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="一致性hash算法在分布式系统里面使用比较广，我也只是听说过这个概念，今天看到一个一致性hash开源库，随手写篇文章，记录下吧。 假如我们使用普通的哈希方式来处理负载均衡，到目标机器的映射使用的算法为： hash(o) mod n (n表示机器的总数) 如果需要增加或减少一台机器的时候，算法就变为 hash(o) mod (n + 1) &#x2F; hash(o) mod (n - 1) 不仅需">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一致性哈希算法">
+<meta property="og:url" content="http://armsword.com/2014/07/21/consistent-hashing/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="一致性hash算法在分布式系统里面使用比较广，我也只是听说过这个概念，今天看到一个一致性hash开源库，随手写篇文章，记录下吧。 假如我们使用普通的哈希方式来处理负载均衡，到目标机器的映射使用的算法为： hash(o) mod n (n表示机器的总数) 如果需要增加或减少一台机器的时候，算法就变为 hash(o) mod (n + 1) &#x2F; hash(o) mod (n - 1) 不仅需">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2014/07/2014721circle.jpg">
+<meta property="og:image" content="http://armsword.com/img/2014/07/2014721object.jpg">
+<meta property="og:image" content="http://armsword.com/img/2014/07/2014721cache.jpg">
+<meta property="og:image" content="http://armsword.com/img/2014/07/2014721remove.jpg">
+<meta property="og:image" content="http://armsword.com/img/2014/07/2014721virtual.jpg">
+<meta property="article:published_time" content="2014-07-21T14:04:29.000Z">
+<meta property="article:modified_time" content="2023-12-26T11:31:50.000Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2014/07/2014721circle.jpg">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-consistent-hashing" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      一致性哈希算法
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/07/21/consistent-hashing/" class="article-date">
+  <time datetime="2014-07-21T14:04:29.000Z" itemprop="datePublished">2014-07-21</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">算法/数据结构</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>一致性hash算法在分布式系统里面使用比较广，我也只是听说过这个概念，今天看到一个<a href="http://www.codeproject.com/Articles/56138/Consistent-hashing">一致性hash开源库</a>，随手写篇文章，记录下吧。</p>
+<p>假如我们使用普通的哈希方式来处理负载均衡，到目标机器的映射使用的算法为：</p>
+<p>hash(o) mod n (n表示机器的总数)</p>
+<p>如果需要增加或减少一台机器的时候，算法就变为 hash(o) mod (n + 1) &#x2F; hash(o) mod (n - 1)</p>
+<p>不仅需要重新编写代码，当服务器做了大量变更，大量的o会重定向不同的服务器而导致了缓冲不被命中，所以此时，就提出了一致性hash算法。</p>
+<h3 id="一致性哈希算法"><a href="#一致性哈希算法" class="headerlink" title="一致性哈希算法"></a>一致性哈希算法</h3><p>简单的说，哈希函数将o映射到 0 ~ 2^32 - 1的值区间，将这些数字头尾相连，然后将它们组织成一个闭合的圆环。如图一所示：<br><img src="/img/2014/07/2014721circle.jpg"></p>
+<p>要实现一致性哈希算法，思路就是下面2个步骤：</p>
+<span id="more"></span>
+
+
+<h4 id="将数据通过一定的hash算法映射到环上"><a href="#将数据通过一定的hash算法映射到环上" class="headerlink" title="将数据通过一定的hash算法映射到环上"></a>将数据通过一定的hash算法映射到环上</h4><p><img src="/img/2014/07/2014721object.jpg"><br>hash(object1) &#x3D; key1;<br>…<br>…<br>hash(object4) &#x3D; key4;</p>
+<h4 id="将机器通过哈希算法映射到环上"><a href="#将机器通过哈希算法映射到环上" class="headerlink" title="将机器通过哈希算法映射到环上"></a>将机器通过哈希算法映射到环上</h4><p><img src="/img/2014/07/2014721cache.jpg"><br>假如有三台cache机器，A，B，C，一般情况下hash计算是采用机器的IP或者机器唯一的别名作为输入值。</p>
+<p>hash(cache A) &#x3D; key A;<br>…<br>…<br>hash(cache B) &#x3D; key C;</p>
+<p>然后顺时针方向计算，将所有object（数据）存储到离自己最近的机器上。<br>如上图所示：object1将存储到 cache A，object2和object3将会存储到 cache C，object4将会存储到 cache B。</p>
+<h4 id="添加或删除机器"><a href="#添加或删除机器" class="headerlink" title="添加或删除机器"></a>添加或删除机器</h4><p>假如B 机器被移走或者坏掉了，根据顺时针存储到最近的机器的特性，之前存储到B机器的objects（数据）将会转到C机器（因为顺时针离C最近），如下所示：<br><img src="/img/2014/07/2014721remove.jpg"><br>同样添加了新机器也是同理。</p>
+<h4 id="虚拟节点"><a href="#虚拟节点" class="headerlink" title="虚拟节点"></a>虚拟节点</h4><p>一致性哈希算法在服务节点太少或不均匀时，容易造成数据倾斜问题，导致平衡性问题。hash算法不能保证平衡的，在一致性哈希算法中，为了尽可能的满足平衡性，引入了虚拟节点。</p>
+<p>虚拟节点是实际节点（机器）在hash空间的复制品，一个实际节点对应了若干了虚拟节点，当我们增加一个机器时，我们在环里增加几个其虚拟节点，当我们移掉它时，我们把其虚拟节点从环中一块移除掉。实际上就是对一个机器节点计算多次哈希，每个计算结果位置都放置一个此服务节点，成为虚拟节点，具体做法可以在机器IP或主机名的后面添加编号来实现，如Node1-1，Node1-2。</p>
+<p>例如，有两台机器A和C，引入了虚拟节点后，就会有4个节点，分布更均匀，如下图所示所示：</p>
+<p><img src="/img/2014/07/2014721virtual.jpg"></p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%80%E8%87%B4%E6%80%A7%E5%93%88%E5%B8%8C%E7%AE%97%E6%B3%95"><span class="toc-number">1.</span> <span class="toc-text">一致性哈希算法</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%B0%86%E6%95%B0%E6%8D%AE%E9%80%9A%E8%BF%87%E4%B8%80%E5%AE%9A%E7%9A%84hash%E7%AE%97%E6%B3%95%E6%98%A0%E5%B0%84%E5%88%B0%E7%8E%AF%E4%B8%8A"><span class="toc-number">1.1.</span> <span class="toc-text">将数据通过一定的hash算法映射到环上</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%B0%86%E6%9C%BA%E5%99%A8%E9%80%9A%E8%BF%87%E5%93%88%E5%B8%8C%E7%AE%97%E6%B3%95%E6%98%A0%E5%B0%84%E5%88%B0%E7%8E%AF%E4%B8%8A"><span class="toc-number">1.2.</span> <span class="toc-text">将机器通过哈希算法映射到环上</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B7%BB%E5%8A%A0%E6%88%96%E5%88%A0%E9%99%A4%E6%9C%BA%E5%99%A8"><span class="toc-number">1.3.</span> <span class="toc-text">添加或删除机器</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%99%9A%E6%8B%9F%E8%8A%82%E7%82%B9"><span class="toc-number">1.4.</span> <span class="toc-text">虚拟节点</span></a></li></ol></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2014/09/04/redis-ae-analyse/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          Redis AE事件库源码剖析
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2014/05/18/light-cgi-server/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">写了一个简单的CGI Server&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

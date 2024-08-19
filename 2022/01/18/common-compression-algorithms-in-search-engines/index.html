@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>科普下搜索索引里常用的压缩算法 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="前言数据压缩是存储领域常用的优化手段，压缩算法可以减少数据的大小减少存储成本、减少磁盘的寻道时间提高I&#x2F;O的性能、减少数据的传输时间并提高缓冲区的命中率，节省的I&#x2F;O时间可以轻易补偿它带来的CPU额外开销。目前在用的主流压缩算法包括zlib、snappy和lz4等。压缩算法并不是压缩比越高越好，压缩比越高，其解压缩速度可能越慢，CPU消耗就会越大，这需要根据硬件配置和业务场景做">
+<meta property="og:type" content="article">
+<meta property="og:title" content="科普下搜索索引里常用的压缩算法">
+<meta property="og:url" content="http://armsword.com/2022/01/18/common-compression-algorithms-in-search-engines/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="前言数据压缩是存储领域常用的优化手段，压缩算法可以减少数据的大小减少存储成本、减少磁盘的寻道时间提高I&#x2F;O的性能、减少数据的传输时间并提高缓冲区的命中率，节省的I&#x2F;O时间可以轻易补偿它带来的CPU额外开销。目前在用的主流压缩算法包括zlib、snappy和lz4等。压缩算法并不是压缩比越高越好，压缩比越高，其解压缩速度可能越慢，CPU消耗就会越大，这需要根据硬件配置和业务场景做">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2022/01/Variable.png">
+<meta property="og:image" content="http://armsword.com/img/2022/01/Group_01.png">
+<meta property="og:image" content="http://armsword.com/img/2022/01/Group_02.png">
+<meta property="og:image" content="http://armsword.com/img/2022/01/RLE.png">
+<meta property="og:image" content="http://armsword.com/img/2022/01/S9_1.png">
+<meta property="og:image" content="http://armsword.com/img/2022/01/S9_2.png">
+<meta property="og:image" content="http://armsword.com/img/2022/01/S16_1.png">
+<meta property="og:image" content="http://armsword.com/img/2022/01/pfordelta.png">
+<meta property="og:image" content="http://armsword.com/img/2022/01/newpfordelta.png">
+<meta property="og:image" content="http://armsword.com/img/2022/01/lz77_1.png">
+<meta property="og:image" content="http://armsword.com/img/2022/01/lz77_2.png">
+<meta property="og:image" content="http://armsword.com/img/2022/01/es.png">
+<meta property="article:published_time" content="2022-01-18T09:43:14.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.289Z">
+<meta property="article:author" content="armsword">
+<meta property="article:tag" content="搜索引擎">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2022/01/Variable.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-common-compression-algorithms-in-search-engines" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      科普下搜索索引里常用的压缩算法
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2022/01/18/common-compression-algorithms-in-search-engines/" class="article-date">
+  <time datetime="2022-01-18T09:43:14.000Z" itemprop="datePublished">2022-01-18</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>数据压缩是存储领域常用的优化手段，压缩算法可以减少数据的大小减少存储成本、减少磁盘的寻道时间提高I&#x2F;O的性能、减少数据的传输时间并提高缓冲区的命中率，节省的I&#x2F;O时间可以轻易补偿它带来的CPU额外开销。目前在用的主流压缩算法包括zlib、snappy和lz4等。压缩算法并不是压缩比越高越好，压缩比越高，其解压缩速度可能越慢，CPU消耗就会越大，这需要根据硬件配置和业务场景做Trade off。本文主要介绍了如下几种搜索索引里常见的压缩算法，大部分压缩算法也适用于OLAP领域，同时有些场景可能需要结合多种场景实现，比如倒排索引的posting list压缩就需要结合PForDelta及Simple算法才能获得更好的压缩比。同时在选择压缩算法时，也会考虑该压缩算法是否支持流式压缩等。</p>
+<ul>
+<li>Fixed length</li>
+<li>Variable Byte</li>
+<li>Improved Variable Byte</li>
+<li>Group Varint</li>
+<li>Run Length Encoding</li>
+<li>Dictionary Coding</li>
+<li>Simple 9</li>
+<li>Simple 16</li>
+<li>PForDelta</li>
+<li>Huffman Coding</li>
+<li>LZ77</li>
+<li>Elasticsearch 行存压缩算法</li>
+</ul>
+<h2 id="Fixed-length"><a href="#Fixed-length" class="headerlink" title="Fixed length"></a>Fixed length</h2><h3 id="压缩方法"><a href="#压缩方法" class="headerlink" title="压缩方法"></a>压缩方法</h3><p>找到一组数据的最大值，之后计算出最大位宽N：</p>
+<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">10</span>,<span class="number">35</span>,<span class="number">100</span>,<span class="number">170</span>,<span class="number">370</span>,<span class="number">29000</span>,<span class="number">30000</span>,<span class="number">30010</span></span><br></pre></td></tr></table></figure>
+
+<p>2^15 &#x3D; 32768  &gt; 30010，则位宽为15，即每个32bit的数据可以用15bit表示</p>
+<span id="more"></span>
+
+<h2 id="Variable-Byte"><a href="#Variable-Byte" class="headerlink" title="Variable Byte"></a>Variable Byte</h2><h3 id="压缩方法-1"><a href="#压缩方法-1" class="headerlink" title="压缩方法"></a>压缩方法</h3><p>每个Byte的第一bit为flag，表示是否继续使用下一个Byte，剩下7位为有效位，所有的有效位组成数字的2进制表示。</p>
+<h3 id="示例-1"><a href="#示例-1" class="headerlink" title="示例"></a>示例</h3><figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">10</span>,<span class="number">35</span>,<span class="number">100</span>,<span class="number">170</span>,<span class="number">370</span>,<span class="number">29000</span>,<span class="number">30000</span>,<span class="number">30010</span></span><br></pre></td></tr></table></figure>
+
+<p>10,35,100：这三个数字小于2^7，则三个数字各需要1个Byte<br>170,370：这两个数字大于2^7，小于2^14，所以各需要2个Byte<br>29000,30000,30010：这三个数字大于2^14，小于2^21，所以各需要3个Byte<br>如图所示：<br><img src="/img/2022/01/Variable.png" width = "100%" /></p>
+<p>综上：这8个32bit的数字（8<em>32）共需要1</em>3+2<em>2+3</em>3 &#x3D; 16 Byte</p>
+<h2 id="Improved-Variable-Byte"><a href="#Improved-Variable-Byte" class="headerlink" title="Improved Variable Byte"></a>Improved Variable Byte</h2><h3 id="压缩方法-2"><a href="#压缩方法-2" class="headerlink" title="压缩方法"></a>压缩方法</h3><p>与Variable Byte相似，但是存储的是差值</p>
+<h3 id="示例-2"><a href="#示例-2" class="headerlink" title="示例"></a>示例</h3><figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">10</span>,<span class="number">35</span>,<span class="number">100</span>,<span class="number">170</span>,<span class="number">370</span>,<span class="number">29000</span>,<span class="number">30000</span>,<span class="number">30100</span></span><br></pre></td></tr></table></figure>
+
+<p>存储差值后变为：</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">10</span>,<span class="number">25</span>,<span class="number">65</span>,<span class="number">70</span>,<span class="number">200</span>,<span class="number">28630</span>,<span class="number">1000</span>,<span class="number">100</span></span><br></pre></td></tr></table></figure>
+
+<p>10,25,65,70,100：这五个数字小于2^7，各需要1个Byte表示</p>
+<p>200,1000:  这两个数字大于2^7小于2^14，则各需要2个Byte表示</p>
+<p>28630: 这个数字大于2^14小于2^21，则需要3个Byte</p>
+<p>综上：这8个32bit的数字（8<em>32）共需要 5</em>1+2*2+3 &#x3D; 12 Byte</p>
+<h2 id="Group-Varint"><a href="#Group-Varint" class="headerlink" title="Group Varint"></a>Group Varint</h2><h3 id="压缩方法-3"><a href="#压缩方法-3" class="headerlink" title="压缩方法"></a>压缩方法</h3><p>4个数为1组，第一个Byte里面每2个bit记录这个数需要的Byte数，后续4个Byte分别是具体的值。</p>
+<h3 id="示例-3"><a href="#示例-3" class="headerlink" title="示例"></a>示例</h3><figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">10</span>,<span class="number">25</span>,<span class="number">65</span>,<span class="number">70</span>,<span class="number">200</span>,<span class="number">28630</span>,<span class="number">1000</span>,<span class="number">100</span></span><br></pre></td></tr></table></figure>
+
+<p>第一组：<br>10,25,65,70: 第一个Byte里每2bit表示这个数字需要的Byte数，分别为00 00 00 00,以上00表示需要1个Byte，即共需要1+4*1等于5 Byte</p>
+<p>如图所示：<br><img src="/img/2022/01/Group_01.png" width = "70%" /></p>
+<p>第二组：<br>200,28630,1000,100: 第一个Byte里每2bit表示这个数字需要的Byte数，分别为00 01 01 00，即共需要1+1+2+2+1 &#x3D; 7 Byte<br><img src="/img/2022/01/Group_02.png" width = "70%" /></p>
+<p>综上：共需要5+7等于12个Byte</p>
+<h2 id="Run-Length-Encoding"><a href="#Run-Length-Encoding" class="headerlink" title="Run Length Encoding"></a>Run Length Encoding</h2><h3 id="压缩方法-4"><a href="#压缩方法-4" class="headerlink" title="压缩方法"></a>压缩方法</h3><p>RLE：根据字符串的连续重复字符进行编码的一种方法</p>
+<h3 id="示例-4"><a href="#示例-4" class="headerlink" title="示例"></a>示例</h3><p>压缩前：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">AAAAAABBCDDEEEEEF1</span><br></pre></td></tr></table></figure>
+<p>压缩后：</p>
+<figure class="highlight dns"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">A6B2C<span class="number">1D2E5F1</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="Dictionary-Coding"><a href="#Dictionary-Coding" class="headerlink" title="Dictionary Coding"></a>Dictionary Coding</h2><h3 id="压缩方法-5"><a href="#压缩方法-5" class="headerlink" title="压缩方法"></a>压缩方法</h3><p>把文本中单词或词汇组合做成一个对应的字典列表，并用特殊代码来表示这个单词或词汇。</p>
+<h3 id="示例-5"><a href="#示例-5" class="headerlink" title="示例"></a>示例</h3><p>字典列表：<br><img src="/img/2022/01/RLE.png" width = "40%" /><br>源文本：Hello World，压缩后的编码为：00 01</p>
+<h2 id="Simple-9"><a href="#Simple-9" class="headerlink" title="Simple 9"></a>Simple 9</h2><h3 id="压缩方法-6"><a href="#压缩方法-6" class="headerlink" title="压缩方法"></a>压缩方法</h3><p>S9压缩算法，是Simple 系列压缩算法的一员，就是把一个32位的int类型分为两个区域，前四个bit记录后面28bit的使用方式， 即模式，后面28位用来存放多个数值，每个数值所占的位数都是等分的，等于28&#x2F;n，只所以被称为S9，是因为前四个bit表示9 种状态，列表如下:</p>
+<img src="/img/2022/01/S9_1.png" width = "60%" />
+
+<p>可选择的位宽和对应存储的数据个数:</p>
+<img src="/img/2022/01/S9_2.png" width = "80%" />
+
+<p>如上图所示，压缩后的数据，位宽有9种选择，分别为1、2、3、4、5、7、9、14、28，记为bits，那对应的压缩后的每个int数 据(前4位为压缩模式)可以存储28、14、9、7、5、4、3、2、1，记为size。压缩的主要思路就是先查找合适的压缩位宽，之后再移位存储数据，详细流程为：</p>
+<ul>
+<li>从首到尾依次遍历需要压缩的数据，按照上图可选择的位宽，从小到大遍历，可以获得位宽bits值和对应的能表示的数据个数size</li>
+<li>设 i &#x3D; 0，如果原始数据(src)小于位宽表示的最大值(1 &lt;&lt; bits)，表示该bits能覆盖到此数据，则 i++，原始数据移动，直到位宽表示的最大值小于原始数据值跳出循环，此时能得到该位宽在原始数据中能覆盖的数据个数i的值</li>
+<li>判断i是否与该位宽bits对应的size是否相等，如果相等，则表示该位宽bits能覆盖size个数据，得到该size个数可被压缩的位宽，然后原始数据移动size个数。如果i与此位宽bits对应的size不相等，则移动到下一个可选择的位宽，直到i与size相等为止</li>
+</ul>
+<h2 id="Simple-16"><a href="#Simple-16" class="headerlink" title="Simple 16"></a>Simple 16</h2><h3 id="压缩方法-7"><a href="#压缩方法-7" class="headerlink" title="压缩方法"></a>压缩方法</h3><p>S16压缩算法，是Simple 系列压缩算法的一员，就是把一个32位的int类型分为两个区域，前四个bit记录后面28bit的使用方式， 即模式，后面28位用来存放多个数值，只所以被称为S16，是因为前四个bit表示16种状态，与S9相比，更节省空间。列表如下:</p>
+<img src="/img/2022/01/S16_1.png" width = "30%" />
+
+<p>而每个数据占用的位数稍微有些复杂，代码里使用了一个以下二维数组进行表示，数组的每一行的每个值表示数值被压缩后的值，如bitCount数组所示。</p>
+<figure class="highlight dns"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">const uint8_t S16Compressor<span class="number">::</span>bitCount[<span class="number">16</span>][<span class="number">28</span>] = &#123;</span><br><span class="line">      &#123;<span class="number">1,1,1,1</span>,<span class="number">1,1,1,1</span>,<span class="number">1,1,1,1</span>,<span class="number">1,1,1,1</span>,<span class="number">1,1,1,1</span>,<span class="number">1,1,1,1</span>,<span class="number">1,1,1,1</span>&#125;,</span><br><span class="line">      &#123;<span class="number">2,2,2,2</span>,<span class="number">2,2,2,1</span>,<span class="number">1,1,1,1</span>,<span class="number">1,1,1,1</span>,<span class="number">1,1,1,1</span>,<span class="number">1,0,0,0</span>,<span class="number">0,0,0,0</span>&#125;,</span><br><span class="line">      &#123;<span class="number">1,1,1,1</span>,<span class="number">1,1,1,2</span>,<span class="number">2,2,2,2</span>,<span class="number">2,2,1,1</span>,<span class="number">1,1,1,1</span>,<span class="number">1,0,0,0</span>,<span class="number">0,0,0,0</span>&#125;,</span><br><span class="line">      &#123;<span class="number">1,1,1,1</span>,<span class="number">1,1,1,1</span>,<span class="number">1,1,1,1</span>,<span class="number">1,1,2,2</span>,<span class="number">2,2,2,2</span>,<span class="number">2,0,0,0</span>,<span class="number">0,0,0,0</span>&#125;,</span><br><span class="line">      &#123;<span class="number">2,2,2,2</span>,<span class="number">2,2,2,2</span>,<span class="number">2,2,2,2</span>,<span class="number">2,2,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>&#125;,</span><br><span class="line">      &#123;<span class="number">4,3,3,3</span>,<span class="number">3,3,3,3</span>,<span class="number">3,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>&#125;,</span><br><span class="line">      &#123;<span class="number">3,4,4,4</span>,<span class="number">4,3,3,3</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>&#125;,</span><br><span class="line">      &#123;<span class="number">4,4,4,4</span>,<span class="number">4,4,4,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>&#125;,</span><br><span class="line">      &#123;<span class="number">5,5,5,5</span>,<span class="number">4,4,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>&#125;,</span><br><span class="line">      &#123;<span class="number">4,4,5,5</span>,<span class="number">5,5,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>&#125;,</span><br><span class="line">      &#123;<span class="number">6,6,6,5</span>,<span class="number">5,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>&#125;,</span><br><span class="line">      &#123;<span class="number">5,5,6,6</span>,<span class="number">6,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>&#125;,</span><br><span class="line">      &#123;<span class="number">7,7,7,7</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>&#125;,</span><br><span class="line">      &#123;<span class="number">10,9,9,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>&#125;,</span><br><span class="line">      &#123;<span class="number">14,14,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>&#125;,</span><br><span class="line">      &#123;<span class="number">28,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>,<span class="number">0,0,0,0</span>&#125;</span><br><span class="line">      &#125;<span class="comment">;</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>压缩算法的实现与Simple 9 相似，这里不再详细介绍。</p>
+<h2 id="PForDelta"><a href="#PForDelta" class="headerlink" title="PForDelta"></a>PForDelta</h2><h3 id="压缩方法-8"><a href="#压缩方法-8" class="headerlink" title="压缩方法"></a>压缩方法</h3><p>PForDelta 是一个专门用于倒排索引的压缩算法，用来解压缩DocList。DocList是存储文档的一个列表，以块为单位，一般每一个块(block)包含了128个文档，块里存储了文档的DocID，但是此id是以相邻文档DocID之间的差值表示的，所以，一般情况下此id值相对较小，使用sizeof(int)来表示一个整数，将大大的浪费了存储空间，所以可以使用选取较小的位宽来表示绝大部分这些数字id，即90%的数字可以用N为位宽来存储，称为normal值，剩余的10%值称为exception值，个数最大为12个 (128 * 10%)，然后每一个block头部再添加一个Header用来存储每一个block里的normal和exception信息。如下图所示，其为实现一个PForDelta算法需要的基础头信息：</p>
+<img src="/img/2022/01/pfordelta.png" width = "30%" />
+
+<ul>
+<li>isLastBlock占用1bit，表示是否为DocList里最后一个文档Block，如果为0，则表示不是最后一个Block，为1，则表示是 最后一个Block</li>
+<li>exceptionIntRange占用11bit，用来表示excetion数据被S9(Simple9压缩算法)压缩后的长度</li>
+<li>frameBits占5bit，表示normal数据的最大位宽</li>
+<li>firstExceptionPos占8bit，表示该Block块第一个exception值下标</li>
+<li>dataNum占7bit，用来表示该Block里数据个数</li>
+</ul>
+<p>PForDelta算法的核心就是找到正常值（可以用N位位宽存储）和异常值（小于12个数字），之后通过位移拼接成int。一个简单的示例如下：</p>
+<img src="/img/2022/01/newpfordelta.png" width = "100%" />
+
+<p>PForDelta算法解压时分为正常部分和异常部分的解压。正常部分只是将一系列按相同的bit位存储的数据顺序提取到数组中，即需要大量的位移操作，完全可以使用SIMD指令，所以很容易使用SIMD进行优化，详细可见：<a href="https://developer.aliyun.com/article/563081">索引压缩算法New PForDelta简介以及使用SIMD技术的优化</a></p>
+<h2 id="Huffman-Coding"><a href="#Huffman-Coding" class="headerlink" title="Huffman Coding"></a>Huffman Coding</h2><h3 id="压缩方法-9"><a href="#压缩方法-9" class="headerlink" title="压缩方法"></a>压缩方法</h3><p>哈夫曼编码(Huffman Coding)，又称霍夫曼编码，是Huffman于1952年提出的一种编码方式，该方法完全依据字符出现概率进行构造的平均长度最短的编码，其采用最小冗余编码的算法进行压缩。其大致分为三步：</p>
+<ul>
+<li>统计字符出现频率</li>
+<li>根据频率构造一颗哈夫曼树，这也是一颗最优二叉树</li>
+<li>对哈夫曼树进行01编码，得到最后的码文</li>
+</ul>
+<p>详细可以查看动图霍夫曼编码算法：<a href="https://zhuanlan.zhihu.com/p/63362804">算法科普：有趣的霍夫曼编码</a></p>
+<h2 id="LZ77"><a href="#LZ77" class="headerlink" title="LZ77"></a>LZ77</h2><h3 id="压缩方法-10"><a href="#压缩方法-10" class="headerlink" title="压缩方法"></a>压缩方法</h3><p>LZ77算法是采用字典做数据压缩的算法。其核心思想：利用数据的重复结构信息来进行数据压缩。其方式就是把数据中一些可以组织成短语(最长字符)的字符加入字典，然后再有相同字符出现采用标记来代替字典中的短语，如此通过标记代替多数重复出现的方式以进行压缩。</p>
+<p>LZ77的主要算法逻辑就是，先通过前向缓冲区预读数据，然后再向滑动窗口移入（滑动窗口有一定的长度），不断的寻找能与字典中短语匹配的最长短语，然后通过标记符标记。</p>
+<p>目前从前向缓冲区中可以和滑动窗口中可以匹配的最长短语就是（A,B）,然后向前移动的时候再次遇到（A,B）的时候采用标记符代替。</p>
+<h3 id="压缩"><a href="#压缩" class="headerlink" title="压缩"></a>压缩</h3><p>当压缩数据的时候，前向缓冲区与移动窗口之间在做短语匹配的是后会存在2种情况:</p>
+<p>找不到匹配时：将未匹配的符号编码成符号标记（多数都是字符本身）</p>
+<p>找到匹配时：将其最长的匹配编码成短语标记。</p>
+<img src="/img/2022/01/lz77_1.png" width = "50%" />
+
+<p>短语标记包含三部分信息：（滑动窗口中的偏移量（从匹配开始的地方计算）、匹配中的符号个数、匹配结束后的前向缓冲区中的第一个符号）。</p>
+<p>一旦把n个符号编码并生成响应的标记，就将这n个符号从滑动窗口的一端移出，并用前向缓冲区中同样数量的符号来代替它们，如此，滑动窗口中始终有最新的短语。通过图来进行解释：</p>
+<img src="/img/2022/01/lz77_2.png" width = "100%" />
+
+
+<h2 id="Elasticsearch-行存压缩算法"><a href="#Elasticsearch-行存压缩算法" class="headerlink" title="Elasticsearch 行存压缩算法"></a>Elasticsearch 行存压缩算法</h2><p>上面简单介绍了霍夫曼和LZ77压缩算法，实际上很多压缩算法是其2种算法的变种或结合，ES默认有2种压缩算法，主要做行存(fdt)，分别是LZ4和DEFLATE，选择不同的压缩算法需要结合自己业务特点做tradeoff，比如这2种压缩算法的压缩比和性能对比如下：</p>
+<img src="/img/2022/01/es.png" width = "100%" />
+
+<p>索引配置best_compression相比配置default可以节省大约一半的磁盘空间，best_compression的压缩效果更好，写入或查询多消耗5%~9%的CPU。感兴趣的可以看下brotli和zstd压缩算法，据测试，codec-compression插件使用的brotli和zstd压缩算法，与默认压缩算法（LZ4）相比，写入性能下降了10%，压缩率提升了45%；与原生best_compression（DEFLATE）相比，写入性能不变，压缩率提升了8%。</p>
+<p>参考链接：<br><a href="https://www.jianshu.com/p/89dd96537d9d">图解LZ77压缩算法</a></p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Fixed-length"><span class="toc-number">2.</span> <span class="toc-text">Fixed length</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8E%8B%E7%BC%A9%E6%96%B9%E6%B3%95"><span class="toc-number">2.1.</span> <span class="toc-text">压缩方法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%A4%BA%E4%BE%8B"><span class="toc-number">2.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Variable-Byte"><span class="toc-number">3.</span> <span class="toc-text">Variable Byte</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8E%8B%E7%BC%A9%E6%96%B9%E6%B3%95-1"><span class="toc-number">3.1.</span> <span class="toc-text">压缩方法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%A4%BA%E4%BE%8B-1"><span class="toc-number">3.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Improved-Variable-Byte"><span class="toc-number">4.</span> <span class="toc-text">Improved Variable Byte</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8E%8B%E7%BC%A9%E6%96%B9%E6%B3%95-2"><span class="toc-number">4.1.</span> <span class="toc-text">压缩方法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%A4%BA%E4%BE%8B-2"><span class="toc-number">4.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Group-Varint"><span class="toc-number">5.</span> <span class="toc-text">Group Varint</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8E%8B%E7%BC%A9%E6%96%B9%E6%B3%95-3"><span class="toc-number">5.1.</span> <span class="toc-text">压缩方法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%A4%BA%E4%BE%8B-3"><span class="toc-number">5.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Run-Length-Encoding"><span class="toc-number">6.</span> <span class="toc-text">Run Length Encoding</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8E%8B%E7%BC%A9%E6%96%B9%E6%B3%95-4"><span class="toc-number">6.1.</span> <span class="toc-text">压缩方法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%A4%BA%E4%BE%8B-4"><span class="toc-number">6.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Dictionary-Coding"><span class="toc-number">7.</span> <span class="toc-text">Dictionary Coding</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8E%8B%E7%BC%A9%E6%96%B9%E6%B3%95-5"><span class="toc-number">7.1.</span> <span class="toc-text">压缩方法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%A4%BA%E4%BE%8B-5"><span class="toc-number">7.2.</span> <span class="toc-text">示例</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Simple-9"><span class="toc-number">8.</span> <span class="toc-text">Simple 9</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8E%8B%E7%BC%A9%E6%96%B9%E6%B3%95-6"><span class="toc-number">8.1.</span> <span class="toc-text">压缩方法</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Simple-16"><span class="toc-number">9.</span> <span class="toc-text">Simple 16</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8E%8B%E7%BC%A9%E6%96%B9%E6%B3%95-7"><span class="toc-number">9.1.</span> <span class="toc-text">压缩方法</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PForDelta"><span class="toc-number">10.</span> <span class="toc-text">PForDelta</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8E%8B%E7%BC%A9%E6%96%B9%E6%B3%95-8"><span class="toc-number">10.1.</span> <span class="toc-text">压缩方法</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Huffman-Coding"><span class="toc-number">11.</span> <span class="toc-text">Huffman Coding</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8E%8B%E7%BC%A9%E6%96%B9%E6%B3%95-9"><span class="toc-number">11.1.</span> <span class="toc-text">压缩方法</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#LZ77"><span class="toc-number">12.</span> <span class="toc-text">LZ77</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8E%8B%E7%BC%A9%E6%96%B9%E6%B3%95-10"><span class="toc-number">12.1.</span> <span class="toc-text">压缩方法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8E%8B%E7%BC%A9"><span class="toc-number">12.2.</span> <span class="toc-text">压缩</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Elasticsearch-%E8%A1%8C%E5%AD%98%E5%8E%8B%E7%BC%A9%E7%AE%97%E6%B3%95"><span class="toc-number">13.</span> <span class="toc-text">Elasticsearch 行存压缩算法</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/" rel="tag">搜索引擎</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2022/09/27/the-most-frequently-used-commands-of-elasticsearch/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          Elasticsearch常用的命令
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2021/09/09/elasticsearch-performance-optimizing-in-online-poi-service/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Elasticsearch性能调优之毫秒级搜索POI业务&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

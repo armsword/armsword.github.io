@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>ES 内存管理分析 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="刚接触ES，研究了下ES内存管理，参考了一些文章，整理了一篇文章，方便自己记忆。 命令 GET _cat&#x2F;nodes?help 列出所有node, 并展示node所在机器的运行状态信息，help可显示帮助信息 1GET _cat&#x2F;nodes?h&#x3D;name,hp,hm,rp,rm,qcm,rcm,fm,sm&amp;v  解析下上面参数的意义    信息如下：   以红框里的node为例，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ES 内存管理分析">
+<meta property="og:url" content="http://armsword.com/2021/03/26/es-memory-management/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="刚接触ES，研究了下ES内存管理，参考了一些文章，整理了一篇文章，方便自己记忆。 命令 GET _cat&#x2F;nodes?help 列出所有node, 并展示node所在机器的运行状态信息，help可显示帮助信息 1GET _cat&#x2F;nodes?h&#x3D;name,hp,hm,rp,rm,qcm,rcm,fm,sm&amp;v  解析下上面参数的意义    信息如下：   以红框里的node为例，">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2021/03/cat.png">
+<meta property="og:image" content="http://armsword.com/img/2021/03/node.png">
+<meta property="og:image" content="http://armsword.com/img/2021/03/heap.png">
+<meta property="og:image" content="http://armsword.com/img/2021/03/mat.png">
+<meta property="article:published_time" content="2021-03-26T09:55:27.000Z">
+<meta property="article:modified_time" content="2023-12-26T11:27:56.427Z">
+<meta property="article:author" content="armsword">
+<meta property="article:tag" content="Elasticsearch">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2021/03/cat.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-es-memory-management" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      ES 内存管理分析
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2021/03/26/es-memory-management/" class="article-date">
+  <time datetime="2021-03-26T09:55:27.000Z" itemprop="datePublished">2021-03-26</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>刚接触ES，研究了下ES内存管理，参考了一些文章，整理了一篇文章，方便自己记忆。</p>
+<p>命令 GET _cat&#x2F;nodes?help 列出所有node, 并展示node所在机器的运行状态信息，help可显示帮助信息</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cat/nodes?<span class="attribute">h</span>=name,hp,hm,rp,rm,qcm,rcm,fm,sm&amp;v</span><br></pre></td></tr></table></figure>
+
+<p>解析下上面参数的意义 </p>
+<img src="/img/2021/03/cat.png" width = "100%" />
+
+<p>信息如下：</p>
+<img src="/img/2021/03/node.png" width = "100%" />
+
+<p>以红框里的node为例， 内存占用 &#x3D; (8.6 gb)qcm + (1gb) rcm + (0.35gb) fm + (2.2 gb)sm，大约12 gb。 </p>
+<span id="more"></span>
+
+<p>内存占用有2种，一种是ES可以管理的 on-heap 内存，另一种是由Lucene管理的 off-heap 内存。</p>
+<h2 id="On-Heap"><a href="#On-Heap" class="headerlink" title="On Heap"></a>On Heap</h2><p>根据缓存占用的作用，可以分为以下五种缓存：节点查询缓存、分片请求缓存、Fielddata Cache、Segments FST Cache、Indexing Buffer（无参数可看占用的大小）。</p>
+<h3 id="节点查询缓存"><a href="#节点查询缓存" class="headerlink" title="节点查询缓存"></a>节点查询缓存</h3><p>Node Query Cache (node 级别的 filter 过滤器结果缓存)， 每个节点有一个，被所有 shard 共享，filter query 结果要么是 yes 要么是no，不涉及 scores 的计算。使用LRU淘汰策略，内存无法被GC。<br>集群中每个节点都要配置，indices.queries.cache.size: 10%，默认为 10%。index.queries.cache.enabled 用来控制具体索引是否启用缓存，默认是开启的。属于 index 级别配置，只用在索引创建时候或者关闭的索引上设置。 </p>
+<h3 id="分片请求缓存"><a href="#分片请求缓存" class="headerlink" title="分片请求缓存"></a>分片请求缓存</h3><p>Shard Request Cache （shard 级别的 query result 缓存）每个 shard 一个，默认情况下该缓存只缓存 request 的结果 size 为0的查询。所以该缓存不会缓存hits，但却会缓存 hits.total, aggregations 和 suggestions，默认值：indices.requests.cache.size: 1%</p>
+<h3 id="Fielddata-Cache"><a href="#Fielddata-Cache" class="headerlink" title="Fielddata Cache"></a>Fielddata Cache</h3><p>Field Data Cache （OLAP场景，用于排序、聚合使用的字段的缓存）。对于Text类型的字段，如果要对其进行聚合和排序，则需要打开字段的Fileddata属性。Fielddata 是延迟加载。如果你从来没有聚合一个分析字符串，就不会加载 fielddata 到内存中。如果没有足够的内存保存 fielddata 时，Elastisearch会不断地从磁盘加载数据到内存，并剔除掉旧的内存数据。剔除操作会造成严重的磁盘I&#x2F;O，并且引发大量的GC，会严重影响Elastisearch的性能。</p>
+<p>通过参数 indices.fielddata.cache.size: 30% 配置，默认情况下Fielddata会不断占用内存，无上限，直到它触发了 fielddata circuit breaker。</p>
+<p>fielddata circuit breaker会根据查询条件评估这次查询会使用多少内存，从而计算加载这部分内存之后，Field Data Cache所占用的内存是否会超过 indices.breaker.fielddata.limit。如果超过这个值，就会触发fielddata circuit breaker，abort这次查询并且抛出异常，防止OOM。</p>
+<p>indices.breaker.fielddata.limit: 60% (默认heap的60%) ，如果设置了indices.fielddata.cache.size，当达到size时，cache会剔除旧的fielddata。注意，indices.breaker.fielddata.limit 必须大于 indices.fielddata.cache.size，否则只会触发fielddata circuit breaker，而不会剔除旧的fielddata。</p>
+<h3 id="Segments-FST-Cache"><a href="#Segments-FST-Cache" class="headerlink" title="Segments FST Cache"></a>Segments FST Cache</h3><p>Segments Cache（segments FST数据的缓存），为了加速查询，FST 永驻堆内内存，无法被 GC 回收。该部分内存无法设置大小，减少data node上的segment memory占用，有三种方法：</p>
+<ul>
+<li>删除不用的索引。</li>
+<li>关闭索引（文件仍然存在于磁盘，只是释放掉内存），需要的时候可重新打开。</li>
+<li>定期对不再更新的索引做force merge</li>
+</ul>
+<h4 id="解释下FST"><a href="#解释下FST" class="headerlink" title="解释下FST"></a>解释下FST</h4><p>ES 底层存储采用 Lucene（搜索引擎），写入时会根据原始数据的内容，分词，然后生成倒排索引。查询时先通过查询倒排索引找到数据地址（DocID），再读取原始数据（行存数据、列存数据）。但由于 Lucene 会为原始数据中的每个词都生成倒排索引，数据量较大。所以倒排索引对应的倒排表被存放在磁盘上。这样如果每次查询都直接读取磁盘上的倒排表，再查询目标关键词，会有很多次磁盘 IO，严重影响查询性能。为了解磁盘 IO 问题，Lucene 引入排索引的二级索引 FST [Finite State Transducer] 。原理上可以理解为前缀树，加速查询。</p>
+<h3 id="Indexing-Buffer"><a href="#Indexing-Buffer" class="headerlink" title="Indexing Buffer"></a>Indexing Buffer</h3><p>Indexing Buffer 索引写入缓冲区，用于存储新写入的文档，当其被填满时，缓冲区中的文档被写入磁盘中的 segments 中。节点上所有 shard 共享。这部分空间是可以被GC的，缓冲区默认大小 10%。</p>
+<h2 id="Off-heap"><a href="#Off-heap" class="headerlink" title="Off-heap"></a>Off-heap</h2><p>上面的提到的内存都是JVM管理的，ES能控制，即On-heap内存，ES还有Off-heap内存，由Lucene管理，负责缓存倒排索引（Segment Memory）。Lucene 中的倒排索引 segments 存储在文件中，为提高访问速度，都会把它加载到内存中，从而提高 Lucene 性能。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><img src="/img/2021/03/heap.png" width = "100%" />
+
+<h2 id="缓存的清除"><a href="#缓存的清除" class="headerlink" title="缓存的清除"></a>缓存的清除</h2><p>清除全部的缓存：</p>
+<figure class="highlight stata"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">POST</span> /_cache/<span class="keyword">clear</span></span><br></pre></td></tr></table></figure>
+<p>清除特定索引的缓存：</p>
+<figure class="highlight stata"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">POST</span> /my_index/_cache/<span class="keyword">clear</span></span><br><span class="line"><span class="keyword">POST</span> /my_index1,my_index2/_cache/<span class="keyword">clear</span></span><br></pre></td></tr></table></figure>
+<p>通过设置fielddata, query, request参数为true来清除特定类型的缓存清除特定类型缓存：</p>
+<figure class="highlight stata"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">POST</span> /my-index/_cache/<span class="keyword">clear</span>?fielddata=true</span><br><span class="line"><span class="keyword">POST</span> /my-index/_cache/<span class="keyword">clear</span>?<span class="keyword">query</span>=true</span><br><span class="line"><span class="keyword">POST</span> /my-index/_cache/<span class="keyword">clear</span>?request=true</span><br></pre></td></tr></table></figure>
+<p>通过上面分析，ES内存管理主要是谨慎对待unbounded的内存。unbounded内存是不可控的，会占用大量的 heap (Field Data Cache)或者 off heap（segments会长期占用内存，其初衷就是利用OS的cache提升性能。只有在Merge之后，才会释放掉标记为Delete的segments，释放部分内存)，从而会导致Elasticsearch OOM。</p>
+<h2 id="查看Cache对应的类"><a href="#查看Cache对应的类" class="headerlink" title="查看Cache对应的类"></a>查看Cache对应的类</h2><p>一个小技巧，测试环境对ES jmap下，之后MAT分析，选择dominator_tree，之后group by class，然后模糊匹配 Cache 关键字，之后可以看到一些关键类，比如IndicesRequestCache和IndicesFieldDataCache，而 FST Cache我还没有找到对应的类，还需要继续熟悉下代码。</p>
+<img src="/img/2021/03/mat.png" width = "100%" />
+
+<h2 id="参考链接："><a href="#参考链接：" class="headerlink" title="参考链接："></a>参考链接：</h2><p><a href="https://blog.csdn.net/microGP/article/details/106949969">https://blog.csdn.net/microGP/article/details/106949969</a></p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#On-Heap"><span class="toc-number">1.</span> <span class="toc-text">On Heap</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%8A%82%E7%82%B9%E6%9F%A5%E8%AF%A2%E7%BC%93%E5%AD%98"><span class="toc-number">1.1.</span> <span class="toc-text">节点查询缓存</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%86%E7%89%87%E8%AF%B7%E6%B1%82%E7%BC%93%E5%AD%98"><span class="toc-number">1.2.</span> <span class="toc-text">分片请求缓存</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Fielddata-Cache"><span class="toc-number">1.3.</span> <span class="toc-text">Fielddata Cache</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Segments-FST-Cache"><span class="toc-number">1.4.</span> <span class="toc-text">Segments FST Cache</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%A7%A3%E9%87%8A%E4%B8%8BFST"><span class="toc-number">1.4.1.</span> <span class="toc-text">解释下FST</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Indexing-Buffer"><span class="toc-number">1.5.</span> <span class="toc-text">Indexing Buffer</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Off-heap"><span class="toc-number">2.</span> <span class="toc-text">Off-heap</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">3.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BC%93%E5%AD%98%E7%9A%84%E6%B8%85%E9%99%A4"><span class="toc-number">4.</span> <span class="toc-text">缓存的清除</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8BCache%E5%AF%B9%E5%BA%94%E7%9A%84%E7%B1%BB"><span class="toc-number">5.</span> <span class="toc-text">查看Cache对应的类</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E9%93%BE%E6%8E%A5%EF%BC%9A"><span class="toc-number">6.</span> <span class="toc-text">参考链接：</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Elasticsearch/" rel="tag">Elasticsearch</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2021/09/09/elasticsearch-performance-optimizing-in-online-poi-service/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          Elasticsearch性能调优之毫秒级搜索POI业务
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2021/03/23/use-async-profiler-find-cpu-bottleneck/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">使用火焰图定位 OLAP 引擎瓶颈&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

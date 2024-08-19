@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Jetty导致Presto堆外内存泄露的排查过程 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="背景一个Presto集群报警，显示Coordinator内存不足。看了下，发现RES内存(86.7G) &gt; XMX(72G) + 堆外内存(10G)，然后看了下Presto UI里Resource Utilization的Non-Heap Memory Used，只用了200M。问题奇怪，pmap查看进程的内存映像信息，如下： 123456789101112[presto@hostname">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Jetty导致Presto堆外内存泄露的排查过程">
+<meta property="og:url" content="http://armsword.com/2020/06/23/jetty-cause-presto-memory-leak/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="背景一个Presto集群报警，显示Coordinator内存不足。看了下，发现RES内存(86.7G) &gt; XMX(72G) + 堆外内存(10G)，然后看了下Presto UI里Resource Utilization的Non-Heap Memory Used，只用了200M。问题奇怪，pmap查看进程的内存映像信息，如下： 123456789101112[presto@hostname">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2020/06/meta.png">
+<meta property="og:image" content="http://armsword.com/img/2020/06/perf.png">
+<meta property="article:published_time" content="2020-06-23T10:52:11.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.293Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2020/06/meta.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-jetty-cause-presto-memory-leak" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Jetty导致Presto堆外内存泄露的排查过程
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2020/06/23/jetty-cause-presto-memory-leak/" class="article-date">
+  <time datetime="2020-06-23T10:52:11.000Z" itemprop="datePublished">2020-06-23</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>一个Presto集群报警，显示Coordinator内存不足。看了下，发现RES内存(86.7G) &gt; XMX(72G) + 堆外内存(10G)，然后看了下Presto UI里Resource Utilization的Non-Heap Memory Used，只用了200M。问题奇怪，pmap查看进程的内存映像信息，如下：</p>
+<figure class="highlight tap"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[presto@hostname ~/presto-current]$ pmap -x<span class="number"> 107870 </span>| sort -rn -k3 | head -n 10</span><br><span class="line">total kB        <span class="number"> 106752092 </span>86763996 86684760</span><br><span class="line">00007fd673000000<span class="number"> 75644928 </span>61078708<span class="number"> 61078708 </span>rw---   [ anon ]</span><br><span class="line">00007fd5c8000000<span class="number"> 2654208 </span>2537116<span class="number"> 2537116 </span>rw---   [ anon ]</span><br><span class="line">000000000120a000<span class="number"> 1244772 </span>1244644<span class="number"> 1244644 </span>rw---   [ anon ]</span><br><span class="line">00007fd5803cf000 <span class="number"> 520388 </span><span class="number"> 497972 </span><span class="number"> 497972 </span>rw---   [ anon ]</span><br><span class="line">00007fd08c836000 <span class="number"> 149720 </span><span class="number"> 149720 </span><span class="number"> 149720 </span>rw---   [ anon ]</span><br><span class="line">00007fd0e2fe2000 <span class="number"> 147620 </span><span class="number"> 147620 </span><span class="number"> 147620 </span>rw---   [ anon ]</span><br><span class="line">00007fd0d9b35000 <span class="number"> 146920 </span><span class="number"> 146920 </span><span class="number"> 146920 </span>rw---   [ anon ]</span><br><span class="line">00007fe964000000 <span class="number"> 116672 </span><span class="number"> 114164 </span><span class="number"> 114164 </span>rwx--   [ anon ]</span><br><span class="line">00007fd0612b1000 <span class="number"> 111932 </span><span class="number"> 111932 </span><span class="number"> 111932 </span>rw---   [ anon ]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>第一列表示虚拟空间地址，第二列表示该项在虚拟空间中占用的大小，第三列表示RSS，第四列表示DIRTY，第五列表示该项名称（anon是佚名的）。</p>
+<p>jmap -heap 发现堆内内存占用正常，然后我jmap dump了一份内存，dump后发现只有700M+，应该与堆内存无关了，既然这样查找直接从堆外内存入手了。</p>
+<span id="more"></span>
+
+<h2 id="查找过程"><a href="#查找过程" class="headerlink" title="查找过程"></a>查找过程</h2><p>启动<code>Native Memory Tracker</code>，jvm配置-XX:NativeMemoryTracking&#x3D;detail参数，重启服务，等现场复现时，通过<code>jcmd pid VM.native_memory detail</code>查看到内存分布如下：</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">[presto@hostname ~/presto-current]$ jcmd 107870 VM.native_memory</span><br><span class="line">107870:</span><br><span class="line"></span><br><span class="line">Native Memory Tracking:</span><br><span class="line"></span><br><span class="line">Total: <span class="attribute">reserved</span>=85091386KB, <span class="attribute">committed</span>=84530010KB</span><br><span class="line">-                 Java Heap (<span class="attribute">reserved</span>=75497472KB, <span class="attribute">committed</span>=75497472KB)</span><br><span class="line">                            (mmap: <span class="attribute">reserved</span>=75497472KB, <span class="attribute">committed</span>=75497472KB) </span><br><span class="line"> </span><br><span class="line">-                     Class (<span class="attribute">reserved</span>=167037KB, <span class="attribute">committed</span>=167037KB)</span><br><span class="line">                            (classes #24712)</span><br><span class="line">                            (<span class="attribute">malloc</span>=7293KB #110480) </span><br><span class="line">                            (mmap: <span class="attribute">reserved</span>=159744KB, <span class="attribute">committed</span>=159744KB) </span><br><span class="line"> </span><br><span class="line">-                    Thread (<span class="attribute">reserved</span>=461357KB, <span class="attribute">committed</span>=461357KB)</span><br><span class="line">                            (thread #447)</span><br><span class="line">                            (stack: <span class="attribute">reserved</span>=458488KB, <span class="attribute">committed</span>=458488KB)</span><br><span class="line">                            (<span class="attribute">malloc</span>=1451KB #2268) </span><br><span class="line">                            (<span class="attribute">arena</span>=1418KB #892)</span><br><span class="line"> </span><br><span class="line">-                      Code (<span class="attribute">reserved</span>=555591KB, <span class="attribute">committed</span>=141671KB)</span><br><span class="line">                            (<span class="attribute">malloc</span>=23111KB #31456) </span><br><span class="line">                            (mmap: <span class="attribute">reserved</span>=532480KB, <span class="attribute">committed</span>=118560KB) </span><br><span class="line"> </span><br><span class="line">-                        GC (<span class="attribute">reserved</span>=2928579KB, <span class="attribute">committed</span>=2928579KB)</span><br><span class="line">                            (<span class="attribute">malloc</span>=94147KB #57989) </span><br><span class="line">                            (mmap: <span class="attribute">reserved</span>=2834432KB, <span class="attribute">committed</span>=2834432KB) </span><br><span class="line"> </span><br><span class="line">-                  Compiler (<span class="attribute">reserved</span>=719KB, <span class="attribute">committed</span>=719KB)</span><br><span class="line">                            (<span class="attribute">malloc</span>=588KB #919) </span><br><span class="line">                            (<span class="attribute">arena</span>=131KB #3)</span><br><span class="line"> </span><br><span class="line">-                  Internal (<span class="attribute">reserved</span>=5296433KB, <span class="attribute">committed</span>=5296433KB)</span><br><span class="line">                            (<span class="attribute">malloc</span>=5296401KB #75822) </span><br><span class="line">                            (mmap: <span class="attribute">reserved</span>=32KB, <span class="attribute">committed</span>=32KB) </span><br><span class="line"> </span><br><span class="line">-                    Symbol (<span class="attribute">reserved</span>=22611KB, <span class="attribute">committed</span>=22611KB)</span><br><span class="line">                            (<span class="attribute">malloc</span>=20110KB #202465) </span><br><span class="line">                            (<span class="attribute">arena</span>=2501KB #1)</span><br><span class="line"> </span><br><span class="line">-    Native Memory<span class="built_in"> Tracking </span>(<span class="attribute">reserved</span>=8111KB, <span class="attribute">committed</span>=8111KB)</span><br><span class="line">                            (<span class="attribute">malloc</span>=463KB #6860) </span><br><span class="line">                            (tracking <span class="attribute">overhead</span>=7648KB)</span><br><span class="line"> </span><br><span class="line">-               Arena Chunk (<span class="attribute">reserved</span>=6019KB, <span class="attribute">committed</span>=6019KB)</span><br><span class="line">                            (<span class="attribute">malloc</span>=6019KB) </span><br><span class="line"> </span><br><span class="line">-                   Unknown (<span class="attribute">reserved</span>=147456KB, <span class="attribute">committed</span>=0KB)</span><br><span class="line">                            (mmap: <span class="attribute">reserved</span>=147456KB, <span class="attribute">committed</span>=0KB)</span><br><span class="line">							</span><br></pre></td></tr></table></figure>
+<p>Internal主要是堆外内存占用，但是不太正常，显示占用5G+,但是我们通过Presto UI发现堆外内存占用只有200M+，难道有堆外内存泄露？查找jcmd里Internal块内存区间，发现Internal只占用了32KB。如下所示：</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-attr">[0x00007fe98dff4000 - 0x00007fe98dffc000]</span> reserved and committed <span class="number">32</span>KB <span class="keyword">for</span> Internal from</span><br><span class="line">    <span class="selector-attr">[0x00007fe98c9599d2]</span> PerfMemory::<span class="built_in">create_memory_region</span>(unsigned long)+<span class="number">0</span>xac2</span><br><span class="line">    <span class="selector-attr">[0x00007fe98c958624]</span> PerfMemory::<span class="built_in">initialize</span>()+<span class="number">0</span>x44</span><br><span class="line">    <span class="selector-attr">[0x00007fe98ca63dcd]</span> Threads::<span class="built_in">create_vm</span>(JavaVMInitArgs*, bool*)+<span class="number">0</span>x1ad</span><br><span class="line">    <span class="selector-attr">[0x00007fe98c6c1e64]</span> JNI_CreateJavaVM+<span class="number">0</span>x74</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>那malloc申请的malloc&#x3D;5296401KB去哪里了呢？只好把jcmd和pmap里面的内存对应起来了。命令：</p>
+<figure class="highlight 1c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pmap <span class="punctuation">-</span>x <span class="number">107870</span> <span class="string">| sort -rn -k3</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>排序一次比照jcmd和pmap内存块，如在jcmd里查找00007fd673000000地址，发现是mmap申请了个xmx堆大小的内存，依次比较，发现很多64M大小的内存块是在jcmd里找不到的。那这些块里存储的是什么的？使用gdb dump一份内存吧，命令：</p>
+<figure class="highlight dsconfig"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">gdb</span> <span class="built_in">--batch</span> <span class="built_in">--pid</span> <span class="string">107870</span> -<span class="string">ex</span> <span class="string">&quot;dump memory gdb_107870.dump 0x7fd5b4000000  0x7fd5b5000000&quot;</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>导出了16MB数据，之后strings gdb_107870.dump 查看，发现内容如下：<br><img src="/img/2020/06/meta.png"></p>
+<p>这些应该是堆内内存里，为啥会其他内存分配呢？没有想法，只好去perf了下。<br>命令：</p>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">perf record -<span class="selector-tag">g</span> -<span class="selector-tag">p</span> <span class="number">107870</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>几十秒后Ctrl+C，执行以下命令查看报告：</p>
+<figure class="highlight elm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">perf</span> re<span class="keyword">port</span> -i perf.data</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>报告如下，发现除了系统调用外，调用libzip的Deflater非常可疑。</p>
+<p><img src="/img/2020/06/perf.png"></p>
+<p>那哪里调用的zip？直接perf打出调用栈即可，内容如下：</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">Started <span class="selector-attr">[cpu]</span> profiling</span><br><span class="line">--- Execution profile ---</span><br><span class="line">Total samples       : <span class="number">152</span></span><br><span class="line">unknown_Java        : <span class="number">2</span> (<span class="number">1.32%</span>)</span><br><span class="line"></span><br><span class="line">Frame buffer usage  : <span class="number">0.5744%</span></span><br><span class="line"></span><br><span class="line">--- <span class="number">120038581</span> ns (<span class="number">7.87%</span>), <span class="number">12</span> samples</span><br><span class="line">  <span class="selector-attr">[ 0]</span> longest_match</span><br><span class="line">  <span class="selector-attr">[ 1]</span> deflate_slow</span><br><span class="line">  <span class="selector-attr">[ 2]</span> deflate</span><br><span class="line">  <span class="selector-attr">[ 3]</span> Java_java_util_zip_Deflater_deflateBytes</span><br><span class="line">  <span class="selector-attr">[ 4]</span> java<span class="selector-class">.util</span><span class="selector-class">.zip</span><span class="selector-class">.Deflater</span><span class="selector-class">.deflateBytes</span></span><br><span class="line">  <span class="selector-attr">[ 5]</span> java<span class="selector-class">.util</span><span class="selector-class">.zip</span><span class="selector-class">.Deflater</span><span class="selector-class">.deflate</span></span><br><span class="line">  <span class="selector-attr">[ 6]</span> org<span class="selector-class">.eclipse</span><span class="selector-class">.jetty</span><span class="selector-class">.server</span><span class="selector-class">.handler</span><span class="selector-class">.gzip</span>.GzipHttpOutputInterceptor<span class="variable">$GzipBufferCB</span><span class="selector-class">.process</span></span><br><span class="line">  <span class="selector-attr">[ 7]</span> org<span class="selector-class">.eclipse</span><span class="selector-class">.jetty</span><span class="selector-class">.util</span><span class="selector-class">.IteratingCallback</span><span class="selector-class">.processing</span></span><br><span class="line">  <span class="selector-attr">[ 8]</span> org<span class="selector-class">.eclipse</span><span class="selector-class">.jetty</span><span class="selector-class">.util</span><span class="selector-class">.IteratingCallback</span><span class="selector-class">.iterate</span></span><br><span class="line">  <span class="selector-attr">[ 9]</span> org<span class="selector-class">.eclipse</span><span class="selector-class">.jetty</span><span class="selector-class">.server</span><span class="selector-class">.handler</span><span class="selector-class">.gzip</span><span class="selector-class">.GzipHttpOutputInterceptor</span><span class="selector-class">.gzip</span></span><br><span class="line">  <span class="selector-attr">[10]</span> org<span class="selector-class">.eclipse</span><span class="selector-class">.jetty</span><span class="selector-class">.server</span><span class="selector-class">.handler</span><span class="selector-class">.gzip</span><span class="selector-class">.GzipHttpOutputInterceptor</span><span class="selector-class">.write</span></span><br><span class="line">  <span class="selector-attr">[11]</span> org<span class="selector-class">.eclipse</span><span class="selector-class">.jetty</span><span class="selector-class">.server</span><span class="selector-class">.HttpOutput</span><span class="selector-class">.write</span></span><br><span class="line">  <span class="selector-attr">[12]</span> org<span class="selector-class">.eclipse</span><span class="selector-class">.jetty</span><span class="selector-class">.server</span><span class="selector-class">.HttpOutput</span><span class="selector-class">.write</span></span><br><span class="line">  <span class="selector-attr">[13]</span> org<span class="selector-class">.eclipse</span><span class="selector-class">.jetty</span><span class="selector-class">.server</span><span class="selector-class">.HttpOutput</span><span class="selector-class">.write</span></span><br><span class="line">  <span class="selector-attr">[14]</span> io<span class="selector-class">.airlift</span><span class="selector-class">.http</span><span class="selector-class">.server</span>.TimingFilter<span class="variable">$TimedServletOutputStream</span><span class="selector-class">.write</span></span><br><span class="line">  <span class="selector-attr">[15]</span> org<span class="selector-class">.glassfish</span><span class="selector-class">.jersey</span><span class="selector-class">.servlet</span><span class="selector-class">.internal</span>.ResponseWriter<span class="variable">$NonCloseableOutputStreamWrapper</span><span class="selector-class">.write</span></span><br><span class="line">  <span class="selector-attr">[16]</span> org<span class="selector-class">.glassfish</span><span class="selector-class">.jersey</span><span class="selector-class">.message</span><span class="selector-class">.internal</span><span class="selector-class">.CommittingOutputStream</span><span class="selector-class">.write</span></span><br><span class="line">  <span class="selector-attr">[17]</span> org<span class="selector-class">.glassfish</span><span class="selector-class">.jersey</span><span class="selector-class">.message</span><span class="selector-class">.internal</span>.WriterInterceptorExecutor<span class="variable">$UnCloseableOutputStream</span><span class="selector-class">.write</span></span><br><span class="line">  <span class="selector-attr">[18]</span> com<span class="selector-class">.fasterxml</span><span class="selector-class">.jackson</span><span class="selector-class">.core</span><span class="selector-class">.json</span><span class="selector-class">.UTF8JsonGenerator</span>._flushBuffer</span><br><span class="line">  <span class="selector-attr">[19]</span> com<span class="selector-class">.fasterxml</span><span class="selector-class">.jackson</span><span class="selector-class">.core</span><span class="selector-class">.json</span><span class="selector-class">.UTF8JsonGenerator</span>._writeCustomStringSegment2</span><br><span class="line">  <span class="selector-attr">[20]</span> com<span class="selector-class">.fasterxml</span><span class="selector-class">.jackson</span><span class="selector-class">.core</span><span class="selector-class">.json</span><span class="selector-class">.UTF8JsonGenerator</span>._writeStringSegment</span><br><span class="line">  <span class="selector-attr">[21]</span> com<span class="selector-class">.fasterxml</span><span class="selector-class">.jackson</span><span class="selector-class">.core</span><span class="selector-class">.json</span><span class="selector-class">.UTF8JsonGenerator</span>._writeStringSegments</span><br><span class="line">  <span class="selector-attr">[22]</span> com<span class="selector-class">.fasterxml</span><span class="selector-class">.jackson</span><span class="selector-class">.core</span><span class="selector-class">.json</span><span class="selector-class">.UTF8JsonGenerator</span><span class="selector-class">.writeString</span></span><br><span class="line">  <span class="selector-attr">[23]</span> com<span class="selector-class">.fasterxml</span><span class="selector-class">.jackson</span><span class="selector-class">.databind</span><span class="selector-class">.ser</span><span class="selector-class">.std</span><span class="selector-class">.StringSerializer</span><span class="selector-class">.serialize</span></span><br><span class="line">  <span class="selector-attr">[24]</span> com<span class="selector-class">.fasterxml</span><span class="selector-class">.jackson</span><span class="selector-class">.databind</span><span class="selector-class">.ser</span><span class="selector-class">.BeanPropertyWriter</span><span class="selector-class">.serializeAsField</span></span><br><span class="line">  <span class="selector-attr">[25]</span> com<span class="selector-class">.fasterxml</span><span class="selector-class">.jackson</span><span class="selector-class">.databind</span><span class="selector-class">.ser</span><span class="selector-class">.std</span><span class="selector-class">.BeanSerializerBase</span><span class="selector-class">.serializeFields</span></span><br><span class="line">  <span class="selector-attr">[26]</span> com<span class="selector-class">.fasterxml</span><span class="selector-class">.jackson</span><span class="selector-class">.databind</span><span class="selector-class">.ser</span><span class="selector-class">.BeanSerializer</span><span class="selector-class">.serialize</span></span><br><span class="line">  <span class="selector-attr">[27]</span> com<span class="selector-class">.fasterxml</span><span class="selector-class">.jackson</span><span class="selector-class">.databind</span><span class="selector-class">.ser</span><span class="selector-class">.std</span><span class="selector-class">.CollectionSerializer</span><span class="selector-class">.serializeContentsUsing</span></span><br><span class="line">  <span class="selector-attr">[28]</span> com<span class="selector-class">.fasterxml</span><span class="selector-class">.jackson</span><span class="selector-class">.databind</span><span class="selector-class">.ser</span><span class="selector-class">.std</span><span class="selector-class">.CollectionSerializer</span><span class="selector-class">.serializeContents</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>发现是jetty库调用的zip，因为zip的调用方式是这样的：</p>
+<figure class="highlight abnf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">try &#123;</span><br><span class="line">    Deflater zip <span class="operator">=</span> new Deflater(level)<span class="comment">;</span></span><br><span class="line">    DeflaterOutputStream defStream <span class="operator">=</span> new DeflaterOutputStream(out)<span class="comment">;</span></span><br><span class="line">&#125;  </span><br><span class="line">finally &#123;</span><br><span class="line">    defStream.close()<span class="comment">;</span></span><br><span class="line">    zip.end()<span class="comment">;</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>已知zip是通过jni调用的C语言库，需要close和end，否则会导致堆外内存泄露。找下jetty-server查看下GzipHttpOutputInterceptor的git history，发现jetty调用gzip确实存在着内存泄露：</p>
+<p><a href="https://github.com/eclipse/jetty.project/pull/1429">https://github.com/eclipse/jetty.project/pull/1429</a><br><a href="https://github.com/eclipse/jetty.project/issues/300">https://github.com/eclipse/jetty.project/issues/300</a></p>
+<p>具体原因大家可以看下上面那个2个PR，jetty在jetty 9.4.20修复了这个问题，我看了下最新的PrestoSQL，airlift里已经将jetty改为新版本了，而我们的Druid.io服务也存在着这个问题，所以先修改jetty依赖，之后看下线上表现吧。</p>
+<p>最后，本文只是随手记录了下查找过程，顺便给同事点查找思路，后面的猜测gzip导致了内存泄露，也是因为前面分析是有堆外内存泄露产生，后面发现gzip cpu使用率比较高，且gzip是通过jni调用的，属于堆外内存，顺着这个思路去查找其代码逻辑，然后发现社区修复了这些问题，而我们的jetty依赖还是比较老的版本，所以修改jetty版本，之后上线验证下。</p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E6%89%BE%E8%BF%87%E7%A8%8B"><span class="toc-number">2.</span> <span class="toc-text">查找过程</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2020/11/03/presto-in-didichuxing/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          Presto 在滴滴的探索和实践
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2020/06/03/the-solution-of-presto-oom-caused-by-orc-statistics/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">记一次Presto Worker OOM的查找过程&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

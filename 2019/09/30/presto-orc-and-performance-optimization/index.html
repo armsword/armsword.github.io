@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Presto ORC及其性能优化 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="简介ORC的全称是(Optimized Row Columnar)，其是为了加速Hive查询以及节省Hadoop磁盘空间而生的，其使用列式存储，支持多种文件压缩方式。由于其被广泛应用在Hadoop系统中，Presto 0.77版本在Hive Connector里实现了ORC Reader。 ORC文件结构  上图（图1）来自网络，有很多文章通过这张图片介绍了ORC文件结构，我这里就不多啰嗦了，我们">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Presto ORC及其性能优化">
+<meta property="og:url" content="http://armsword.com/2019/09/30/presto-orc-and-performance-optimization/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="简介ORC的全称是(Optimized Row Columnar)，其是为了加速Hive查询以及节省Hadoop磁盘空间而生的，其使用列式存储，支持多种文件压缩方式。由于其被广泛应用在Hadoop系统中，Presto 0.77版本在Hive Connector里实现了ORC Reader。 ORC文件结构  上图（图1）来自网络，有很多文章通过这张图片介绍了ORC文件结构，我这里就不多啰嗦了，我们">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2019/09/01.jpg">
+<meta property="og:image" content="http://armsword.com/img/2019/09/07.png">
+<meta property="og:image" content="http://armsword.com/img/2019/09/08.png">
+<meta property="article:published_time" content="2019-09-30T07:06:04.000Z">
+<meta property="article:modified_time" content="2023-12-26T11:36:28.000Z">
+<meta property="article:author" content="armsword">
+<meta property="article:tag" content="presto">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2019/09/01.jpg">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-presto-orc-and-performance-optimization" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Presto ORC及其性能优化
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2019/09/30/presto-orc-and-performance-optimization/" class="article-date">
+  <time datetime="2019-09-30T07:06:04.000Z" itemprop="datePublished">2019-09-30</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>ORC的全称是(Optimized Row Columnar)，其是为了加速Hive查询以及节省Hadoop磁盘空间而生的，其使用列式存储，支持多种文件压缩方式。由于其被广泛应用在Hadoop系统中，Presto 0.77版本在Hive Connector里实现了ORC Reader。</p>
+<h2 id="ORC文件结构"><a href="#ORC文件结构" class="headerlink" title="ORC文件结构"></a>ORC文件结构</h2><img src="/img/2019/09/01.jpg" width="800" align=left />
+
+<p>上图（图1）来自网络，有很多文章通过这张图片介绍了ORC文件结构，我这里就不多啰嗦了，我们直接通过数据来看文件格式吧。</p>
+<span id="more"></span>
+
+<h3 id="创建表"><a href="#创建表" class="headerlink" title="创建表"></a>创建表</h3><img src="/img/2019/09/07.png" width="800" align=left />
+
+
+<h3 id="插入数据"><a href="#插入数据" class="headerlink" title="插入数据"></a>插入数据</h3><figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> orc(id,<span class="type">name</span>) <span class="keyword">values</span>(<span class="number">1</span>,<span class="string">&#x27;a&#x27;</span>),(<span class="number">2</span>,<span class="string">&#x27;b&#x27;</span>),(<span class="number">3</span>,<span class="string">&#x27;c&#x27;</span>),(<span class="number">4</span>,<span class="string">&#x27;d&#x27;</span>),(<span class="number">5</span>,<span class="string">&#x27;e&#x27;</span>),(<span class="number">6</span>,<span class="string">&#x27;f&#x27;</span>),(<span class="number">7</span>,<span class="keyword">null</span>);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>注：我们想只生成一个文件，所以一次插入了7条数据，否则会生成多个文件，不利于我们后续分析。</p>
+<h3 id="Dump数据"><a href="#Dump数据" class="headerlink" title="Dump数据"></a>Dump数据</h3><p>使用Hive自带的ORC DUMP工具，命令：</p>
+<figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">.<span class="regexp">/bin/</span>hive --orcfiledump hdfs:<span class="regexp">//</span>localhost:<span class="number">9000</span><span class="regexp">/user/</span>hive<span class="regexp">/warehouse/</span>orc/<span class="number">000000</span>_0</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>数据格式：<br><img src="/img/2019/09/08.png" width="800" align=left /></p>
+<p>上图由回车划分了5个模块，第五个模块表示该ORC文件数据大小，我们不需要关心。</p>
+<ul>
+<li>模块1<br>对应图1里面的PostScript，包含压缩类型及表结构信息</li>
+<li>模块2<br>Stripe Statistics对应图1里面的Stripe Footer，Stripe粒度的索引，可以看到其包含3列，Column 1 对应<code>id</code>字段，包含其最大值和最小值以及包含其sum总和，其中也有个<code>hasNull</code>标记，用于标记是否含有NULL，此字段可用于SQL里带有 <code>is null</code> 的优化，Column 2对应<code>name</code>字段，与Column 1相似，但是sum表示非NULL值的行数。注意此处只含有1个Stripe，默认为10000，参数hive.exec.orc.default.row.index.stride可控制其大小，简单测试了下，发现此值最小为1000，否则生成MR出错，具体需要代码里再确认下。Column 0只统计其count值，可以忽略。</li>
+<li>模块3<br>对应图1里面的File Footer，与Stripe Footer相似，但是是文件级别的索引。</li>
+<li>模块4<br>stripe详细信息，就是真实列数据块，其中又分为Index data（记录每列的索引信息），Raw Data（记录原始数据），Index data可以根据自身业务特点做些性能调优，比如实现布隆过滤器索引（Hive 1.2实现）。Raw Data是通过row group保存的，其实可以简单的认为就是默认按照10000将原始数据划分更小的块，每一个row group由多个stream保存数据和索引信息。每一个stream的数据会根据该列的类型使用特定的压缩算法保存。在ORC中存在如下几种stream类型：</li>
+<li>PRESENT：每一个成员值在这个stream中保持一位（bit）用于标识该值是否为NULL</li>
+<li>DATA：当前stripe的成员值，真实数据</li>
+<li>LENGTH：每一个成员的长度，string类型特有，否则你不知道每个string的长度</li>
+<li>DICTIONARY_DATA：对string类型数据编码之后字典的内容</li>
+<li>SECONDARY：存储Decimal、timestamp类型的小数或者纳秒数等</li>
+</ul>
+<p>通过模块4，我们可以看到<code>id</code>含列有DATA Stream，而<code>name</code>含有PRESENT、DATA、LENGTH Stream，因为存在空值，所以多了个PRESENT Stream。</p>
+<h2 id="Presto-ORC及优化"><a href="#Presto-ORC及优化" class="headerlink" title="Presto ORC及优化"></a>Presto ORC及优化</h2><p>Presto在实现ORC时，Hive-based ORC reader维护的数据是行式的，Presto想使用官方提供的客户端时还需要将行数据转换为列数据，且当时不支持Predicate pushdown，所以索性Presto自己实现ORC Reader，不过Hive 0.13也实现了VectorizedOrcRecordReader提供列格式。</p>
+<h3 id="Predicate-pushdown"><a href="#Predicate-pushdown" class="headerlink" title="Predicate pushdown"></a>Predicate pushdown</h3><p>由ORC文件格式分析，ORC在每个文件中提供三级索引：</p>
+<ul>
+<li>文件级别，整个文件级别的统计信息</li>
+<li>stripe级别，每个stripe每列中的值的统计信息</li>
+<li>行级别 (行组)，stripe中每组10000行（默认值）的每列值的统计信息</li>
+</ul>
+<p>假如查询过滤条件为WHERE id &#x3D; 1，首先从文件的统计信息（一级索引）中看看id字段的min&#x2F;max值，如果1不包含在内，那么跳过该文件；如果在这个文件中，那么继续查看二级索引，每个stripe中id字段的min&#x2F;max值，如果1不包含在内，那么跳过此stripe；如果在该stripe中，则继续匹配row group中的min&#x2F;max值（三级索引），如果1不包含在内，那么跳过该row group。如果1包含在内min和max范围内，则利用布隆过滤器再次判断是否一定不在内，不在内则继续跳过该行组。其原理就是通过三级索引，将查询范围缩小到10000行的集合，而原始数据是列式存储，更加适合CPU pipeline的编码方式，有效利用这种局部性，缓存可以达到极高的命中率，所以ORC有非常高效的性能。</p>
+<h3 id="Lazy-reads"><a href="#Lazy-reads" class="headerlink" title="Lazy reads"></a>Lazy reads</h3><p>以SQL为例，<code>SELECT a, b FROM ... WHERE a = ...</code>，如果a不匹配，那么将不会读取b的列。</p>
+<h3 id="Bulk-reads"><a href="#Bulk-reads" class="headerlink" title="Bulk reads"></a>Bulk reads</h3><p>Presto老版本ORC Reader代码可以简化为以下逻辑：</p>
+<figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (dataStream == <span class="keyword">null</span>) &#123;</span><br><span class="line">    presentStream.skip(nextBatchSize);</span><br><span class="line">    <span class="keyword">return</span> RunLengthEncodedBlock.<span class="keyword">create</span>(<span class="keyword">type</span>, <span class="keyword">null</span>, nextBatchSize);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">BlockBuilder builder = <span class="keyword">type</span>.createBlockBuilder(<span class="keyword">null</span>, nextBatchSize);</span><br><span class="line"><span class="keyword">if</span> (presentStream == <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; nextBatchSize; i++) &#123;</span><br><span class="line">        <span class="keyword">type</span>.writeLong(builder, dataStream.next());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; nextBatchSize; i++) &#123;</span><br><span class="line">        <span class="keyword">if</span> (presentStream.nextBit()) &#123;</span><br><span class="line">            <span class="keyword">type</span>.writeLong(builder, dataStream.next());</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            builder.appendNull();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> builder.build();</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>比如float及double的datatStream.next()实现为：</p>
+<figure class="highlight aspectj"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">float</span> <span class="title">next</span><span class="params">()</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> IOException</span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    input.readFully(buffer, <span class="number">0</span>, SIZE_OF_FLOAT);</span><br><span class="line">    <span class="function"><span class="keyword">return</span> slice.<span class="title">getFloat</span><span class="params">(<span class="number">0</span>)</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>一次只读取一个值，将其改为按照Bulk loading（比如8*SIZE_OF_FLOAT），读取性能有明显提升。<br>而对于Boolean reader，之前一次处理 1 bit数据（但是读取按照Byte），优化点是将其改为一次处理 8 bit（1 Byte）。</p>
+<h3 id="Improve-null-reading"><a href="#Improve-null-reading" class="headerlink" title="Improve null reading"></a>Improve null reading</h3><p>从上面的代码可以看到，当有PRESENT Stream时（就是存在null值时），还要每次处理PRESENT Stream，读取DATA Stream及 PRESENT Stream，CPU Cache利用率很低，所以上面代码改为了下面形式：</p>
+<figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">// bulk <span class="keyword">read</span> <span class="keyword">and</span> count <span class="keyword">null</span> <span class="keyword">values</span></span><br><span class="line"><span class="type">boolean</span>[] <span class="keyword">isNull</span> = <span class="built_in">new</span> <span class="type">boolean</span>[nextBatchSize];</span><br><span class="line"><span class="type">int</span> nullCount = presentStream.getUnsetBits(nextBatchSize, <span class="keyword">isNull</span>);</span><br><span class="line"></span><br><span class="line">// bulk <span class="keyword">read</span> non-<span class="keyword">values</span> <span class="keyword">into</span> a <span class="keyword">temporary</span> <span class="keyword">array</span></span><br><span class="line">dataStream.next(tempBuffer, nextBatchSize - nullCount);</span><br><span class="line"></span><br><span class="line">// <span class="keyword">copy</span> <span class="keyword">values</span> <span class="keyword">into</span> result</span><br><span class="line">long[] result = <span class="built_in">new</span> long[<span class="keyword">isNull</span>.length];</span><br><span class="line"><span class="type">int</span> position = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="keyword">isNull</span>.length; i++) &#123;</span><br><span class="line">    result[i] = tempBuffer[position];</span><br><span class="line">    <span class="keyword">if</span> (!<span class="keyword">isNull</span>[i]) &#123;</span><br><span class="line">        position++;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>先将数据读取临时文件里，然后依次处理。</p>
+<h3 id="Avoid-dynamic-dispatch-in-loops"><a href="#Avoid-dynamic-dispatch-in-loops" class="headerlink" title="Avoid dynamic dispatch in loops"></a>Avoid dynamic dispatch in loops</h3><figure class="highlight haskell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">for</span> (int i = <span class="number">0</span>; i &lt; nextBatchSize; i++) &#123;</span><br><span class="line">    <span class="class"><span class="keyword">type</span>.writeLong(<span class="title">builder</span>, <span class="title">dataStream</span>.<span class="title">next</span>());</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>很多Stream Reader只包含一种type，但是LongStreamReader会包含BIGINT、INTEGER、SMALLINT、TINYINT 及 DATE Types。这会让JVM的一些优化失效，比如inline，改动为：</p>
+<figure class="highlight mipsasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">if (type <span class="keyword">instanceof </span><span class="keyword">BigintType) </span>&#123;</span><br><span class="line">    <span class="keyword">BlockBuilder </span><span class="keyword">builder </span>= type.createBlockBuilder(null, nextBatchSize);</span><br><span class="line">    for (int i = <span class="number">0</span><span class="comment">; i &lt; nextBatchSize; i++) &#123;</span></span><br><span class="line">        type.writeLong(<span class="keyword">builder, </span>dataStream.next());</span><br><span class="line">    &#125;</span><br><span class="line">    return <span class="keyword">builder.build();</span></span><br><span class="line"><span class="keyword"></span>&#125;</span><br><span class="line">if (type <span class="keyword">instanceof </span>IntegerType) &#123;</span><br><span class="line">    <span class="keyword">BlockBuilder </span><span class="keyword">builder </span>= type.createBlockBuilder(null, nextBatchSize);</span><br><span class="line">    for (int i = <span class="number">0</span><span class="comment">; i &lt; nextBatchSize; i++) &#123;</span></span><br><span class="line">        type.writeLong(<span class="keyword">builder, </span>dataStream.next());</span><br><span class="line">    &#125;</span><br><span class="line">    return <span class="keyword">builder.build();</span></span><br><span class="line"><span class="keyword"></span>&#125;</span><br><span class="line"></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p>因为早期Hive ORC Reader的一些特性，导致Presto自己实现了ORC Reader，但是现在来看，直接调用社区的ORC Reader效果会更好，因为Presto基本上每2、3个小版本就会修复ORC Bug或者做些简单的性能提升，但是代码里很多都是来源于社区ORC的代码，Presto社区整体进展缓慢，直接调用社区ORC接口，省下了优化和修复Bug的时间，剩下的时间做些Presto引擎更核心的事情应该才是正确的做法。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://orc.apache.org/specification/ORCv1/">https://orc.apache.org/specification/ORCv1/</a></li>
+<li><a href="https://prestosql.io/blog/2019/04/23/even-faster-orc.html">https://prestosql.io/blog/2019/04/23/even-faster-orc.html</a></li>
+</ul>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AE%80%E4%BB%8B"><span class="toc-number">1.</span> <span class="toc-text">简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ORC%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84"><span class="toc-number">2.</span> <span class="toc-text">ORC文件结构</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E8%A1%A8"><span class="toc-number">2.1.</span> <span class="toc-text">创建表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8F%92%E5%85%A5%E6%95%B0%E6%8D%AE"><span class="toc-number">2.2.</span> <span class="toc-text">插入数据</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Dump%E6%95%B0%E6%8D%AE"><span class="toc-number">2.3.</span> <span class="toc-text">Dump数据</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Presto-ORC%E5%8F%8A%E4%BC%98%E5%8C%96"><span class="toc-number">3.</span> <span class="toc-text">Presto ORC及优化</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Predicate-pushdown"><span class="toc-number">3.1.</span> <span class="toc-text">Predicate pushdown</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Lazy-reads"><span class="toc-number">3.2.</span> <span class="toc-text">Lazy reads</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Bulk-reads"><span class="toc-number">3.3.</span> <span class="toc-text">Bulk reads</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Improve-null-reading"><span class="toc-number">3.4.</span> <span class="toc-text">Improve null reading</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Avoid-dynamic-dispatch-in-loops"><span class="toc-number">3.5.</span> <span class="toc-text">Avoid dynamic dispatch in loops</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E9%93%BE%E6%8E%A5"><span class="toc-number">4.</span> <span class="toc-text">参考链接</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/11/13/the-configuration-settings-of-presto-memory-management/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          Presto内存管理相关参数设置
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/09/18/solve-presto-system-load-too-high/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Presto System load过高问题调研&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

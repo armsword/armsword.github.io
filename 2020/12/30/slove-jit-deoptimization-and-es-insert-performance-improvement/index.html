@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>解决JIT Deoptimization，ES插入性能提升7倍 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="背景描述ES节点写入到5.7K，会产生比较多的reject，CPU利用率才30%，部分索引延迟在增加。如图所示：   CPU使用率在30%，但是Rejected记录达到8W行 原因分析写入场景，CPU打不满且出现异常，根据之前Presto的经验，大概率是JVM问题。打下火焰图看下：   可以看到接近35%的CPU在做JIT Deoptimization。 JIT为了提高热点代码（Hot Spot">
+<meta property="og:type" content="article">
+<meta property="og:title" content="解决JIT Deoptimization，ES插入性能提升7倍">
+<meta property="og:url" content="http://armsword.com/2020/12/30/slove-jit-deoptimization-and-es-insert-performance-improvement/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="背景描述ES节点写入到5.7K，会产生比较多的reject，CPU利用率才30%，部分索引延迟在增加。如图所示：   CPU使用率在30%，但是Rejected记录达到8W行 原因分析写入场景，CPU打不满且出现异常，根据之前Presto的经验，大概率是JVM问题。打下火焰图看下：   可以看到接近35%的CPU在做JIT Deoptimization。 JIT为了提高热点代码（Hot Spot">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2020/12/arius.jpg">
+<meta property="og:image" content="http://armsword.com/img/2020/12/perf.png">
+<meta property="og:image" content="http://armsword.com/img/2020/12/write.png">
+<meta property="og:image" content="http://armsword.com/img/2020/12/cpu.png">
+<meta property="article:published_time" content="2020-12-30T12:47:51.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.296Z">
+<meta property="article:author" content="armsword">
+<meta property="article:tag" content="Elasticsearch">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2020/12/arius.jpg">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-slove-jit-deoptimization-and-es-insert-performance-improvement" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      解决JIT Deoptimization，ES插入性能提升7倍
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2020/12/30/slove-jit-deoptimization-and-es-insert-performance-improvement/" class="article-date">
+  <time datetime="2020-12-30T12:47:51.000Z" itemprop="datePublished">2020-12-30</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景描述"><a href="#背景描述" class="headerlink" title="背景描述"></a>背景描述</h2><p>ES节点写入到5.7K，会产生比较多的reject，CPU利用率才30%，部分索引延迟在增加。如图所示：</p>
+<img src="/img/2020/12/arius.jpg" width = "90%" />
+
+<p>CPU使用率在30%，但是Rejected记录达到8W行</p>
+<h2 id="原因分析"><a href="#原因分析" class="headerlink" title="原因分析"></a>原因分析</h2><p>写入场景，CPU打不满且出现异常，根据之前Presto的经验，大概率是JVM问题。打下火焰图看下：</p>
+<img src="/img/2020/12/perf.png" width = "90%" />
+
+<p>可以看到接近35%的CPU在做JIT Deoptimization。</p>
+<h3 id="JIT"><a href="#JIT" class="headerlink" title="JIT"></a>JIT</h3><p>为了提高热点代码（Hot Spot Code）的执行效率，在运行时，虚拟机将会把这些代码编译成与本地平台相关的机器码，并进行各种层次的优化，完成这个任务的编译器称为即时编译器（JIT）。</p>
+<span id="more"></span>
+
+<p>“热点代码”两类:</p>
+<ul>
+<li>被多次调用的方法</li>
+<li>被多次执行的循环体 – 尽管编译动作是由循环体所触发的，但编译器依然会以整个方法（而不是单独的循环体）作为编译对象。</li>
+</ul>
+<p>编译器根据概率选择一些大多数时候都能提升运行速度的优化手段，当优化的假设不成立，出现“罕见陷阱”（Uncommon Trap）时可以通过逆优化（Deoptimization）退回到解释状态继续执行。而逆优化有参数是可以控制其阈值的，详细原理可以参考Presto遇到的问题：</p>
+<p><a href="https://mp.weixin.qq.com/s/OK39zkUj-kJfY6HYixj_Lw">https://mp.weixin.qq.com/s/OK39zkUj-kJfY6HYixj_Lw</a></p>
+<h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h2><p>所以JVM修改下面参数验证：</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-XX:<span class="attribute">ReservedCodeCacheSize</span>=512M</span><br><span class="line">-XX:<span class="attribute">PerMethodRecompilationCutoff</span>=10000</span><br><span class="line">-XX:<span class="attribute">PerBytecodeRecompilationCutoff</span>=10000</span><br></pre></td></tr></table></figure>
+
+<h2 id="线上效果"><a href="#线上效果" class="headerlink" title="线上效果"></a>线上效果</h2><p>如下图所示：<br><img src="/img/2020/12/write.png" width = "90%" /></p>
+<img src="/img/2020/12/cpu.png" width = "90%" />
+
+<p>写入性能从单节点5.7k&#x2F;s提升到40k&#x2F;s，性能提升7倍，而CPU使用率从30%下降到20%，提升了写入上限值。而这个具体能提升多少其实与具体的Case有关，之前测试遇到过逆优化占用90% CPU的情况。</p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF%E6%8F%8F%E8%BF%B0"><span class="toc-number">1.</span> <span class="toc-text">背景描述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8E%9F%E5%9B%A0%E5%88%86%E6%9E%90"><span class="toc-number">2.</span> <span class="toc-text">原因分析</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#JIT"><span class="toc-number">2.1.</span> <span class="toc-text">JIT</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95"><span class="toc-number">3.</span> <span class="toc-text">解决方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BA%BF%E4%B8%8A%E6%95%88%E6%9E%9C"><span class="toc-number">4.</span> <span class="toc-text">线上效果</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Elasticsearch/" rel="tag">Elasticsearch</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2021/02/07/jvm-bug-causes-Presto-queries-to-slow-down/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          说下那些导致Presto查询变慢的JVM Bug和解决方法
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2020/12/10/solve-presto-jvm-coredump/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Presto Master JVM Core问题调研&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

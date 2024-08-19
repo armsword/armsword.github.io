@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Presto调度task选择Worker方法 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Presto调度task方式12345678910111213public final class SystemPartitioningHandle        implements ConnectorPartitioningHandle&#123;    private enum SystemPartitioning    &#123;        SINGLE,        FIXED,">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Presto调度task选择Worker方法">
+<meta property="og:url" content="http://armsword.com/2020/04/08/presto-scheduling-task/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="Presto调度task方式12345678910111213public final class SystemPartitioningHandle        implements ConnectorPartitioningHandle&#123;    private enum SystemPartitioning    &#123;        SINGLE,        FIXED,">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2020/04/plan.png">
+<meta property="article:published_time" content="2020-04-08T06:30:22.000Z">
+<meta property="article:modified_time" content="2023-12-26T11:37:57.000Z">
+<meta property="article:author" content="armsword">
+<meta property="article:tag" content="presto">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2020/04/plan.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-presto-scheduling-task" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Presto调度task选择Worker方法
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2020/04/08/presto-scheduling-task/" class="article-date">
+  <time datetime="2020-04-08T06:30:22.000Z" itemprop="datePublished">2020-04-08</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h3 id="Presto调度task方式"><a href="#Presto调度task方式" class="headerlink" title="Presto调度task方式"></a>Presto调度task方式</h3><figure class="highlight angelscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="symbol">SystemPartitioningHandle</span></span><br><span class="line">        <span class="symbol">implements</span> <span class="symbol">ConnectorPartitioningHandle</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">enum</span> SystemPartitioning</span><br><span class="line">    &#123;</span><br><span class="line">        SINGLE,</span><br><span class="line">        FIXED,</span><br><span class="line">        SOURCE,</span><br><span class="line">        SCALED,</span><br><span class="line">        COORDINATOR_ONLY,</span><br><span class="line">        ARBITRARY</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>常见的场景主要包含SINGLE、FIXED及SOURCE类型，其中SINGLE表示最后数据的汇总输出，FIXED表示中间数据的计算，如JOIN等，SOURCE类型表示与源数据打交道的类型。</p>
+<p>以下SQL为例：</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">select</span> * from (select * from <span class="number">1</span>test join <span class="number">2</span>test1 <span class="literal">on</span> <span class="number">1</span>test.id = <span class="number">2</span>test1.<span class="number">123</span>id);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<span id="more"></span>
+
+<h3 id="其执行计划为"><a href="#其执行计划为" class="headerlink" title="其执行计划为"></a>其执行计划为</h3><p><img src="/img/2020/04/plan.png"></p>
+<p>如上图所示，左右两个stage调度task时都是SOURCE类型，中间为两张表JOIN，其为FIXED类型，最上面的output为SINGLE类型，做最后的汇总输出。</p>
+<p>无论哪种类型，在调度task时，都要选择Worker，那其是怎么选择Worker的呢？</p>
+<p>根据上面我们提到的Presto调度task方式，可以划分为两类：非源头fragment和源头fragment</p>
+<h3 id="非源头fragment"><a href="#非源头fragment" class="headerlink" title="非源头fragment"></a>非源头fragment</h3><p>依赖SystemPartitioningHandle策略，通过当前集群可用节点以及hash partition count配置（query.initial-hash-partitions，默认为100）来共同确定该fragment需要的节点个数, 之后再调用 NodeSelector 选出Worker。逻辑为下：</p>
+<figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">public</span> NodePartitionMap getNodePartitionMap(<span class="keyword">Session</span> <span class="keyword">session</span>, NodeScheduler nodeScheduler)</span><br><span class="line">&#123;</span><br><span class="line">        NodeSelector nodeSelector = nodeScheduler.createNodeSelector(<span class="keyword">null</span>);</span><br><span class="line">        List&lt;Node&gt; nodes;</span><br><span class="line">        <span class="keyword">if</span> (partitioning == SystemPartitioning.COORDINATOR_ONLY) &#123;</span><br><span class="line">            nodes = ImmutableList.<span class="keyword">of</span>(nodeSelector.selectCurrentNode());</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (partitioning == SystemPartitioning.SINGLE) &#123;</span><br><span class="line">            nodes = nodeSelector.selectRandomNodes(<span class="number">1</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (partitioning == SystemPartitioning.FIXED) &#123;</span><br><span class="line">            nodes = nodeSelector.selectRandomNodes(getHashPartitionCount(<span class="keyword">session</span>));</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            throw <span class="built_in">new</span> IllegalArgumentException(&quot;Unsupported plan distribution &quot; + partitioning);</span><br><span class="line">        &#125;</span><br><span class="line"> </span><br><span class="line">        checkCondition(!nodes.isEmpty(), NO_NODES_AVAILABLE, &quot;No worker nodes available&quot;);</span><br><span class="line"> </span><br><span class="line">        ImmutableMap.Builder&lt;<span class="type">Integer</span>, Node&gt; partitionToNode = ImmutableMap.builder();</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; nodes.size(); i++) &#123;</span><br><span class="line">            Node node = nodes.<span class="keyword">get</span>(i);</span><br><span class="line">            partitionToNode.put(i, node);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">new</span> NodePartitionMap(partitionToNode.build(), split -&gt; &#123;</span><br><span class="line">            throw <span class="built_in">new</span> UnsupportedOperationException(&quot;System distribution does not support source splits&quot;);</span><br><span class="line">        &#125;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>根据上面代码，我们可以看到SINGLE及FIXED会根据调度task的类型选择Node，最终调用的是同一个函数，函数逻辑为：</p>
+<figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="built_in">public</span> List&lt;Node&gt; selectRandomNodes(<span class="type">int</span> <span class="keyword">limit</span>, <span class="keyword">Set</span>&lt;Node&gt; excludedNodes)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> selectNodes(<span class="keyword">limit</span>, randomizedNodes(nodeMap.<span class="keyword">get</span>().<span class="keyword">get</span>(), includeCoordinator, excludedNodes));</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="源头fragment"><a href="#源头fragment" class="headerlink" title="源头fragment"></a>源头fragment</h3><p>源头fragment依赖于其connector id，以hive connector为例，其通过discovery服务注册上来，具体实现是在DiscoveryNodeManger#refreshNodesInternal。在真正Schedule task时，为split分配Node时，采用DynamicSplitPlacementPolicy策略调用以下接口：</p>
+<figure class="highlight crmsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">public static ResettableRandomizedIterator<span class="tag">&lt;Node&gt;</span> randomizedNodes(NodeMap nodeMap, boolean includeCoordinator, Set<span class="tag">&lt;Node&gt;</span> excludedNodes)</span><br><span class="line">&#123;</span><br><span class="line">        ImmutableList<span class="tag">&lt;Node&gt;</span> nodes = nodeMap.getNodesByHostAndPort().values().stream()</span><br><span class="line">                .filter(<span class="keyword">node</span> <span class="title">-&gt; includeCoordinator</span> || !nodeMap.getCoordinatorNodeIds().contains(node.getNodeIdentifier()))</span><br><span class="line">                .filter(<span class="keyword">node</span> <span class="title">-&gt; !excludedNodes</span>.contains(<span class="keyword">node</span><span class="title">))</span></span><br><span class="line"><span class="title">                .collect</span>(toImmutableList());</span><br><span class="line">        return new ResettableRandomizedIterator<span class="tag">&lt;&gt;</span>(nodes);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>可以看到无论是哪种选择方式，最终都绕不开NodeMap，那NodeMap怎么来的，由上文代码可以看到，其需要创建nodeScheduler.createNodeSelector，代码如下：</p>
+<figure class="highlight livescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">public NodeSelector createNodeSelector(ConnectorId connectorId)</span><br><span class="line">&#123;</span><br><span class="line">        <span class="regexp">// this supplier is thread-safe. TODO: this logic should probably move to the scheduler since the choice of which node to run in should be</span></span><br><span class="line"><span class="regexp">        //</span> done <span class="keyword">as</span> close <span class="keyword">to</span> <span class="keyword">when</span> the the split <span class="keyword">is</span> about <span class="keyword">to</span> be scheduled</span><br><span class="line">        Supplier&lt;NodeMap&gt; nodeMap = Suppliers.memoizeWithExpiration<span class="function"><span class="params">(() -&gt; &#123;</span></span></span><br><span class="line"><span class="params"><span class="function">            ImmutableSetMultimap.Builder&lt;HostAddress, Node&gt; byHostAndPort = ImmutableSetMultimap.builder();</span></span></span><br><span class="line"><span class="params"><span class="function">            ImmutableSetMultimap.Builder&lt;InetAddress, Node&gt; byHost = ImmutableSetMultimap.builder();</span></span></span><br><span class="line"><span class="params"><span class="function">            ImmutableSetMultimap.Builder&lt;NetworkLocation, Node&gt; workersByNetworkPath = ImmutableSetMultimap.builder();</span></span></span><br><span class="line"><span class="params"><span class="function"> </span></span></span><br><span class="line"><span class="params"><span class="function">            <span class="built_in">Set</span>&lt;Node&gt; nodes;</span></span></span><br><span class="line"><span class="params"><span class="function">            <span class="keyword">if</span> (connectorId != <span class="literal">null</span>) &#123;</span></span></span><br><span class="line"><span class="params"><span class="function">                nodes = nodeManager.getActiveConnectorNodes(connectorId);</span></span></span><br><span class="line"><span class="params"><span class="function">            &#125;</span></span></span><br><span class="line"><span class="params"><span class="function">            <span class="keyword">else</span> &#123;</span></span></span><br><span class="line"><span class="params"><span class="function">                nodes = nodeManager.getNodes(ACTIVE);</span></span></span><br><span class="line"><span class="params"><span class="function">            &#125;</span></span></span><br><span class="line"><span class="params"><span class="function"> </span></span></span><br><span class="line"><span class="params"><span class="function">            <span class="built_in">Set</span>&lt;<span class="built_in">String</span>&gt; coordinatorNodeIds = nodeManager.getCoordinators().stream()</span></span></span><br><span class="line"><span class="params"><span class="function">                    .<span class="keyword">map</span>(Node::getNodeIdentifier)</span></span></span><br><span class="line"><span class="params"><span class="function">                    .collect(toImmutableSet());</span></span></span><br><span class="line"><span class="params"><span class="function"> </span></span></span><br><span class="line"><span class="params"><span class="function">            <span class="keyword">for</span> (Node node : nodes) &#123;</span></span></span><br><span class="line"><span class="params"><span class="function">            <span class="regexp">// 略</span></span></span></span><br></pre></td></tr></table></figure>
+<p>这里我们找到源头了，Presto的机器是由Discovery管理的，上文nodeManager即DiscoveryNodeManager封装了Discovery服务接口，Discovery维护Worker死活信息。</p>
+<p>知道Worker怎么选择后，之后就会使用stage的不同的调度器来开始下发task和split，同样根据SystemPartitioningHandle的不同，源头分为SourcePartitionedScheduler、FixedSourcePartitionedScheduler，非源头使用FixedCountScheduler进行调度，其在调度某个stage时下发多少task到Worker以及split下发过程，我们将在后续介绍。</p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#Presto%E8%B0%83%E5%BA%A6task%E6%96%B9%E5%BC%8F"><span class="toc-number">1.</span> <span class="toc-text">Presto调度task方式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%B6%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92%E4%B8%BA"><span class="toc-number">2.</span> <span class="toc-text">其执行计划为</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9D%9E%E6%BA%90%E5%A4%B4fragment"><span class="toc-number">3.</span> <span class="toc-text">非源头fragment</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%BA%90%E5%A4%B4fragment"><span class="toc-number">4.</span> <span class="toc-text">源头fragment</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2020/05/02/the-difference-between-prestodb-and-prestosql/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          PrestoDB和PrestoSQL比较及选择
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2020/02/18/presto-memory-kill-policy/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Presto集群内存不足时保护机制&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

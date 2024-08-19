@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Earlybird:Twitter实时搜索引擎 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="简单说下，2011年左右的Paper，Paper里说Twitter的实时索引和检索系统叫做Earlybird，Paper中主要讲了2件事，第一个就是支持Twitter的实时索引的倒排索引结构是怎么样的，第二个就是利用Java并发模型，处理并发读写。 该引擎功能 低延时、高吞吐能力； 能处理突发峰值（Weibo的特性）； 突出时效性，时间越近，排名应该越靠前； 该实时引擎支持AND、OR、NOT以及">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Earlybird:Twitter实时搜索引擎">
+<meta property="og:url" content="http://armsword.com/2016/08/17/earlybird/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="简单说下，2011年左右的Paper，Paper里说Twitter的实时索引和检索系统叫做Earlybird，Paper中主要讲了2件事，第一个就是支持Twitter的实时索引的倒排索引结构是怎么样的，第二个就是利用Java并发模型，处理并发读写。 该引擎功能 低延时、高吞吐能力； 能处理突发峰值（Weibo的特性）； 突出时效性，时间越近，排名应该越靠前； 该实时引擎支持AND、OR、NOT以及">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2016/08/earlybird.png">
+<meta property="og:image" content="http://armsword.com/img/2016/08/slice.png">
+<meta property="article:published_time" content="2016-08-16T16:49:46.000Z">
+<meta property="article:modified_time" content="2023-12-26T11:33:50.000Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2016/08/earlybird.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-earlybird" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Earlybird:Twitter实时搜索引擎
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2016/08/17/earlybird/" class="article-date">
+  <time datetime="2016-08-16T16:49:46.000Z" itemprop="datePublished">2016-08-17</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/">搜索引擎</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>简单说下，2011年左右的Paper，Paper里说Twitter的实时索引和检索系统叫做Earlybird，Paper中主要讲了2件事，第一个就是支持Twitter的实时索引的倒排索引结构是怎么样的，第二个就是利用Java并发模型，处理并发读写。</p>
+<h4 id="该引擎功能"><a href="#该引擎功能" class="headerlink" title="该引擎功能"></a>该引擎功能</h4><ul>
+<li>低延时、高吞吐能力；</li>
+<li>能处理突发峰值（Weibo的特性）；</li>
+<li>突出时效性，时间越近，排名应该越靠前；</li>
+<li>该实时引擎支持AND、OR、NOT以及短语查询，实时性大约10S，查询latency 50ms；</li>
+</ul>
+<h4 id="该实时引擎，基于Lucene，使用Java开发，理由是"><a href="#该实时引擎，基于Lucene，使用Java开发，理由是" class="headerlink" title="该实时引擎，基于Lucene，使用Java开发，理由是"></a>该实时引擎，基于Lucene，使用Java开发，理由是</h4><ul>
+<li>利用已存在的Lucene代码，并用来做全量索引；</li>
+<li>适用于Twitter以JVM为中心的开发环境；</li>
+<li>利用Java和JVM提供容易理解的并发模型；</li>
+</ul>
+<p>其实上面几条理由与阿里很多开发项目类似，但是阿里的搜索引擎是C++编写的，质量也是非常不错的，叫问天(HA3)。</p>
+<span id="more"></span>
+
+<h2 id="索引构建过程"><a href="#索引构建过程" class="headerlink" title="索引构建过程"></a>索引构建过程</h2><p>Earlybird处理三种信号：</p>
+<ul>
+<li>静态信号，初次建立索引时被添加；</li>
+<li>共鸣信号，动态更新的，比如tweet转发次数；</li>
+<li>搜索用户信息，用来个性化排序；</li>
+</ul>
+<p><img src="/img/2016/08/earlybird.png"></p>
+<ol>
+<li>用户发布tweet，之后被发送到一个队列，叫做Ingestion Pipeline里。这些tweet会被分词，并被加上一些meta信息，比如语言等；</li>
+<li>为了处理大容量，tweet按照哈希算法，分发到各个Earlybird服务上，之后将tweet实时地建立索引；</li>
+<li>如上图所示，有一个Updater服务，它推送共鸣信号到Earlybird服务，用于动态地更新索引，比如tweet转发信息等。</li>
+</ol>
+<h2 id="查询过程如下"><a href="#查询过程如下" class="headerlink" title="查询过程如下"></a>查询过程如下</h2><ol>
+<li>当查询请求过来，先到达前端“Blender”，Blender解析请求，并将搜索用户的本地社交图谱信息也下发到Earlybird服务；</li>
+<li>Earlybird服务执行相关性计算并排序，并将排序好的tweet（排序分数高的，最近发生的tweets）返回给Blender；</li>
+<li>Blender合并各个Earlybird返回的列表，并重排序后返回给用户；</li>
+</ol>
+<h2 id="Term字典"><a href="#Term字典" class="headerlink" title="Term字典"></a>Term字典</h2><p>Twitter实时索引现在不支持一些高级查询，比如通配符。所以term词典使用hash表实现。没有选择Java默认的HashMap，因为其不是GC友好的，Earlybird实现了个开链法的哈希表（个人猜测是不是与Redis的渐进式哈希相似呢？）每个Term被分配了一个唯一且单调递增的id作为key，value包含以下两部分信息：</p>
+<ul>
+<li>Term对应的倒排索引数据长度；</li>
+<li>指向倒排索引数据末尾的指针；</li>
+</ul>
+<h2 id="动态（active）索引"><a href="#动态（active）索引" class="headerlink" title="动态（active）索引"></a>动态（active）索引</h2><p>Paper里首先介绍了现在存在的索引组织方式不适合实时索引，如将新发生的tweet放到postings链最后面，但是读取时候需要倒序读取，这个是不支持现在流行的压缩算法的，而如果将新的数据放到倒排索引前面，这带来的问题就是内存分配的问题。Earlybird使用了一个更简单的方式，分离索引读和写的方式。</p>
+<p>每个实例维护了多个索引分段（目前是12个instance），每个分段保存相对较少量的tweet（目前是2^23~840万 tweets）。新增加的tweets被分到同一个segment（分段）中，满了之后再放下一个，这样，在任何时候只有一个分段被更改，其他都是只读状态，当一个segment满了，停止接收新的tweets时，会做只读优化。</p>
+<p>postings列表在优化之前直接使用整数数组，按照docid升序存储，并且不做压缩，因此查找可以直接二分查找。postings增长时分配空间以pool为单位，分配空间按指数预留空间，分为4个，大小分别为应2^1、2^4、2^7、2^11 。如果一个pool满了，另一个pool将会分配。每个pool里面有若干个slice，每个slice保存一个term的postings列表，每个postings列表里面存储着一个term的postings信息，每个postings是一个32-bit的整数，24-bit用作文档id；8-bit用作位置id，保存term在tweet中出现的位置。因为tweet有140字符限制，所以8-bit足够用。在建立索引时，先尝试填满2^1pool中的slice，如果填满，就转到2^4的pool的slice，以此类推。term 字典中保存term对应的最后一个pool的中postings list尾部指针。如下图所示：<br><img src="/img/2016/08/slice.png"></p>
+<h2 id="索引优化"><a href="#索引优化" class="headerlink" title="索引优化"></a>索引优化</h2><p>一旦动态索引停止接收新的tweets时，即此segment的tweets超过840W时，后台执行只读索引优化。优化过程中，根据老的索引数据，新的索引数据会被创建，原始索引数据不做变化，一旦完成构建，原始索引数据将被新的索引替换。postings链分为两种，长的和短的，以长度1000为界限。短的，即postings链长度小于1000，postings保持原样（24-bit文档id加上8-bit的位置信息），但是postings会按照时间逆序排列。对于长的postings链，采用了基于block的压缩算法，PForDelta和Simple9。</p>
+<h2 id="并发管理"><a href="#并发管理" class="headerlink" title="并发管理"></a>并发管理</h2><p>对于实时索引来说，一个重要的需求就是在多线程环境下处理好并发读和写操作。当然这个只用于动态索引当中，静态索引（优化后的）只有读操作。因为不懂Java，这块简单说下吧，Paper里说Java和JVM提供了一个非常容易理解的并发内存模型。11个只读段并发读不需要锁，唯一的可读可写段使用volatile关键字实现高效同步，然后也使用了 jvm memory barrier。懂Java得同学，通过以下新tweet添加处理过程，可能就明白一二了。</p>
+<p>tweet里的每个term，首先去查询对应的词典入口，在字典中，term被映射到term id。它包括2个信息，Term对应的倒排索引数据长度和指向倒排索引数据末尾的指针。通过末尾的指针，信息被添加到新的postings链中。如果没有足够的空间插入新的postings信息，新的slice被分配。如果term是第一次遇到，它被添加到词典并且分配下一个term id。postings被添加到slice时，term并发的增加计数，指向postings链尾巴的指针也被并发更新。当tweet里的所有term都被处理后，增加maxDoc变量，此变量表示目前遇到的最大文档id。</p>
+<p>简单就写这么多吧，没看明白的同学可以自己仔细阅读下twitter的这篇实时索引Paper吧，地址：</p>
+<p><a href="http://www.umiacs.umd.edu/~jimmylin/publications/Busch_etal_ICDE2012.pdf">http://www.umiacs.umd.edu/~jimmylin/publications/Busch_etal_ICDE2012.pdf</a></p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%AF%A5%E5%BC%95%E6%93%8E%E5%8A%9F%E8%83%BD"><span class="toc-number">1.</span> <span class="toc-text">该引擎功能</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%AF%A5%E5%AE%9E%E6%97%B6%E5%BC%95%E6%93%8E%EF%BC%8C%E5%9F%BA%E4%BA%8ELucene%EF%BC%8C%E4%BD%BF%E7%94%A8Java%E5%BC%80%E5%8F%91%EF%BC%8C%E7%90%86%E7%94%B1%E6%98%AF"><span class="toc-number">2.</span> <span class="toc-text">该实时引擎，基于Lucene，使用Java开发，理由是</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%B4%A2%E5%BC%95%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B"><span class="toc-number"></span> <span class="toc-text">索引构建过程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E8%AF%A2%E8%BF%87%E7%A8%8B%E5%A6%82%E4%B8%8B"><span class="toc-number"></span> <span class="toc-text">查询过程如下</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Term%E5%AD%97%E5%85%B8"><span class="toc-number"></span> <span class="toc-text">Term字典</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A8%E6%80%81%EF%BC%88active%EF%BC%89%E7%B4%A2%E5%BC%95"><span class="toc-number"></span> <span class="toc-text">动态（active）索引</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%B4%A2%E5%BC%95%E4%BC%98%E5%8C%96"><span class="toc-number"></span> <span class="toc-text">索引优化</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B9%B6%E5%8F%91%E7%AE%A1%E7%90%86"><span class="toc-number"></span> <span class="toc-text">并发管理</span></a>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2016/09/10/a-high-performace-and-thread-safe-cpp-log-lib/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          dlog:高性能线程安全的C++日志库
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2016/08/10/find-socket-bug-in-proxy/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">记一次线上Bug的查找过程和思路&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

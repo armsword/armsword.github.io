@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>解锁滴滴ES的性能潜力：JDK 17和ZGC的升级之路 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="前文介绍了滴滴自研的ES强一致性多活是如何实现的，其中也提到为了提升查询性能和解决查询毛刺问题，滴滴ES原地升级JDK17和ZGC，在这个过程中我们遇到了哪些问题，怎样解决的，以及最终上线效果如何，这篇文章就带大家深入了解。 背景滴滴ES在2020年的时候由2.X升级到7.6.0，该版本是在官方7.6.0的基础上改造而来，支持的是JDK11，采用的垃圾回收器是G1。ES的业务主要分为两类，一类是日">
+<meta property="og:type" content="article">
+<meta property="og:title" content="解锁滴滴ES的性能潜力：JDK 17和ZGC的升级之路">
+<meta property="og:url" content="http://armsword.com/2023/08/10/es-jdk17-and-zgc/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="前文介绍了滴滴自研的ES强一致性多活是如何实现的，其中也提到为了提升查询性能和解决查询毛刺问题，滴滴ES原地升级JDK17和ZGC，在这个过程中我们遇到了哪些问题，怎样解决的，以及最终上线效果如何，这篇文章就带大家深入了解。 背景滴滴ES在2020年的时候由2.X升级到7.6.0，该版本是在官方7.6.0的基础上改造而来，支持的是JDK11，采用的垃圾回收器是G1。ES的业务主要分为两类，一类是日">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2023/08/zgc_01.png">
+<meta property="og:image" content="http://armsword.com/img/2023/08/zgc_02.png">
+<meta property="og:image" content="http://armsword.com/img/2023/08/zgc_03.png">
+<meta property="og:image" content="http://armsword.com/img/2023/08/zgc_04.png">
+<meta property="og:image" content="http://armsword.com/img/2023/08/zgc_05.png">
+<meta property="og:image" content="http://armsword.com/img/2023/08/zgc_06.png">
+<meta property="og:image" content="http://armsword.com/img/2023/08/zgc_07.png">
+<meta property="og:image" content="http://armsword.com/img/2023/08/zgc_08.png">
+<meta property="og:image" content="http://armsword.com/img/2023/08/zgc_09.png">
+<meta property="og:image" content="http://armsword.com/img/2023/08/zgc_10.png">
+<meta property="og:image" content="http://armsword.com/img/2023/08/zgc_11.png">
+<meta property="og:image" content="http://armsword.com/img/2023/08/zgc_12.png">
+<meta property="og:image" content="http://armsword.com/img/2023/08/zgc_13.png">
+<meta property="og:image" content="http://armsword.com/img/2023/08/zgc_14.png">
+<meta property="og:image" content="http://armsword.com/img/2023/08/zgc_15.png">
+<meta property="og:image" content="http://armsword.com/img/2023/08/zgc_16.png">
+<meta property="og:image" content="http://armsword.com/img/2023/08/zgc_17.png">
+<meta property="og:image" content="http://armsword.com/img/2023/08/zgc_18.png">
+<meta property="article:published_time" content="2023-08-10T08:35:28.000Z">
+<meta property="article:modified_time" content="2023-12-26T11:26:21.000Z">
+<meta property="article:author" content="armsword">
+<meta property="article:tag" content="Elasticsearch">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2023/08/zgc_01.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-es-jdk17-and-zgc" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      解锁滴滴ES的性能潜力：JDK 17和ZGC的升级之路
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2023/08/10/es-jdk17-and-zgc/" class="article-date">
+  <time datetime="2023-08-10T08:35:28.000Z" itemprop="datePublished">2023-08-10</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>前文介绍了<a href="%E6%8E%A2%E7%B4%A2ES%E9%AB%98%E5%8F%AF%E7%94%A8%EF%BC%9A%E6%BB%B4%E6%BB%B4%E8%87%AA%E7%A0%94%E8%B7%A8%E6%95%B0%E6%8D%AE%E4%B8%AD%E5%BF%83%E5%A4%8D%E5%88%B6%E6%8A%80%E6%9C%AF%E8%AF%A6%E8%A7%A3">滴滴自研的ES强一致性多活</a>是如何实现的，其中也提到为了提升查询性能和解决查询毛刺问题，滴滴ES原地升级JDK17和ZGC，在这个过程中我们遇到了哪些问题，怎样解决的，以及最终上线效果如何，这篇文章就带大家深入了解。</p>
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>滴滴ES在2020年的时候由2.X升级到7.6.0，该版本是在官方7.6.0的基础上改造而来，支持的是JDK11，采用的垃圾回收器是G1。ES的业务主要分为两类，一类是日志场景，该场景写多读少，高峰期CPU使用率在85%左右，写入性能是它的主要瓶颈；另一类是非日志场景，例如POI检索、订单、支付，这些场景对查询耗时及查询稳定性都有着较高的要求。</p>
+<p>随着ES业务数据量的增长，GC导致的查询稳定性压力剧增，已经逐渐无法满足业务需求。以下是ES面临的主要问题：</p>
+<h3 id="非日志场景的GC问题"><a href="#非日志场景的GC问题" class="headerlink" title="非日志场景的GC问题"></a>非日志场景的GC问题</h3><p>1、Yong GC平均暂停时间长，一些集群的平均暂停时间达到百毫秒级别。</p>
+<p>GC暂停时间长在订单集群这种112G大内存的进程中表现尤为明显。下图为订单集群的GC暂停时间，可以发现一次Yang GC的平均暂停时间就达到了200ms，有些甚至超过了1s。ES的核心业务POI、订单等对查询耗时的P99以及Max都有一定的需求，GC暂停导致的查询延时以及毛刺问题无法满足业务需求。</p>
+<p><img src="/img/2023/08/zgc_01.png" alt="订单集群的GC暂停时间"></p>
+<span id="more"></span>
+
+<p>2、Full GC问题频繁，影响集群稳定性。</p>
+<p>G1的Full GC会导致GC模式退化为串行扫描整个堆，导致几十秒甚至是分钟级别的暂停。这种长时间的暂停不仅影响用户的查询，还容易造成节点间的通信超时，导致master、dataNode脱离集群，影响集群稳定性。</p>
+<p>3、JDK11-G1内存不回收问题频发，如下图所示，通过调优G1参数也没有很好地解决内存问题。                       </p>
+<p><img src="/img/2023/08/zgc_02.png" alt="GC不回收现象"></p>
+<h3 id="日志场景的Reject问题"><a href="#日志场景的Reject问题" class="headerlink" title="日志场景的Reject问题"></a>日志场景的Reject问题</h3><p>ES的日志场景写入量大，GC频繁且性能较差，这也进一步加剧日志集群的写入Reject问题。</p>
+<h2 id="JDK17落地"><a href="#JDK17落地" class="headerlink" title="JDK17落地"></a>JDK17落地</h2><p>2022年上半年，ES开启了扫雷专项，意在打造一个更高性能、更低延迟、更加稳定的ES检索引擎。在这种背景下，对JDK17-ZGC进行调研，经过测试ZGC可以将GC暂停时间控制在10ms内，能够很好地解决GC导致的查询耗时问题。</p>
+<p>同时针对日志这种高吞吐场景，测试了JDK17-G1，发现GC性能相较于JDK11-G1提升了15%，并且JDK17在向量化支持、字符串处理等方面做了许多优化，能在一定程度上缓解日志集群的写入压力。如图所示：</p>
+<p><img src="/img/2023/08/zgc_03.png" alt="官方GC吞吐性能"></p>
+<p><img src="/img/2023/08/zgc_04.png" alt="官方GC延迟"></p>
+<p>生产环境需要稳定、可维护并且免费的JDK版本，同时JDK17是JDK11后又一个可长期支持的版本，在性能、稳定性和安全性上都有很大的提升，对ZGC的适配也进一步加强，对G1的稳定性和性能有极大的提升。因此，选择了这一版本。</p>
+<p>ZGC 是一个并发的、单代的、基于区域的、NUMA 感知的垃圾回收器，Stop-the-world 阶段仅限于根扫描，因此 GC 暂停时间不会随堆或 live set 的变大而增加。</p>
+<p>ZGC垃圾回收过程几乎全程并发，如下图所示，这得益于它所采用的着色指针和读屏障技术。这两项技术解决了对象转移过程中的对象地址定位不准确问题，从而使得传统GC停顿时间最长的对象转移过程和进程并发进行。</p>
+<p><img src="/img/2023/08/zgc_05.png" alt="ZGC并发垃圾回收过程"></p>
+<p>为了实现JDK17在滴滴ES的落地，我们从以下三方面进行着手：</p>
+<h3 id="Gradle版本升级"><a href="#Gradle版本升级" class="headerlink" title="Gradle版本升级"></a>Gradle版本升级</h3><p>ES依靠Gradle进行项目管理，Gradle使用一种基于Groovy的特定领域语言(DSL)来声明项目设置。Gradle版本、JDK版本和Groovy版本，三者是一一对应的。滴滴ES7.6.0采用的是Gadle6.0版本，支持JDK11。</p>
+<p>相应地，如果要使用JDK17，就需要将Gradle升级到7.3版本以上。实现跨大版本的Gradle升级，主要从以下四个方面进行了优化调整。</p>
+<ul>
+<li>1、语法升级</li>
+</ul>
+<p><img src="/img/2023/08/zgc_06.png" alt="配置"></p>
+<ul>
+<li>2、插件加载方式调整</li>
+</ul>
+<p>插件的使用方式由apply plugin ‘xxx’ 更改为 plugins{ id ‘xxx’ id’xxx’}，否则容易出现插件找不到问题。</p>
+<ul>
+<li>3、解决语法格式导致代码编译失败问题</li>
+</ul>
+<p>Gradle由6.0升级到7.3.2，对应的Groovy也从2.x升级到了3.0.7版本。新版本的Groovy有着更加严格的解析器，可能无法编译以前Groovy已经接收的代码。部分解决操作如下图：</p>
+<p><img src="/img/2023/08/zgc_07.png" alt="代码注解格式调整"></p>
+<ul>
+<li>4、Plugin重构<br>由于一些groovy语法已失效或调整，部分Groovy plugin需要通过java语言进行重构，例如校验类插件PrecommitPlugin.groovy重构为PrecommitPlugin.java。</li>
+</ul>
+<h3 id="源码编译"><a href="#源码编译" class="headerlink" title="源码编译"></a>源码编译</h3><ul>
+<li>1、解决ES源码触发JVM编译BUG</li>
+</ul>
+<p>使用lambda表达式代替方法引用，解决方法引用导致的JDK编译BUG。部分修改如下图所示。<br><img src="/img/2023/08/zgc_08.png" alt="方法引用替换"></p>
+<ul>
+<li>2、依赖jar包升级：例如Jetty升级到9+版本、jackson升级到2.3.3版本等。</li>
+<li>3、类无法使用：通过类替换、BuildPlugin.groovy插件重构等方式解决。</li>
+<li>4、注解类问题：部分gradle注解进行了升级替换，例如一些任务类插件需要增加@TaskAction注解等。</li>
+</ul>
+<h3 id="搭建ZGC指标监控体系"><a href="#搭建ZGC指标监控体系" class="headerlink" title="搭建ZGC指标监控体系"></a>搭建ZGC指标监控体系</h3><p>一套完整的监控体系能够快速的发现问题并止损，才能更好的保障服务的稳定性。为此，ES基于G1搭建了一套完善的JVM指标监控体系，监控一些核心指标并配置报警，能够很好的判断内存的健康度。例如：</p>
+<ul>
+<li>监控G1 老年代使用率，当老年代使用率长时间超过阈值时触发报警。</li>
+<li>监控Full GC指标，当进程发生Full GC时及时触发报警。</li>
+</ul>
+<p>G1的Full GC非常影响查询性能，容易导致用户查询耗时飙升甚至查询超时。通过监控老年代的使用率能够很好的判断内存压力，从而决定是否需要进行扩容、业务治理等，也能在一定程度上降低Full GC发生的频率。如果发生了Full GC，更需要去判断原因，并采取相应的策略进行优化处理。</p>
+<p>ZGC是一个单代的垃圾回收器，也就没有新生代和老年代之分，那么通过什么指标去衡量内存压力呢？内存用满了，ZGC如何进行处理？是否也会存在类似G1 FullGC这种十分影响查询的操作？该如何发现这类情况？</p>
+<p>我们发现，ZGC在内存用满的时候会发生Allocation Stall（内存分配速率过快，ZGC回收不过来，触发线程粒度的分配暂停），这个操作和G1 Full GC类似，区别在于G1 Full GC会将整个进程挂起，ZGC则是根据预测模型选择性地挂起部分线程。在后期的上线过程中，Allocation Stall对查询性能影响十分严重，因此对Allocation Stall事件的监控非常重要。</p>
+<p>通过查找资料了解到当下ZGC的大规模使用场景较少，关于ZGC监控指标的相关信息匮乏。目前JDK17自带的ZGC指标bean只有两个：</p>
+<ul>
+<li>ZGC Cycles：统计的是ZGC发生的次数以及总耗时</li>
+<li>ZGC Pauses：统计的是ZGC在GC过程中暂停的次数及暂停时间，这是JDK17新增的指标bean，无法统计Allocation Stall导致的线程挂起时间</li>
+</ul>
+<p>G1能够通过指标bean获取到Full GC的次数、gc时间，新生代、老年代的内存使用率等。ZGC是单代垃圾回收器没有老年代，同时ZGC无法直接通过JDK自带的指标bean获取到Allocation Stall的次数，只能在它发生的时候通过GC日志去查看。</p>
+<p>针对这些问题，我们设计了一套ZGC指标统计体系。首先重构ES指标统计模块，使其能够统计ZGC Cycles和ZGC Pauses指标。其次，针对Allocation Stall没法统计问题，通过注册GC事件监听器，配合事件回调机制，解析GC Caues从而实现对Allocation Stall的统计。与此同时搭建ZGC Allocation Stall的监控报警体系。指标统计流程如下图所示，ZGC部分指标展示如下：<br><img src="/img/2023/08/zgc_09.png" alt="ZGC Allocation Stall指标统计流程图"></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">   <span class="attr">&quot;gc&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="comment">// ES node stats ZGC指标</span></span><br><span class="line">       <span class="attr">&quot;collectors&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">           <span class="attr">&quot;ZGC Cycles&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="comment">// JDK自带指标bean</span></span><br><span class="line">               <span class="attr">&quot;collection_count&quot;</span><span class="punctuation">:</span> <span class="number">242</span><span class="punctuation">,</span></span><br><span class="line">               <span class="attr">&quot;collection_time_in_millis&quot;</span><span class="punctuation">:</span> <span class="number">97209</span></span><br><span class="line">           <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">           <span class="attr">&quot;ZGC Pauses&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span> <span class="comment">// JDK17新增的指标bean</span></span><br><span class="line">               <span class="attr">&quot;collection_count&quot;</span><span class="punctuation">:</span> <span class="number">726</span><span class="punctuation">,</span></span><br><span class="line">               <span class="attr">&quot;collection_time_in_millis&quot;</span><span class="punctuation">:</span> <span class="number">27</span></span><br><span class="line">           <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">           <span class="attr">&quot;ZGC AllocationStallCount&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span>  <span class="comment">// ES指标模块新增的AllocationStall指标bean</span></span><br><span class="line">               <span class="attr">&quot;collection_count&quot;</span><span class="punctuation">:</span> <span class="number">0</span><span class="punctuation">,</span></span><br><span class="line">               <span class="attr">&quot;collection_time_in_millis&quot;</span><span class="punctuation">:</span> <span class="number">0</span></span><br><span class="line">           <span class="punctuation">&#125;</span></span><br><span class="line">       <span class="punctuation">&#125;</span></span><br><span class="line">   <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<h3 id="生产环境踩坑与调优"><a href="#生产环境踩坑与调优" class="headerlink" title="生产环境踩坑与调优"></a>生产环境踩坑与调优</h3><ul>
+<li><p>1、Allocation Stall 问题<br>前文也提到了Allocation Stall是由于分配速率过快，ZGC回收不过来导致的。Allocation Stall对ES的影响如下：</p>
+<ul>
+<li>查询耗时增加问题：从下图的监控可以看出发生Allocation Stall之后P99的查询耗时突增。</li>
+<li>内存熔断问题：ZGC触发的是线程级别Allocation Stall，触发时会选择性地挂起部分线程，其他线程仍然会继续申请内存，就会触发ES的内存熔断机制，导致查询熔断、写入熔断、分片分配熔断等一系列影响用户使用和集群稳定的问题。<br><img src="/img/2023/08/zgc_10.png" alt="Allocation Stall监控图"><br><img src="/img/2023/08/zgc_11.png" alt="P99耗时"><br>调优和解决方式如下：</li>
+<li>根据机器内存使用情况，调整-Xmx增加堆内存的大小，例如一些dataNode由31G调整为64G。</li>
+<li>调整修正系数ZAllocationSpikeTolerance，由默认2调大至5，可以更快的触发GC 。</li>
+<li>根据不同的堆大小，调大GC线程数 ConcGCThread，降低并发标记时间，例如96G内存的GCThread由16调整到24。</li>
+<li>-XX:+UseDynamicNumberOfGCThreads（JDK17的ZGC新特性）：配置动态GC线程，降低CPU的使用量。</li>
+</ul>
+</li>
+<li><p>2、GC大毛刺问题</p>
+</li>
+</ul>
+<p>如果查询毛刺或分析GC日志时发现超大的暂停时间（几十到几百毫秒），可以关闭NUMA的Auto Balance，因为开启Auto- Balance后，调动器会做大量的工作如现有页释放、分配本地node页等，来迁移进程和memory到同一个node上，从而造成一些不确定性的卡顿。</p>
+<ul>
+<li>3、其他<ul>
+<li>单独开启类压缩：+UseCompressedClassPointers ，JDK15之后支持单独开启类压缩，通过减少所有对象报头的大小，从而减少整体堆的使用（适用于内存配置31G以内）。</li>
+<li>软限制堆大小：ES一些集群存在定时更新大量数据的场景，在此期间内存使用率会突增。同时，ES底层的Lucene需要依赖操作系统缓存来提升查询速度。面对这种场景，可以通过SoftMaxHeapSize配合-XX:ZUncommitDelay参数使用，将未使用的内存归还操作系统。</li>
+</ul>
+</li>
+</ul>
+<h2 id="上线效果"><a href="#上线效果" class="headerlink" title="上线效果"></a>上线效果</h2><p>经过三个多月的实践与优化，ES目前已经在15个集群上线了JDK17版本，上线后ES可以提供更低延时、更高性能、更稳定的检索服务，主要效果如下：</p>
+<h3 id="更低延时"><a href="#更低延时" class="headerlink" title="更低延时"></a>更低延时</h3><ul>
+<li>1、A业务集群上线效果</li>
+</ul>
+<p>之前，有集群经常发生内存不回收问题。如下图，上线ZGC后，P99从800ms降低到30ms，下降96%；平均查询耗时从25ms降低到6ms，下降75%。</p>
+<p><img src="/img/2023/08/zgc_12.png" alt="P99查询耗时"></p>
+<ul>
+<li>2、B业务集群上线效果</li>
+</ul>
+<p>如图，上线后毛刺明显减少，能够提供更加稳定且低延时的检索服务。<br><img src="/img/2023/08/zgc_13.png" alt="P99查询耗时"></p>
+<ul>
+<li>3、某隔离集群上线效果</li>
+</ul>
+<p>如图，上线后P99从16ms降低到8ms降低50%。<br><img src="/img/2023/08/zgc_14.png" alt="P99查询耗时"></p>
+<h3 id="更高性能"><a href="#更高性能" class="headerlink" title="更高性能"></a>更高性能</h3><h4 id="1、某日志集群A上线效果"><a href="#1、某日志集群A上线效果" class="headerlink" title="1、某日志集群A上线效果"></a>1、某日志集群A上线效果</h4><p>ES某日志集群A上线JDK17后，CPU使用率下降20%，写入性能提升，解决了写入队列堆积和reject问题。</p>
+<p><img src="/img/2023/08/zgc_15.png" alt="DataNode写入队列堆积图"></p>
+<p><img src="/img/2023/08/zgc_16.png" alt="DataNode写入reject图"></p>
+<p><img src="/img/2023/08/zgc_17.png" alt="CPU Idle图"></p>
+<h4 id="2、某日志集群B上线效果"><a href="#2、某日志集群B上线效果" class="headerlink" title="2、某日志集群B上线效果"></a>2、某日志集群B上线效果</h4><p>ES某日志集群B上线JDK17后，CPU使用率下降8%，写入性能提升，写入reject降低30%，能够较好地缓解日志集群压力。    </p>
+<p><img src="/img/2023/08/zgc_18.png" alt="DataNode写入reject图"></p>
+<h3 id="更稳定"><a href="#更稳定" class="headerlink" title="更稳定"></a>更稳定</h3><p>上线JDK17-ZGC和JDK17-G1后，ES关于内存问题的报警进一步收敛，最近几乎没有内存方面的报警 。</p>
+<p>此外，ZGC是单代GC，吞吐较低并且在Concurrent Mark阶段耗时长，为避免内存分配停顿，需要更多的内存和ConcGCThread线程，这导致CPU使用率增高。因此，对于注重吞吐的日志场景采用G1，对于CPU相对富足且对延时有一定敏感性的集群，可以通过牺牲一部分CPU换取查询性能，故采用ZGC。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>JDK17助力ES提供更低延时、更高性能、更稳定的检索服务，滴滴ES团队对JDK的调优和优化不止原地升级JDK17，在使用G1时，也解决了很多JDK相关的疑难杂症，包括JIT Deoptimization问题，使ES写入性能提升7倍；ES重新实现读写锁，解决了ThreadLocalMap remove导致单节点CPU飙升等等，这里就不一一介绍了。</p>
+<p>目前ES仍存在分片恢复、多租户查询互相影响、写入性能等问题，后续我们会在这些方面重点发力，更好地助力业务发展。</p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">背景</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9D%9E%E6%97%A5%E5%BF%97%E5%9C%BA%E6%99%AF%E7%9A%84GC%E9%97%AE%E9%A2%98"><span class="toc-number">1.1.</span> <span class="toc-text">非日志场景的GC问题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%97%A5%E5%BF%97%E5%9C%BA%E6%99%AF%E7%9A%84Reject%E9%97%AE%E9%A2%98"><span class="toc-number">1.2.</span> <span class="toc-text">日志场景的Reject问题</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#JDK17%E8%90%BD%E5%9C%B0"><span class="toc-number">2.</span> <span class="toc-text">JDK17落地</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Gradle%E7%89%88%E6%9C%AC%E5%8D%87%E7%BA%A7"><span class="toc-number">2.1.</span> <span class="toc-text">Gradle版本升级</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%BA%90%E7%A0%81%E7%BC%96%E8%AF%91"><span class="toc-number">2.2.</span> <span class="toc-text">源码编译</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%90%AD%E5%BB%BAZGC%E6%8C%87%E6%A0%87%E7%9B%91%E6%8E%A7%E4%BD%93%E7%B3%BB"><span class="toc-number">2.3.</span> <span class="toc-text">搭建ZGC指标监控体系</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83%E8%B8%A9%E5%9D%91%E4%B8%8E%E8%B0%83%E4%BC%98"><span class="toc-number">2.4.</span> <span class="toc-text">生产环境踩坑与调优</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8A%E7%BA%BF%E6%95%88%E6%9E%9C"><span class="toc-number">3.</span> <span class="toc-text">上线效果</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9B%B4%E4%BD%8E%E5%BB%B6%E6%97%B6"><span class="toc-number">3.1.</span> <span class="toc-text">更低延时</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9B%B4%E9%AB%98%E6%80%A7%E8%83%BD"><span class="toc-number">3.2.</span> <span class="toc-text">更高性能</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1%E3%80%81%E6%9F%90%E6%97%A5%E5%BF%97%E9%9B%86%E7%BE%A4A%E4%B8%8A%E7%BA%BF%E6%95%88%E6%9E%9C"><span class="toc-number">3.2.1.</span> <span class="toc-text">1、某日志集群A上线效果</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2%E3%80%81%E6%9F%90%E6%97%A5%E5%BF%97%E9%9B%86%E7%BE%A4B%E4%B8%8A%E7%BA%BF%E6%95%88%E6%9E%9C"><span class="toc-number">3.2.2.</span> <span class="toc-text">2、某日志集群B上线效果</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9B%B4%E7%A8%B3%E5%AE%9A"><span class="toc-number">3.3.</span> <span class="toc-text">更稳定</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">4.</span> <span class="toc-text">总结</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Elasticsearch/" rel="tag">Elasticsearch</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2023/08/11/didi-es-zstd/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          如何让ES低成本、高性能？滴滴落地ZSTD压缩算法的实践分享
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2023/08/08/didi-es-high-availability-solution/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">探索ES高可用：滴滴自研跨数据中心复制技术详解&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Elasticsearch性能调优之毫秒级搜索POI业务 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="背景地图POI搜索业务使用的Elasticsearch集群是自建的2.3版本，维护ES需要耗费很多精力和人力。而目前公司有专门的ES搜索团队，且ES版本已经升级到7.6版本。ES 7.6版本有很多新的特性，如IndexSorting，查询加速，索引off-heap，全新的熔断器等等。6月份，ES搜索团队决定与地图POI合作共建，将ES升级到公司里的ES 7.6，专业的人做专业的事，ES团队维护集群">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Elasticsearch性能调优之毫秒级搜索POI业务">
+<meta property="og:url" content="http://armsword.com/2021/09/09/elasticsearch-performance-optimizing-in-online-poi-service/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="背景地图POI搜索业务使用的Elasticsearch集群是自建的2.3版本，维护ES需要耗费很多精力和人力。而目前公司有专门的ES搜索团队，且ES版本已经升级到7.6版本。ES 7.6版本有很多新的特性，如IndexSorting，查询加速，索引off-heap，全新的熔断器等等。6月份，ES搜索团队决定与地图POI合作共建，将ES升级到公司里的ES 7.6，专业的人做专业的事，ES团队维护集群">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2021/09/curve.png">
+<meta property="og:image" content="http://armsword.com/img/2021/09/TP99.png">
+<meta property="og:image" content="http://armsword.com/img/2021/09/TP99_91.png">
+<meta property="og:image" content="http://armsword.com/img/2021/09/TP99_41.png">
+<meta property="og:image" content="http://armsword.com/img/2021/09/glitch.png">
+<meta property="og:image" content="http://armsword.com/img/2021/09/pagefault.png">
+<meta property="og:image" content="http://armsword.com/img/2021/09/kprobe.png">
+<meta property="article:published_time" content="2021-09-09T12:35:34.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.291Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2021/09/curve.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-elasticsearch-performance-optimizing-in-online-poi-service" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Elasticsearch性能调优之毫秒级搜索POI业务
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2021/09/09/elasticsearch-performance-optimizing-in-online-poi-service/" class="article-date">
+  <time datetime="2021-09-09T12:35:34.000Z" itemprop="datePublished">2021-09-09</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>地图POI搜索业务使用的Elasticsearch集群是自建的2.3版本，维护ES需要耗费很多精力和人力。而目前公司有专门的ES搜索团队，且ES版本已经升级到7.6版本。ES 7.6版本有很多新的特性，如IndexSorting，查询加速，索引off-heap，全新的熔断器等等。6月份，ES搜索团队决定与地图POI合作共建，将ES升级到公司里的ES 7.6，专业的人做专业的事，ES团队维护集群稳定性、提升性能等，这样地图POI团队可以更好的聚焦到业务架构和推荐系统中台化上。</p>
+<p>地图POI分为国内POI和国际化POI，其面向在线搜索业务，对搜索耗时要求比较高，国内POI要求TP50耗时小于5ms，TP99 耗时小于20ms，国际化POI要求TP50耗时小于5ms，TP99耗时小于60ms。且两个业务方的索引查询超时时间都为180ms。由于其业务特点，所以在迁移ES 7.6时，并非一帆风顺，遇到很多性能和稳定性问题，这篇文章会介绍下遇到的性能问题和解决方法。由于篇幅有限，本文只介绍了影响性能最大的三个问题及优化手段和排查问题过程，分别为：</p>
+<ul>
+<li>前缀查询优化</li>
+<li>查询截断</li>
+<li>查询超时毛刺</li>
+</ul>
+<h2 id="前缀查询优化"><a href="#前缀查询优化" class="headerlink" title="前缀查询优化"></a>前缀查询优化</h2><p>调好合适的分片数，之后将索引从Hive离线导入到ES，做一轮压测，耗时曲线图如下图所示，耗时都接近800ms了，并且超过180ms就认为是超时，这与期望的性能有比较大的差距：</p>
+<img src="/img/2021/09/curve.png" width = "100%" />
+
+<p>通过gateway里面的审计日志，计算出国际化POI TP50、TP90、TP99时间，如下图所示：</p>
+<img src="/img/2021/09/TP99.png" width = "100%" />
+
+<p>可以看到TP99时间到了619ms，这与预期的性能有很大差距。所以我们需要看下为什么查询性能这么慢，我们将审计日志里面的压测DSL全部拿到，之后根据查询耗时降序排序，然后将DSL模板归类，发现耗时最久的是类似下面这种DSL：</p>
+<span id="more"></span>
+
+<figure class="highlight prolog"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">GET</span> poi_index/<span class="symbol">_search</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;_source&quot;</span>: &#123;</span><br><span class="line">    <span class="string">&quot;includes&quot;</span>: [</span><br><span class="line">      <span class="string">&quot;city&quot;</span></span><br><span class="line">    ]</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="string">&quot;from&quot;</span>: <span class="number">0</span>,</span><br><span class="line">  <span class="string">&quot;query&quot;</span>: &#123;</span><br><span class="line">    <span class="string">&quot;bool&quot;</span>: &#123;</span><br><span class="line">      <span class="string">&quot;must&quot;</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">          <span class="string">&quot;term&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;area&quot;</span>: <span class="number">55000199</span></span><br><span class="line">          &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        &#123;</span><br><span class="line">          <span class="string">&quot;bool&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;should&quot;</span>: &#123;</span><br><span class="line">              <span class="string">&quot;bool&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;boost&quot;</span>: <span class="number">1</span>,</span><br><span class="line">                <span class="string">&quot;should&quot;</span>: [</span><br><span class="line">                  &#123;</span><br><span class="line">                    <span class="string">&quot;prefix&quot;</span>: &#123;</span><br><span class="line">                      <span class="string">&quot;displayname_nor_pt.prefix&quot;</span>: <span class="string">&quot;r&quot;</span></span><br><span class="line">                    &#125;</span><br><span class="line">                  &#125;,</span><br><span class="line">                  &#123;</span><br><span class="line">                    <span class="string">&quot;prefix&quot;</span>: &#123;</span><br><span class="line">                      <span class="string">&quot;alias_pt.prefix&quot;</span>: <span class="string">&quot;r&quot;</span></span><br><span class="line">                    &#125;</span><br><span class="line">                  &#125;,</span><br><span class="line">                  &#123;</span><br><span class="line">                    <span class="string">&quot;prefix&quot;</span>: &#123;</span><br><span class="line">                      <span class="string">&quot;atlas_name_nor.prefix&quot;</span>: <span class="string">&quot;r&quot;</span></span><br><span class="line">                    &#125;</span><br><span class="line">                  &#125;,</span><br><span class="line">                  &#123;</span><br><span class="line">                    <span class="string">&quot;match&quot;</span>: &#123;</span><br><span class="line">                      <span class="string">&quot;displayname_nor_pt.invert&quot;</span>: &#123;</span><br><span class="line">                        <span class="string">&quot;operator&quot;</span>: <span class="string">&quot;and&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;query&quot;</span>: <span class="string">&quot;r&quot;</span></span><br><span class="line">                      &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                  &#125;,</span><br><span class="line">                  &#123;</span><br><span class="line">                    <span class="string">&quot;match&quot;</span>: &#123;</span><br><span class="line">                      <span class="string">&quot;atlas_address_nor.invert&quot;</span>: &#123;</span><br><span class="line">                        <span class="string">&quot;operator&quot;</span>: <span class="string">&quot;and&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;query&quot;</span>: <span class="string">&quot;r&quot;</span></span><br><span class="line">                      &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                  &#125;</span><br><span class="line">                ]</span><br><span class="line">              &#125;</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      ]</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="string">&quot;size&quot;</span>: <span class="number">20</span>,</span><br><span class="line">  <span class="string">&quot;timeout&quot;</span>: <span class="string">&quot;180ms&quot;</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>通过Kibana查询，查询耗时稳定如下：</p>
+<figure class="highlight ada"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;took&quot;</span> : 1508,</span><br><span class="line">  <span class="string">&quot;timed_out&quot;</span> : <span class="type">true</span>,</span><br><span class="line">  <span class="string">&quot;_shards&quot;</span> : &#123;</span><br><span class="line">    <span class="string">&quot;total&quot;</span> : 10,</span><br><span class="line">    <span class="string">&quot;successful&quot;</span> : 10,</span><br><span class="line">    <span class="string">&quot;skipped&quot;</span> : 0,</span><br><span class="line">    <span class="string">&quot;failed&quot;</span> : 0</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>那怎么判断这个DSL耗时浪费在哪里了呢？答案是：二分法。通过二分法删除查询语句，之后我们看到是<code>prefix</code> 前缀查询导致性能变慢。再讲前缀优化之前，先说下为什么前缀查询慢，比如我们将上面的DSL简化为：</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> my_index/_search</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;query&quot;</span>: &#123;</span><br><span class="line">    <span class="string">&quot;prefix&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;displayname_nor_pt.prefix&quot;</span>: <span class="string">&quot;r&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面的查询，为了支持前缀匹配，查询会做以下事情：</p>
+<ul>
+<li>扫描词列表并查找到第一个以 r 开始的词</li>
+<li>搜集关联的文档ID</li>
+<li>移动到下一个词</li>
+<li>如果这个词也是以 r 开头，查询跳回到第二步再重复执行，直到下一个词不以 r 为止</li>
+</ul>
+<p>这对于小的例子当然可以正常工作，但是如果倒排索引中有数以百万的 displayname_nor_pt.prefix 都是以 r 开头时，前缀查询则需要访问每个词然后计算结果。且前缀越短所需访问的词越多。那如何优化呢？答案是：Edge NGram。以单词hello为例，Edge NGram Token Filter设置下min_gram为1，max_gram为5。它的Edge NGram的结果如下：</p>
+<ul>
+<li>h</li>
+<li>he</li>
+<li>hel</li>
+<li>hell</li>
+<li>hello</li>
+</ul>
+<p>其意思就是在使用Edge NGram建索引时，一个单词会生成多个倒排索引，比如hello，将生成5个倒排，核心思想就是空间换时间，将前缀匹配转换为term查询。但是使用Edge NGram用户需要修改查询语句，为了提高用户体验，减少升级工作量，发现ES 7.X 支持了 index_prefixes，在创建mapping时指定，我们将业务索引模板mapping添加类似如下配置：</p>
+<figure class="highlight ada"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;properties&quot;</span> : &#123;</span><br><span class="line">        <span class="string">&quot;displayname_nor_pt&quot;</span> : &#123;</span><br><span class="line">          <span class="string">&quot;type&quot;</span> : &quot;<span class="type">keyword</span><span class="string">&quot;,</span></span><br><span class="line"><span class="string">          &quot;</span>fields<span class="string">&quot; : &#123;</span></span><br><span class="line"><span class="string">            &quot;</span>prefix<span class="string">&quot; : &#123;</span></span><br><span class="line"><span class="string">              &quot;</span>index_prefixes<span class="string">&quot; : &#123;</span></span><br><span class="line"><span class="string">                &quot;</span>max_chars<span class="string">&quot; : 7,</span></span><br><span class="line"><span class="string">                &quot;</span>min_chars<span class="string">&quot; : 1</span></span><br><span class="line"><span class="string">              &#125;,</span></span><br><span class="line"><span class="string">              &quot;</span>analyzer<span class="string">&quot; : &quot;</span>keyword_lower<span class="string">&quot;,</span></span><br><span class="line"><span class="string">              &quot;</span><span class="keyword">type</span><span class="string">&quot; : &quot;</span>text<span class="string">&quot;</span></span><br><span class="line"><span class="string">            &#125;</span></span><br><span class="line"><span class="string">          &#125;</span></span><br><span class="line"><span class="string">        &#125;</span></span><br><span class="line"><span class="string">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>之后重新导入数据，相同的查询，耗时变为：</p>
+<figure class="highlight ada"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;took&quot;</span> : 3,</span><br><span class="line">  <span class="string">&quot;timed_out&quot;</span> : <span class="type">false</span>,</span><br><span class="line">  <span class="string">&quot;_shards&quot;</span> : &#123;</span><br><span class="line">    <span class="string">&quot;total&quot;</span> : 10,</span><br><span class="line">    <span class="string">&quot;successful&quot;</span> : 10,</span><br><span class="line">    <span class="string">&quot;skipped&quot;</span> : 0,</span><br><span class="line">    <span class="string">&quot;failed&quot;</span> : 0</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>性能提升500倍+，之后再压测，查看国际化POI TP50 TP99耗时：</p>
+<img src="/img/2021/09/TP99_91.png" width = "100%" />
+
+<h2 id="查询截断"><a href="#查询截断" class="headerlink" title="查询截断"></a>查询截断</h2><p>优化Prefix后，国际化POI TP99耗时到了81ms，但是我跟POI业务方保证能优化到50ms以内，目前离目标还有距离，所以继续分析国际化的DSL，发现查询语句里大部分是没有使用<code>terminate_after</code>截断，少部分使用截断功能的DSL，截断值是200000，而其查询size一般为15。先解释下terminate_after：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">terminate_after： 限定从每个shard中收集的最大文档数量。缺省不设此最大数量限制。如果设定了该值，那么响应结果中将会包含一个terminated_early的字段，以表示该次查询实际上是较早地终止了。</span><br></pre></td></tr></table></figure>
+<p>根据上面的定义，如果直接使用terminate_afer，那会导致严重diff，如果为了解决这个问题：</p>
+<ul>
+<li>IndexSorting，指定字段做预排序，查询时候sort</li>
+<li>索引完成导入时，调用force merge，每个分片生成一个segment</li>
+</ul>
+<p>在做了预排，召回的size如果只需要15个的话，查询DSL里添加terminate_after&#x3D;15，这样可以大量减轻节点的排序截断的内存消耗和计算量。POI团队优化DSL后查询性能，TP99从81ms降低到41ms：</p>
+<img src="/img/2021/09/TP99_41.png" width = "100%" />
+
+<h2 id="查询超时毛刺"><a href="#查询超时毛刺" class="headerlink" title="查询超时毛刺"></a>查询超时毛刺</h2><p>国内POI升级到7.6后，遇到个非常奇怪的问题，机器CPU使用率5%不到，但是会有接近5%的查询会超时，但是如果单独查询时，就不会超时，意思是查询不稳定。如下图所示，17:25流量请求到7.6集群，然后就会出现大量查询超时（超过180ms），且重复执行时候，又不出现超时了。</p>
+<img src="/img/2021/09/glitch.png" width = "100%" />
+
+<p>这个问题比较棘手，排查了ES引擎，dmesg，内存、CPU及IO等等都没有出现瓶颈。根据我的经验，可能是page fault导致的，或者遇到CPU false sharing问题或者Cache line导致的性能下降问题，因为ES需要从磁盘读取索引，Page Cache导致的问题概率更高。随手去perf stat看下机器情况：</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># perf stat -a</span></span><br><span class="line"></span><br><span class="line"><span class="attribute">Performance</span> counter stats for &#x27;system wide&#x27;:</span><br><span class="line"></span><br><span class="line">     <span class="attribute">16425927</span>.<span class="number">374625</span>      task-clock (msec)         #   <span class="number">95</span>.<span class="number">999</span> CPUs utilized</span><br><span class="line">          <span class="attribute">16</span>,<span class="number">344</span>,<span class="number">280</span>      context-switches          #    <span class="number">0</span>.<span class="number">995</span> K/sec</span><br><span class="line">             <span class="attribute">220</span>,<span class="number">755</span>      cpu-migrations            #    <span class="number">0</span>.<span class="number">013</span> K/sec</span><br><span class="line">           <span class="attribute">6</span>,<span class="number">860</span>,<span class="number">133</span>      page-faults               #    <span class="number">0</span>.<span class="number">418</span> K/sec</span><br><span class="line">   <span class="attribute">39</span>,<span class="number">43</span>,<span class="number">737</span>,<span class="number">586</span>,<span class="number">430</span>      cycles                    #    <span class="number">2</span>.<span class="number">400</span> GHz</span><br><span class="line">   <span class="attribute">4</span>,<span class="number">388</span>,<span class="number">353</span>,<span class="number">876</span>,<span class="number">624</span>      instructions              #    <span class="number">0</span>.<span class="number">11</span>  insn per cycle</span><br><span class="line">     <span class="attribute">992</span>,<span class="number">167</span>,<span class="number">860</span>,<span class="number">072</span>      branches                  #   <span class="number">60</span>.<span class="number">403</span> M/sec</span><br><span class="line">       <span class="attribute">3</span>,<span class="number">670</span>,<span class="number">316</span>,<span class="number">256</span>      branch-misses             #    <span class="number">0</span>.<span class="number">37</span>% of <span class="literal">all</span> branches</span><br><span class="line"></span><br><span class="line">      <span class="attribute">171</span>.<span class="number">104416655</span> seconds time elapsed</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>于是我又对比了查询正常的集群，perf数据对比后发现context-switches及page-faults有些偏高，我想确认下page-faults耗时及是哪个函数（功能）耗时久，有时候想知道下发某个操作后内核在做些什么，这个时候就要对内核进行调试，我们可以使用kprobe来探测内核的行为。在使用kprobe hook内存前，我们需要先知道page fault相关的函数，这个函数是handle_mm_fault，进程在用户态及内核态访问虚拟地址，触发缺页异常，用于处理用户空间的页错误异常，这个函数下面可以被hook的函数如下（黄色背景）：</p>
+<img src="/img/2021/09/pagefault.png" width = "100%" />
+
+<p>回到问题上，我们需要确认是page fault导致的问题，我们首先需要看下handle_mm_fault函数申请耗时，方法如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/kernel.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/kprobes.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/ktime.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/limits.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/sched.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/cgroup.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/dcache.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/aio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">char</span> func_name[NAME_MAX] = <span class="string">&quot;handle_mm_fault&quot;</span>;</span><br><span class="line"><span class="built_in">module_param_string</span>(func, func_name, NAME_MAX, S_IRUGO);</span><br><span class="line"><span class="built_in">MODULE_PARM_DESC</span>(func, <span class="string">&quot;Function to kretprobe; this module will report the&quot;</span></span><br><span class="line">                        <span class="string">&quot; function&#x27;s execution time&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">/* per-instance private data */</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">my_data</span> &#123;</span><br><span class="line">        <span class="type">ktime_t</span> entry_stamp;</span><br><span class="line">        <span class="type">int</span> printk;</span><br><span class="line">        <span class="keyword">struct</span> <span class="title class_">bdi_writeback</span> *wb;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* Here we use the entry_hanlder to timestamp function entry */</span></span><br><span class="line"><span class="function"><span class="type">static</span> <span class="type">int</span> <span class="title">entry_handler</span><span class="params">(<span class="keyword">struct</span> kretprobe_instance *ri, <span class="keyword">struct</span> pt_regs *regs)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">        <span class="keyword">struct</span> <span class="title class_">my_data</span> *data;</span><br><span class="line">        data = (<span class="keyword">struct</span> my_data *)ri-&gt;data;</span><br><span class="line"></span><br><span class="line">        data-&gt;printk = <span class="number">1</span>;</span><br><span class="line">        data-&gt;entry_stamp = <span class="built_in">ktime_get</span>();</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Return-probe handler: Log the return value and duration. Duration may turn</span></span><br><span class="line"><span class="comment"> * out to be zero consistently, depending upon the granularity of time</span></span><br><span class="line"><span class="comment"> * accounting on the platform.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="type">static</span> <span class="type">int</span> <span class="title">ret_handler</span><span class="params">(<span class="keyword">struct</span> kretprobe_instance *ri, <span class="keyword">struct</span> pt_regs *regs)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">        <span class="type">long</span> retval = <span class="built_in">regs_return_value</span>(regs);</span><br><span class="line">        <span class="keyword">struct</span> <span class="title class_">my_data</span> *data = (<span class="keyword">struct</span> my_data *)ri-&gt;data;</span><br><span class="line">        s64 delta;</span><br><span class="line">        <span class="type">ktime_t</span> now;</span><br><span class="line">        now = <span class="built_in">ktime_get</span>();</span><br><span class="line">        delta = <span class="built_in">ktime_to_ns</span>(<span class="built_in">ktime_sub</span>(now, data-&gt;entry_stamp));</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span>(!data-&gt;printk) &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (delta / <span class="number">1000</span> / <span class="number">1000</span> &gt; <span class="number">100</span>)</span><br><span class="line">                <span class="built_in">printk</span>(<span class="string">&quot;pid %ld, %s in %s returned %d and took %lld ns to execute\n&quot;</span>,</span><br><span class="line">                        current-&gt;pid, current-&gt;comm, func_name, retval, (<span class="type">long</span> <span class="type">long</span>)delta);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">struct</span> <span class="title class_">kretprobe</span> my_kretprobe = &#123;</span><br><span class="line">        .handler                = ret_handler,</span><br><span class="line">        .entry_handler          = entry_handler,</span><br><span class="line">        .data_size              = <span class="built_in">sizeof</span>(<span class="keyword">struct</span> my_data),</span><br><span class="line">        <span class="comment">/* Probe up to 20 instances concurrently. */</span></span><br><span class="line">        .maxactive              = <span class="number">1024</span>,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">static</span> <span class="type">int</span> __init <span class="title">kretprobe_init</span><span class="params">(<span class="type">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">        <span class="type">int</span> ret;</span><br><span class="line">        my_kretprobe.kp.symbol_name = func_name;</span><br><span class="line">        ret = <span class="built_in">register_kretprobe</span>(&amp;my_kretprobe);</span><br><span class="line">        <span class="keyword">if</span> (ret &lt; <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="built_in">printk</span>(KERN_INFO <span class="string">&quot;register_kretprobe failed, returned %d\n&quot;</span>,</span><br><span class="line">                                ret);</span><br><span class="line">                <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="built_in">printk</span>(KERN_INFO <span class="string">&quot;Planted return probe at %s: %p\n&quot;</span>,</span><br><span class="line">                        my_kretprobe.kp.symbol_name, my_kretprobe.kp.addr);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">static</span> <span class="type">void</span> __exit <span class="title">kretprobe_exit</span><span class="params">(<span class="type">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">        <span class="built_in">unregister_kretprobe</span>(&amp;my_kretprobe);</span><br><span class="line">        <span class="built_in">printk</span>(KERN_INFO <span class="string">&quot;kretprobe at %p unregistered\n&quot;</span>,</span><br><span class="line">                        my_kretprobe.kp.addr);</span><br><span class="line"></span><br><span class="line">        <span class="comment">/* nmissed &gt; 0 suggests that maxactive was set too low. */</span></span><br><span class="line">        <span class="built_in">printk</span>(KERN_INFO <span class="string">&quot;Missed probing %d instances of %s\n&quot;</span>,</span><br><span class="line">                my_kretprobe.nmissed, my_kretprobe.kp.symbol_name);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">module_init</span>(kretprobe_init)</span><br><span class="line"><span class="built_in">module_exit</span>(kretprobe_exit)</span><br><span class="line"><span class="built_in">MODULE_LICENSE</span>(<span class="string">&quot;GPL&quot;</span>);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>上面的代码简单解释下，抓取内核缺页耗时（handle_mm_fault），超过100ms就打印进程id（JVM里是线程id）及进程名。关于kprobe，可以详细看下这个wiki：<a href="https://kernelgo.org/kprobe.html">kprobe kretprobe example</a>。之后编译，通过 insmod *ko 加载到内核模块，通过dmesg静等结果，第二天早晨dmesg看下，看到如下信息：</p>
+<img src="/img/2021/09/kprobe.png" width = "100%" />
+
+<p>可以看到确实缺页函数执行超过100ms，符合之前猜想。为了更精确判断哪个函数导致的，我们一次跟踪了do_wp_page、do_numa_page等，发现耗时主要是do_numa_page导致的问题。numa为啥会导致性能问题呢？<br>于是找了下系统部，系统部说之前遇到过 numa balancing 导致的性能问题，关掉numa balancing就好了，网上搜了一些文章，发现一篇文章也推荐关闭numa balancing，<a href="https://www.ibm.com/support/pages/%E5%85%B3%E4%BA%8Eapar-it23357%E5%AF%B9%E6%80%A7%E8%83%BD%E5%BD%B1%E5%93%8D%E7%9A%84%E6%9B%B4%E6%B7%B1%E5%B1%82%E6%AC%A1%E6%8E%A2%E8%AE%A8">关于APAR IT23357对性能影响的更深层次探讨</a></p>
+<p>看了下机器numa状态：</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># numastat</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">                           <span class="attribute">node0</span>           node1</span><br><span class="line"><span class="attribute">numa_hit</span>             <span class="number">18920313219</span>     <span class="number">16185022530</span></span><br><span class="line"><span class="attribute">numa_miss</span>              <span class="number">858944103</span>      <span class="number">1083697842</span></span><br><span class="line"><span class="attribute">numa_foreign</span>          <span class="number">1083697842</span>       <span class="number">858944103</span></span><br><span class="line"><span class="attribute">interleave_hit</span>            <span class="number">109322</span>          <span class="number">109638</span></span><br><span class="line"><span class="attribute">local_node</span>           <span class="number">18923181605</span>     <span class="number">16191147877</span></span><br><span class="line"><span class="attribute">other_node</span>             <span class="number">856075717</span>      <span class="number">1077572495</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>有2个node，numa balancing就是提供一个numa自动平衡策略，系统通过自动调配内存以求在各个numa nodes的内存使用率处于相对平衡的状态，这个策略可以通过修改内核参数&#x2F;proc&#x2F;sys&#x2F;kernel&#x2F;numa_balancing控制。所以尝试关闭了下numa balancing，命令如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash"><span class="built_in">echo</span> 0 &gt; /proc/sys/kernel/numa_balancing</span></span><br></pre></td></tr></table></figure>
+
+<p>查询超时毛刺奇迹般的消失了。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>由于篇幅有限，抛砖引玉讲了支持毫秒级搜索业务遇到的三个性能问题，然而为了支持好这种毫秒级线上业务，仅仅做这些是不够的，双方团队相互合作，一起做了召回diff、双活（Master Slave）支持和演练、force merge以及做了SOP预案等等。后续可能需要更多精力来维护集群稳定性，查询长尾问题以及通过更好的了解业务来优化引擎和提升体验。</p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E7%BC%80%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96"><span class="toc-number">2.</span> <span class="toc-text">前缀查询优化</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E8%AF%A2%E6%88%AA%E6%96%AD"><span class="toc-number">3.</span> <span class="toc-text">查询截断</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E8%AF%A2%E8%B6%85%E6%97%B6%E6%AF%9B%E5%88%BA"><span class="toc-number">4.</span> <span class="toc-text">查询超时毛刺</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">5.</span> <span class="toc-text">总结</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2022/01/18/common-compression-algorithms-in-search-engines/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          科普下搜索索引里常用的压缩算法
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2021/03/26/es-memory-management/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">ES 内存管理分析&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

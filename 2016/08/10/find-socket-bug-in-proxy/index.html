@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>记一次线上Bug的查找过程和思路 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="前言简单说下问题情况，Proxy即作为客户端又有服务端功能，其接受QS（Query Server）的请求，之后向BS（索引服务）发送请求，然后根据BS的返回结果Merge后返回给QS。不能泄露太多东西，所以本文主要是整理一些知识点和问题查找思路。 问题和现象 Proxy机器上出现大量的CLOSE_WAIT。 Proxy失去服务能力，内存使用不为0，CPU使用率为0。 机器报警，TcpListenO">
+<meta property="og:type" content="article">
+<meta property="og:title" content="记一次线上Bug的查找过程和思路">
+<meta property="og:url" content="http://armsword.com/2016/08/10/find-socket-bug-in-proxy/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="前言简单说下问题情况，Proxy即作为客户端又有服务端功能，其接受QS（Query Server）的请求，之后向BS（索引服务）发送请求，然后根据BS的返回结果Merge后返回给QS。不能泄露太多东西，所以本文主要是整理一些知识点和问题查找思路。 问题和现象 Proxy机器上出现大量的CLOSE_WAIT。 Proxy失去服务能力，内存使用不为0，CPU使用率为0。 机器报警，TcpListenO">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2016/08/tcp.jpg">
+<meta property="article:published_time" content="2016-08-10T13:33:40.000Z">
+<meta property="article:modified_time" content="2023-12-26T11:33:12.000Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2016/08/tcp.jpg">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-find-socket-bug-in-proxy" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      记一次线上Bug的查找过程和思路
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2016/08/10/find-socket-bug-in-proxy/" class="article-date">
+  <time datetime="2016-08-10T13:33:40.000Z" itemprop="datePublished">2016-08-10</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>简单说下问题情况，Proxy即作为客户端又有服务端功能，其接受QS（Query Server）的请求，之后向BS（索引服务）发送请求，然后根据BS的返回结果Merge后返回给QS。不能泄露太多东西，所以本文主要是整理一些知识点和问题查找思路。</p>
+<h2 id="问题和现象"><a href="#问题和现象" class="headerlink" title="问题和现象"></a>问题和现象</h2><ul>
+<li>Proxy机器上出现大量的CLOSE_WAIT。</li>
+<li>Proxy失去服务能力，内存使用不为0，CPU使用率为0。</li>
+<li>机器报警，TcpListenOverFlows。</li>
+</ul>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">命令查看：</span><br><span class="line">netstat <span class="operator">-</span>n <span class="operator">|</span> awk &#x27;<span class="regexp">/^tcp/</span> &#123;<span class="operator">++</span><span class="type">S</span>[<span class="variable">$NF</span>]&#125; <span class="type">END</span> &#123;<span class="keyword">for</span>(a <span class="keyword">in</span> <span class="type">S</span>) print a, <span class="type">S</span>[a]&#125;&#x27;</span><br><span class="line"> </span><br><span class="line"> </span><br><span class="line">结果：</span><br><span class="line"><span class="type">TIME_WAIT</span> <span class="number">31927</span></span><br><span class="line"><span class="type">CLOSE_WAIT</span> <span class="number">1570</span></span><br><span class="line"><span class="type">ESTABLISHED</span> <span class="number">40</span></span><br><span class="line"> </span><br><span class="line"><span class="type">TIME_WAIT：表示主动关闭，通过优化系统内核参数可容易解决</span><span class="operator">。</span></span><br><span class="line"><span class="type">CLOSE_WAIT：表示被动关闭，需要从程序本身出发</span><span class="operator">。</span></span><br><span class="line"><span class="type">ESTABLISHED：表示正在通信</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">注：以上数据非真实线上情况，只为举例</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<span id="more"></span>
+
+<h2 id="一些知识点"><a href="#一些知识点" class="headerlink" title="一些知识点"></a>一些知识点</h2><h3 id="TCP握手图"><a href="#TCP握手图" class="headerlink" title="TCP握手图"></a>TCP握手图</h3><img src="/img/2016/08/tcp.jpg" width = "550" height = "660" alt="" align=center />
+
+<h3 id="TIME-WAIT"><a href="#TIME-WAIT" class="headerlink" title="TIME_WAIT"></a>TIME_WAIT</h3><p>Linux系统下，TCP&#x2F;IP连接断开后，会以TIME_WAIT状态保留一定的时间（2MSL：max segment lifetime），默认为4分钟，然后才会关闭回收资源。当并发请求过多的时候，就会产生大量的 TIME_WAIT状态的连接，无法及时断开的话，会占用大量的端口资源和服务器资源。<br>状态保持2MSL的原因：<br>1.防止上一次连接中的包，迷路后重新出现，影响新连接（经过2MSL，上一次连接中所有的重复包都会消失）<br>2.可靠的关闭TCP连接。在主动关闭方发送的最后一个 ack(fin) ，有可能丢失，这时被动方会重新发fin, 如果这时主动方处于 CLOSED 状态 ，就会响应 rst 而不是 ack。所以主动方要处于 TIME_WAIT 状态，而不能是 CLOSED 。另外这么设计TIME_WAIT 会定时的回收资源，并不会占用很大资源的，除非短时间内接受大量请求或者受到攻击。<br>一些解决方法：<br>通过修改&#x2F;etc&#x2F;sysctl.conf文件，服务器能够快速回收和重用那些TIME_WAIT的资源 。 </p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">#表示开启SYN Cookies。当出现SYN等待队列溢出时，启用cookies来处理，可防范少量SYN攻击，默认为<span class="number">0</span>，表示关闭</span><br><span class="line">net<span class="selector-class">.ipv4</span><span class="selector-class">.tcp_syncookies</span> = <span class="number">1</span>  </span><br><span class="line"></span><br><span class="line">#表示开启重用。允许将TIME-WAIT sockets重新用于新的TCP连接，默认为<span class="number">0</span>，表示关闭  </span><br><span class="line">net<span class="selector-class">.ipv4</span><span class="selector-class">.tcp_tw_reuse</span> = <span class="number">1</span>  </span><br><span class="line"></span><br><span class="line">#表示开启TCP连接中TIME-WAIT sockets的快速回收，默认为<span class="number">0</span>，表示关闭  </span><br><span class="line">net<span class="selector-class">.ipv4</span><span class="selector-class">.tcp_tw_recycle</span> = <span class="number">1</span></span><br><span class="line"></span><br><span class="line">#表示如果套接字由本端要求关闭，这个参数决定了它保持在FIN-WAIT-<span class="number">2</span>状态的时间  </span><br><span class="line">net<span class="selector-class">.ipv4</span>.tcp_fin_timeout=<span class="number">30</span></span><br><span class="line"></span><br><span class="line">生效命令：</span><br><span class="line">/sbin/sysctl -p</span><br></pre></td></tr></table></figure>
+
+<h3 id="CLOSE-WAIT"><a href="#CLOSE-WAIT" class="headerlink" title="CLOSE_WAIT"></a>CLOSE_WAIT</h3><p>CLOSE_WAIT表示被动关闭，出现这种问题，基本是就是客户端连接异常或者自己没有迅速回收资源。<br>什么情况下，连接处于CLOSE_WAIT状态呢？</p>
+<ul>
+<li>在被动关闭连接情况下，在已经接收到FIN，但是还没有发送自己的FIN的时刻，连接处于CLOSE_WAIT状态。通常来讲，CLOSE_WAIT状态的持续时间应该很短，正如SYN_RCVD状态。但是在一些特殊情况下，就会出现连接长时间处于CLOSE_WAIT状态的情况。</li>
+<li>出现大量close_wait的现象，主要原因是某种情况下对方关闭了socket链接，但是我方忙与读或者写，没有关闭连接（CLOSE_WAIT应该是默认2小时才会关闭）。代码需要判断socket，一旦读到0，断开连接，read返回负，检查一下errno，如果不是AGAIN，就断开连接。</li>
+<li>scoket阻塞，无超时或非阻塞处理。</li>
+</ul>
+<h3 id="EPOLL"><a href="#EPOLL" class="headerlink" title="EPOLL"></a>EPOLL</h3><ul>
+<li>EPOLLIN：连接，对端发送普通数据，对端socket正常关闭。</li>
+<li>EPOLLPRI：带外数据，文件描述符有紧急的数据可读。</li>
+<li>EPOLLOUT：数据可写。</li>
+<li>对端正常关闭（close()，shell下kill或ctr+c），触发EPOLLIN和EPOLLRDHUP，但是不触发EPOLLERR和EPOLLHUP。&#x2F;&#x2F;重要</li>
+<li>对端异常断开连接（如网线），不会触发任何事件。判断方式是向已经断开的socket写或者读，会发生EPOLLERR错误。</li>
+</ul>
+<h3 id="socket接口的几个知识点"><a href="#socket接口的几个知识点" class="headerlink" title="socket接口的几个知识点"></a>socket接口的几个知识点</h3><ul>
+<li>read总是在接收缓冲区有数据时立即返回，而不是等到给定的read buffer填满时返回。<br>只有当receive buffer为空时，blocking模式才会等待，而nonblock模式下会立即返回-1（errno &#x3D; EAGAIN或EWOULDBLOCK）</li>
+<li>blocking的write只有在缓冲区足以放下整个buffer时才返回（与blocking read并不相同）<br>nonblock write则是返回能够放下的字节数，之后调用则返回-1（errno &#x3D; EAGAIN或EWOULDBLOCK）<br>对于blocking的write有个特例：当write正阻塞等待时对面关闭了socket，则write则会立即将剩余缓冲区填满并返回所写的字节数，再次调用则write失败（connection reset by peer）</li>
+</ul>
+<h3 id="Bug查找"><a href="#Bug查找" class="headerlink" title="Bug查找"></a>Bug查找</h3><p>通过以上的知识点，我们就可以很好的定位问题原因了，因为Proxy即作为客户端，又有服务端功能，其转发QS的结果到BS之后，再将BS的结果merge后回复给QS。仔细排查代码，发现2处引起Proxy大量出现CLOSE_TIMEWAIT。<br>&lt;1&gt;、Proxy将BS的结果merge后，发送QS时，socket是阻塞的，也未做超时处理。<br>&lt;2&gt;、QS超时（3S），会主动关闭socket，而Proxy这层没有关闭fd，可能原作者认为会触发EPOLLERR和EPOLLHUP（这里面做了处理）。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><p>1、<a href="http://www.cnblogs.com/promise6522/archive/2012/03/03/2377935.html">http://www.cnblogs.com/promise6522/archive/2012/03/03/2377935.html</a><br>2、<a href="http://originlee.com/2015/04/22/nonblocking-tcp-socket/">http://originlee.com/2015/04/22/nonblocking-tcp-socket/</a> </p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E5%92%8C%E7%8E%B0%E8%B1%A1"><span class="toc-number">2.</span> <span class="toc-text">问题和现象</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E4%BA%9B%E7%9F%A5%E8%AF%86%E7%82%B9"><span class="toc-number">3.</span> <span class="toc-text">一些知识点</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#TCP%E6%8F%A1%E6%89%8B%E5%9B%BE"><span class="toc-number">3.1.</span> <span class="toc-text">TCP握手图</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#TIME-WAIT"><span class="toc-number">3.2.</span> <span class="toc-text">TIME_WAIT</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CLOSE-WAIT"><span class="toc-number">3.3.</span> <span class="toc-text">CLOSE_WAIT</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#EPOLL"><span class="toc-number">3.4.</span> <span class="toc-text">EPOLL</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#socket%E6%8E%A5%E5%8F%A3%E7%9A%84%E5%87%A0%E4%B8%AA%E7%9F%A5%E8%AF%86%E7%82%B9"><span class="toc-number">3.5.</span> <span class="toc-text">socket接口的几个知识点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Bug%E6%9F%A5%E6%89%BE"><span class="toc-number">3.6.</span> <span class="toc-text">Bug查找</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E9%93%BE%E6%8E%A5"><span class="toc-number">4.</span> <span class="toc-text">参考链接</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2016/08/17/earlybird/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          Earlybird:Twitter实时搜索引擎
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2016/07/09/linux-max-locked-memory-ulimit/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">浅谈Linux ulimit以及max memory locked&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

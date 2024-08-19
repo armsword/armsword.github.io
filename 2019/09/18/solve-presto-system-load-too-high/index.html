@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Presto System load过高问题调研 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="背景我们Presto有个集群，每6.5天会出现System load过高问题，这个集群有个特点，只服务于一个业务方，且SQL基本相似。如图所示：Sys load很高（20-40%），严重影响查询性能。 业务SQL查询时间表现为： ScanFilterAndProjectOperator（Source Stage）阶段有机器有明显的长尾现象，比如20台机器，正常这个Operator执行时间只需要1S">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Presto System load过高问题调研">
+<meta property="og:url" content="http://armsword.com/2019/09/18/solve-presto-system-load-too-high/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="背景我们Presto有个集群，每6.5天会出现System load过高问题，这个集群有个特点，只服务于一个业务方，且SQL基本相似。如图所示：Sys load很高（20-40%），严重影响查询性能。 业务SQL查询时间表现为： ScanFilterAndProjectOperator（Source Stage）阶段有机器有明显的长尾现象，比如20台机器，正常这个Operator执行时间只需要1S">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2019/09/01.png">
+<meta property="og:image" content="http://armsword.com/img/2019/09/02.png">
+<meta property="og:image" content="http://armsword.com/img/2019/09/03.png">
+<meta property="og:image" content="http://armsword.com/img/2019/09/04.png">
+<meta property="og:image" content="http://armsword.com/img/2019/09/05.png">
+<meta property="og:image" content="http://armsword.com/img/2019/09/06.png">
+<meta property="article:published_time" content="2019-09-18T11:04:09.000Z">
+<meta property="article:modified_time" content="2023-12-26T11:35:57.000Z">
+<meta property="article:author" content="armsword">
+<meta property="article:tag" content="presto">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2019/09/01.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-solve-presto-system-load-too-high" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Presto System load过高问题调研
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2019/09/18/solve-presto-system-load-too-high/" class="article-date">
+  <time datetime="2019-09-18T11:04:09.000Z" itemprop="datePublished">2019-09-18</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>我们Presto有个集群，每6.5天会出现System load过高问题，这个集群有个特点，只服务于一个业务方，且SQL基本相似。如图所示：Sys load很高（20-40%），严重影响查询性能。<br><img src="/img/2019/09/01.png" width="800" align=left /></p>
+<p>业务SQL查询时间表现为：</p>
+<p>ScanFilterAndProjectOperator（Source Stage）阶段有机器有明显的长尾现象，比如20台机器，正常这个Operator执行时间只需要1S，但是有几台机器会耗时几分钟。而重启服务后，查询恢复正常。</p>
+<span id="more"></span>
+
+<p>先jstack看下Presto在干啥：<br><img src="/img/2019/09/02.png"><br>如图所示，Presto通过ScanFilterAndProjectOperator类执行filter过滤，其中这个filter方法是Codegen生成。</p>
+<p>pstack查看下线程栈：<br><img src="/img/2019/09/03.png"></p>
+<p>看到程序主要CPU浪费在Deoptimization::uncommon_trap里了。为什么呢？再说这个问题之前，我们先说下JIT。</p>
+<h2 id="JIT"><a href="#JIT" class="headerlink" title="JIT"></a>JIT</h2><p>为了提高热点代码（Hot Spot Code）的执行效率，在运行时，虚拟机将会把这些代码编译成与本地平台相关的机器码，并进行各种层次的优化，完成这个任务的编译器称为即时编译器（JIT）。</p>
+<p>“热点代码”两类:</p>
+<ul>
+<li>被多次调用的方法</li>
+<li>被多次执行的循环体 – 尽管编译动作是由循环体所触发的，但编译器依然会以整个方法（而不是单独的循环体）作为编译对象。<br>编译器根据概率选择一些大多数时候都能提升运行速度的优化手段，当优化的假设不成立，出现“罕见陷阱”（Uncommon Trap）时可以通过逆优化（Deoptimization）退回到解释状态继续执行。</li>
+</ul>
+<p>如：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">test</span>(<span class="params"><span class="built_in">Object</span> input</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (input == <span class="literal">null</span>) &#123;</span><br><span class="line">	    <span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// do something</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果input一直不为空，执行1W次时，那么上述代码将优化为（类似GCC的 -O2优化算法）：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">test</span>(<span class="params"><span class="built_in">Object</span> input</span>) &#123;</span><br><span class="line"><span class="comment">// do something</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>但是如果之后出现input为空，那么将会触发Uncommon Trap，通过逆优化（Deoptimization）退回到解释状态继续执行。所以触发逆优化是正常的，但是我们的问题是程序一直在做Uncommon Trap，做了很多无用功，这是不正常的。</p>
+<p>查阅JVM源码 <a href="https://github.com/MuniyappanV/jdk-source-code/blob/master/jdk6u21_src/hotspot/src/share/vm/opto/compile.cpp#L2694">compile::too_many_recompiles</a>，发现有参数可以控制可编译次数：</p>
+<figure class="highlight zephir"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> Compile::too_many_recompiles(ciMethod* method,</span><br><span class="line">                                  <span class="keyword">int</span> bci,</span><br><span class="line">                                  Deoptimization::DeoptReason reason) &#123;</span><br><span class="line"> </span><br><span class="line">  <span class="comment">// Pick a cutoff point well within PerBytecodeRecompilationCutoff.</span></span><br><span class="line">  <span class="keyword">uint</span> bc_cutoff = (<span class="keyword">uint</span>) PerBytecodeRecompilationCutoff / <span class="number">8</span>;</span><br><span class="line">  <span class="keyword">uint</span> m_cutoff  = (<span class="keyword">uint</span>) PerMethodRecompilationCutoff / <span class="number">2</span> + <span class="number">1</span>;  <span class="comment">// not zero</span></span><br><span class="line">  Deoptimization::DeoptReason per_bc_reason</span><br><span class="line">    = Deoptimization::reason_recorded_per_bytecode_if_any(reason);</span><br><span class="line"> </span><br><span class="line">  <span class="keyword">if</span> ((per_bc_reason == Deoptimization::Reason_none</span><br><span class="line">       || md-&gt;has_trap_at(bci, reason) != <span class="number">0</span>)</span><br><span class="line">      <span class="comment">// The trap frequency measure we care about is the recompile count:</span></span><br><span class="line">      &amp;&amp; md-&gt;trap_recompiled_at(bci)</span><br><span class="line">      &amp;&amp; md-&gt;overflow_recompile_count() &gt;= bc_cutoff) &#123;</span><br><span class="line">    <span class="comment">// Do not emit a trap here if it has already caused recompilations.</span></span><br><span class="line">    <span class="comment">// Also, if there are multiple reasons, or if there is no per-BCI record,</span></span><br><span class="line">    <span class="comment">// assume the worst.</span></span><br><span class="line">    <span class="keyword">if</span> (log())</span><br><span class="line">      log()-&gt;elem(<span class="string">&quot;observe trap=&#x27;%s recompiled&#x27; count=&#x27;%d&#x27; recompiles2=&#x27;%d&#x27;&quot;</span>,</span><br><span class="line">                  Deoptimization::trap_reason_name(reason),</span><br><span class="line">                  md-&gt;trap_count(reason),</span><br><span class="line">                  md-&gt;overflow_recompile_count());</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (trap_count(reason) != <span class="number">0</span></span><br><span class="line">             &amp;&amp; decompile_count() &gt;= m_cutoff) &#123;</span><br><span class="line">    <span class="comment">// Too many recompiles globally, and we have seen this sort of trap.</span></span><br><span class="line">    <span class="comment">// Use cumulative decompile_count, not just md-&gt;decompile_count.</span></span><br><span class="line"> </span><br><span class="line">    <span class="keyword">if</span> (log())</span><br><span class="line">      log()-&gt;elem(<span class="string">&quot;observe trap=&#x27;%s&#x27; count=&#x27;%d&#x27; mcount=&#x27;%d&#x27; decompiles=&#x27;%d&#x27; mdecompiles=&#x27;%d&#x27;&quot;</span>,</span><br><span class="line">                  Deoptimization::trap_reason_name(reason),</span><br><span class="line">                  md-&gt;trap_count(reason), trap_count(reason),</span><br><span class="line">                  md-&gt;decompile_count(), decompile_count());</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// The coast is clear.</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>PerMethodRecompilationCutoff 可以控制recompiles次数，触发uncommon_trap时，且too_many_recompiles为true时，其行为为Deoptimization::Action_none。<br><a href="https://github.com/MuniyappanV/jdk-source-code/blob/master/jdk6u21_src/hotspot/src/share/vm/opto/graphKit.cpp#L1807">https://github.com/MuniyappanV/jdk-source-code/blob/master/jdk6u21_src&#x2F;hotspot&#x2F;src&#x2F;share&#x2F;vm&#x2F;opto&#x2F;graphKit.cpp#L1807</a></p>
+<figure class="highlight zephir"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">void GraphKit::uncommon_trap(<span class="keyword">int</span> trap_request,</span><br><span class="line">                             ciKlass* klass, <span class="keyword">const</span> <span class="keyword">char</span>* comment,</span><br><span class="line">                             <span class="keyword">bool</span> must_throw,</span><br><span class="line">                             <span class="keyword">bool</span> keep_exact_action) &#123;</span><br><span class="line">  Deoptimization::DeoptReason reason = Deoptimization::trap_request_reason(trap_request);</span><br><span class="line">  Deoptimization::DeoptAction action = Deoptimization::trap_request_action(trap_request);</span><br><span class="line"> </span><br><span class="line">  <span class="keyword">switch</span> (action) &#123;</span><br><span class="line">  <span class="keyword">case</span> Deoptimization::Action_maybe_recompile:</span><br><span class="line">  <span class="keyword">case</span> Deoptimization::Action_reinterpret:</span><br><span class="line">    <span class="comment">// Temporary fix for 6529811 to allow virtual calls to be sure they</span></span><br><span class="line">    <span class="comment">// get the chance to go from mono-&gt;bi-&gt;mega</span></span><br><span class="line">    <span class="keyword">if</span> (!keep_exact_action &amp;&amp;</span><br><span class="line">        Deoptimization::trap_request_index(trap_request) &lt; <span class="number">0</span> &amp;&amp;</span><br><span class="line">        too_many_recompiles(reason)) &#123;</span><br><span class="line">      <span class="comment">// This BCI is causing too many recompilations.</span></span><br><span class="line">      action = Deoptimization::Action_none;</span><br><span class="line">      trap_request = Deoptimization::make_trap_request(reason, action);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      C-&gt;set_trap_can_recompile(<span class="keyword">true</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line"> </span><br><span class="line">  <span class="keyword">case</span> Deoptimization::Action_make_not_entrant:</span><br><span class="line">    C-&gt;set_trap_can_recompile(<span class="keyword">true</span>);</span><br><span class="line">    <span class="keyword">break</span>;</span><br></pre></td></tr></table></figure>
+<p>我们写个测试程序，测试PerMethodRecompilationCutoff 参数，参数超过recompile次数时性能表现：</p>
+<figure class="highlight arduino"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">DeoptimizationTest</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">DeoptimizationTest</span><span class="params">()</span> </span>&#123;&#125;</span><br><span class="line">    <span class="function"><span class="type">static</span> <span class="type">int</span> <span class="title">someComplicatedFunction</span><span class="params">(<span class="type">double</span> x)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> (<span class="type">int</span>) (Math.<span class="built_in">pow</span>(x, x) + Math.<span class="built_in">log</span>(x) + Math.<span class="built_in">sqrt</span>(x));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="type">static</span> <span class="type">void</span> <span class="title">hotMethod</span><span class="params">(<span class="type">int</span> iteration)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (iteration &lt; <span class="number">20</span>) &#123;</span><br><span class="line">            <span class="built_in">someComplicatedFunction</span>(<span class="number">1.23</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (iteration &lt; <span class="number">40</span>) &#123;</span><br><span class="line">            <span class="built_in">someComplicatedFunction</span>(<span class="number">1.23</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (iteration &lt; <span class="number">60</span>) &#123;</span><br><span class="line">            <span class="built_in">someComplicatedFunction</span>(<span class="number">1.23</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (iteration &lt; <span class="number">80</span>) &#123;</span><br><span class="line">            <span class="built_in">someComplicatedFunction</span>(<span class="number">1.23</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="built_in">someComplicatedFunction</span>(<span class="number">1.23</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="type">static</span> <span class="type">void</span> <span class="title">hotMethodWrapper</span><span class="params">(<span class="type">int</span> iteration)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="type">int</span> count = <span class="number">100</span>_000;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; count; i++) &#123;</span><br><span class="line">            <span class="built_in">hotMethod</span>(iteration);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="type">static</span> <span class="type">void</span> <span class="title">main</span><span class="params">(<span class="type">String</span>[] args)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> k = <span class="number">0</span>; k &lt; <span class="number">100</span>; k++) &#123;</span><br><span class="line">            <span class="type">long</span> start = System.<span class="built_in">nanoTime</span>();</span><br><span class="line">            <span class="built_in">hotMethodWrapper</span>(k + <span class="number">1</span>);</span><br><span class="line">            System.out.<span class="built_in">println</span>(<span class="string">&quot;iteration &quot;</span> + k + <span class="string">&quot;: &quot;</span> + (System.<span class="built_in">nanoTime</span>() - start) / <span class="number">1</span>_000_000 + <span class="string">&quot;ms&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行代码：javac DeoptimizationTest.java &amp;&amp; java -XX:PerMethodRecompilationCutoff&#x3D;3  DeoptimizationTest<br><img src="/img/2019/09/04.png" width="800" align=left /><br>指定PerMethodRecompilationCutoff为3，意思是PerMethodRecompilationCutoff&#x2F;2 + 1 &#x3D; 2，那么第三个分支将触发大量Deoptimization::Action_none操作，如上图所示，发现第59次迭代时，查询变慢了接近600倍。</p>
+<p>火焰图见下图，可以看到耗时与我们Presto遇到的问题非常相似，耗时主要在Deoptimization::uncommon_trap：<br><img src="/img/2019/09/05.png"></p>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>既然当达到阈值会触发Deoptimization::Action_none，那么最简单的解决方法是不让他达到阈值就好了。修改JVM参数：</p>
+<p>-XX:PerMethodRecompilationCutoff<br>-XX:PerBytecodeRecompilationCutoff</p>
+<p>这2个值尽量调大一些，比如2000和500以上。</p>
+<p>线上我找了一台机器测试了一周，CPU表现为：</p>
+<p><img src="/img/2019/09/06.png"></p>
+<p>因为这个问题，应该是个JVM Bug，社区找了下关键词，发现JDK 11.0.6 好像解了这个问题，但是这个版本还没有release，无法验证，等版本发布后再验证下。</p>
+<p><a href="https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8227523">https://bugs.java.com/bugdatabase/view_bug.do?bug_id&#x3D;8227523</a></p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://www.slideshare.net/dougqh/jvm-mechanics-when-does-the">https://www.slideshare.net/dougqh/jvm-mechanics-when-does-the</a></li>
+<li>社区<a href="http://wsmithril-wiki.github.io/">wsmithril</a>网友提供的资料</li>
+</ul>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#JIT"><span class="toc-number">2.</span> <span class="toc-text">JIT</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="toc-number">3.</span> <span class="toc-text">解决方案</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E9%93%BE%E6%8E%A5"><span class="toc-number">4.</span> <span class="toc-text">参考链接</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/09/30/presto-orc-and-performance-optimization/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          Presto ORC及其性能优化
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/03/31/presto-compatible-hive-syntax/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Presto兼容Hive SQL的一些改造工作&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

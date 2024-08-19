@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>记一次Presto Worker OOM的查找过程 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="背景最近Presto集群又上线了几个新业务，伴之而来的是OOM很频繁，且发生时间多在早晨8点左右，线上稳定性是高优需要解决的，所以查找了下导致Presto集群OOM的原因，发现了一些问题，这里抛砖引玉下，可能其他使用Presto的用户也会遇到类似的问题。 排查过程我给一些业务划分了不同的label，这里说明下我们把Presto引擎改进了下，可以动态将机器划分不同的label，这样SQL查询时候指定">
+<meta property="og:type" content="article">
+<meta property="og:title" content="记一次Presto Worker OOM的查找过程">
+<meta property="og:url" content="http://armsword.com/2020/06/03/the-solution-of-presto-oom-caused-by-orc-statistics/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="背景最近Presto集群又上线了几个新业务，伴之而来的是OOM很频繁，且发生时间多在早晨8点左右，线上稳定性是高优需要解决的，所以查找了下导致Presto集群OOM的原因，发现了一些问题，这里抛砖引玉下，可能其他使用Presto的用户也会遇到类似的问题。 排查过程我给一些业务划分了不同的label，这里说明下我们把Presto引擎改进了下，可以动态将机器划分不同的label，这样SQL查询时候指定">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2020/06/stripe.png">
+<meta property="og:image" content="http://armsword.com/img/2020/06/hivecode.png">
+<meta property="og:image" content="http://armsword.com/img/2020/06/spark.png">
+<meta property="og:image" content="http://armsword.com/img/2020/06/perf.jpg">
+<meta property="og:image" content="http://armsword.com/img/2020/06/call.png">
+<meta property="og:image" content="http://armsword.com/img/2020/06/memory.jpg">
+<meta property="og:image" content="http://armsword.com/img/2020/06/exception.jpg">
+<meta property="article:published_time" content="2020-06-03T02:57:48.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.281Z">
+<meta property="article:author" content="armsword">
+<meta property="article:tag" content="presto">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2020/06/stripe.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-the-solution-of-presto-oom-caused-by-orc-statistics" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      记一次Presto Worker OOM的查找过程
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2020/06/03/the-solution-of-presto-oom-caused-by-orc-statistics/" class="article-date">
+  <time datetime="2020-06-03T02:57:48.000Z" itemprop="datePublished">2020-06-03</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近Presto集群又上线了几个新业务，伴之而来的是OOM很频繁，且发生时间多在早晨8点左右，线上稳定性是高优需要解决的，所以查找了下导致Presto集群OOM的原因，发现了一些问题，这里抛砖引玉下，可能其他使用Presto的用户也会遇到类似的问题。</p>
+<h2 id="排查过程"><a href="#排查过程" class="headerlink" title="排查过程"></a>排查过程</h2><p>我给一些业务划分了不同的label，这里说明下我们把Presto引擎改进了下，可以动态将机器划分不同的label，这样SQL查询时候指定不同的label，SQL调度时只根据指定的label查找机器即可。之后发现一个业务方的SQL会导致集群OOM。具体表现为，多次Full GC，之后OOM，看GC日志第一感觉应该是有内存泄露。</p>
+<p>我通过审计日志（之前通过event-listener实现了个日志审计模块）拿到OOM时2K左右条SQL，发现SQL都是简单的SQL，类似这种：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> <span class="keyword">table</span> <span class="keyword">WHERE</span> <span class="keyword">year</span><span class="operator">=</span><span class="string">&#x27;2020&#x27;</span> <span class="keyword">AND</span> <span class="keyword">month</span><span class="operator">=</span><span class="string">&#x27;06&#x27;</span> <span class="keyword">AND</span> <span class="keyword">day</span><span class="operator">=</span><span class="string">&#x27;01&#x27;</span> LIMIT <span class="number">10</span>;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>根据SQL，我猜测可能以下2种原因导致了OOM：</p>
+<ul>
+<li>查询的表存在Hive视图（我让Presto支持了Hive视图）</li>
+<li>异常SQL触发了内存泄露</li>
+</ul>
+<span id="more"></span>
+
+<p>因为这个业务方的SQL都是小查询，90时间也就1S样子，所以懒得推测原因了，直接把SQL拿到，二分法测试环境跑一遍SQL，通过jstat -gcutil查看GC情况，Old区飙升的会认为存在潜在问题，最终定位了6个表有问题，并且在查询这些表SQL时，Old区疯涨，然后Full GC，连续多次Full GC后OOM。</p>
+<p>show create table 查看下表字段信息，70-100个左右字段，但惊奇的发现这几个表都是ORC格式，所以OOM与ORC有关系吗？</p>
+<p>那通过orcdump查看下这些orc的元信息吧，命令：</p>
+<figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">.<span class="regexp">/bin/</span>hive --orcfiledump hdfs:<span class="regexp">//</span>localhost:<span class="number">9000</span><span class="regexp">/user/</span>hive<span class="regexp">/warehouse/</span>orc/<span class="number">000000</span>_0</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>惊奇的发现这个ORC文件竟然有2W+个Stripe Statistics，猜测是Stripe Statistics太大导致的问题，如下图所示：<br><img src="/img/2020/06/stripe.png"></p>
+<p>第一反应，是不是用户生成orc参数配置错了，比如stripe的大小设置过小，但是看了下业务方的生成orc的参数，属于正常的，如下图：<br><img src="/img/2020/06/hivecode.png"></p>
+<p>hadoop du看了下orc文件，发现一个表只有一个orc文件，且竟然大于20GB，根据orc predicate pushdown的先后顺序策略：</p>
+<ul>
+<li>文件级别，整个文件级别的统计信息</li>
+<li>stripe级别，每个stripe每列中的值的统计信息</li>
+<li>行级别 (行组)，stripe中每组10000行（默认值）的每列值的统计信息</li>
+</ul>
+<p>那文件的大小应该会影响stripe的大小，于是让业务方将repartition改为10，即生成10个文件，测试发现查询小于1S，且无OOM。<br><img src="/img/2020/06/spark.png"></p>
+<p>验证成功，即Orc Stripe Statistics太大导致的问题。那为什么Stripe Statistics太大会导致Presto OOM呢？</p>
+<p>我们测试环境查询一个有问题的SQL，然后perf下，看下火山图，看下当时Presto当时都在做什么，如下图所示：<br><img src="/img/2020/06/perf.jpg"></p>
+<p>发现大约70%的CPU都用于GC，剩下的都在执行SQL计算。我们生成一份CPU采样，看下执行SQL计算时主要做什么，如下图：<br><img src="/img/2020/06/call.png"></p>
+<p>根据上图可以看到每个Driver对应的split都在读取Stripe Statistics，我们的猜测是符合预期的，所以原因就明朗了：</p>
+<p>业务方使用spark产出orc文件，其repartition设置为1，就会产生一个大于20+G的orc文件，导致stripe个数太多，比如产生2W个stripe（有些表orcdump都不成功，stripe statistics太大了，无法dump，远超2W个），假如表有75个字段，那就会产生2W * 75 个实例，如果presto再划分多个split，比如100，那就是100 * 2W * 75 个instance，因为这个内存是untracked memory，无法使用Presto的OOM Killer逻辑，如果机器内存比较小，那可能2个sql就导致oom了。</p>
+<h2 id="引擎改进"><a href="#引擎改进" class="headerlink" title="引擎改进"></a>引擎改进</h2><p>我们通知了业务方如果ORC文件太大，将ORC拆分为多个文件，但是可能业务方比较多，下次依然遇到类似的问题，所以引擎需要改进下，尽量让这种不符合预期的SQL直接报错。我们知道ORC使用Protocol buffers来定义一个orc file中元数据的结构，PB报文是限制大小的，网上搜索了下是64MB，但是为什么Presto依然能查询报文超过64MB的ORC文件？研究了下，发现CodedInputStream有个setSizeLimit接口可以限制PB报文的大小，我将其改为64MB，发现有问题的SQL将会查询失败，符合预期。</p>
+<p>但是我发现一个问题，当报文超过64M，SQL查询失败后，worker old区依然快满了，我jmap触发了full gc，old区没有任何变化，说明有类似内存泄露的问题，但是过了15分钟后，old区恢复正常，我们知道task info会在内存里保留15分钟，难道与这个有关？于是我dump了份内存，使用MAT分析了下。</p>
+<p>如下图所示，发现Stripe Statistics依然在内存中：</p>
+<p><img src="/img/2020/06/memory.jpg"></p>
+<p>看下哪里引用了这些类，导致无法被内存释放，如下图所示：</p>
+<p><img src="/img/2020/06/exception.jpg"></p>
+<p>这样就明白了，读取ORC文件失败时候，每个split都抛出了异常，然后异常信息扔入一个链表里，每个异常信息竟然引用了Orc Statistics信息。既然原因明了了，我们将异常信息替换下，这样就避免了Stripe Statistics信息被引用导致无法被释放，简单修改下代码测试下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> Metadata <span class="title function_">readMetadata</span><span class="params">(HiveWriterVersion hiveWriterVersion, InputStream inputStream)</span></span><br><span class="line">       <span class="keyword">throws</span> IOException</span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">CodedInputStream</span> <span class="variable">input</span> <span class="operator">=</span> CodedInputStream.newInstance(inputStream);</span><br><span class="line">    input.setSizeLimit(PROTOBUF_MESSAGE_MAX_LIMIT); <span class="comment">//通过配置修改为可更改，默认为64MB</span></span><br><span class="line">    OrcProto.Metadata metadata;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        metadata = OrcProto.Metadata.parseFrom(input);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">PrestoException</span>(NOT_SUPPORTED, <span class="string">&quot;read orc proto failed, may be the orc file statistic is too large&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">Metadata</span>(toStripeStatistics(hiveWriterVersion, metadata.getStripeStatsList()));</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>之后测试，查询超过64MB报文的ORC文件，查询失败，无内存泄露产生，世界终于清净了。</p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8E%92%E6%9F%A5%E8%BF%87%E7%A8%8B"><span class="toc-number">2.</span> <span class="toc-text">排查过程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BC%95%E6%93%8E%E6%94%B9%E8%BF%9B"><span class="toc-number">3.</span> <span class="toc-text">引擎改进</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2020/06/23/jetty-cause-presto-memory-leak/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          Jetty导致Presto堆外内存泄露的排查过程
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2020/05/02/the-difference-between-prestodb-and-prestosql/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">PrestoDB和PrestoSQL比较及选择&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

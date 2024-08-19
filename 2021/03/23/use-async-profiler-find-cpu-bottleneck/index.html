@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>使用火焰图定位 OLAP 引擎瓶颈 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="在维护 OLAP 引擎时，很多时候需要对引擎做系统的性能分析和优化，此时往往需要查看 CPU 耗时，了解主要耗时点及瓶颈在哪里。俗语有曰：兵欲善其事必先利其器，程序员定位性能问题也需要一件“利器”。性能调优工具（perf）能够显示系统的调用栈及时间分布，但是呈现内容上只能单一的列出调用栈或者非层次化的时间分布，不够直观。火焰图（flame graph）能够帮助大家更直观的发现问题。本文将以 Pre">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用火焰图定位 OLAP 引擎瓶颈">
+<meta property="og:url" content="http://armsword.com/2021/03/23/use-async-profiler-find-cpu-bottleneck/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="在维护 OLAP 引擎时，很多时候需要对引擎做系统的性能分析和优化，此时往往需要查看 CPU 耗时，了解主要耗时点及瓶颈在哪里。俗语有曰：兵欲善其事必先利其器，程序员定位性能问题也需要一件“利器”。性能调优工具（perf）能够显示系统的调用栈及时间分布，但是呈现内容上只能单一的列出调用栈或者非层次化的时间分布，不够直观。火焰图（flame graph）能够帮助大家更直观的发现问题。本文将以 Pre">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2021/03/01.png">
+<meta property="og:image" content="http://armsword.com/img/2021/03/02.png">
+<meta property="og:image" content="http://armsword.com/img/2021/03/03.png">
+<meta property="og:image" content="http://armsword.com/img/2021/03/04.png">
+<meta property="og:image" content="http://armsword.com/img/2021/03/05.png">
+<meta property="article:published_time" content="2021-03-23T12:24:35.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.289Z">
+<meta property="article:author" content="armsword">
+<meta property="article:tag" content="perf">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2021/03/01.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-use-async-profiler-find-cpu-bottleneck" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      使用火焰图定位 OLAP 引擎瓶颈
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2021/03/23/use-async-profiler-find-cpu-bottleneck/" class="article-date">
+  <time datetime="2021-03-23T12:24:35.000Z" itemprop="datePublished">2021-03-23</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>在维护 OLAP 引擎时，很多时候需要对引擎做系统的性能分析和优化，此时往往需要查看 CPU 耗时，了解主要耗时点及瓶颈在哪里。俗语有曰：兵欲善其事必先利其器，程序员定位性能问题也需要一件“利器”。性能调优工具（perf）能够显示系统的调用栈及时间分布，但是呈现内容上只能单一的列出调用栈或者非层次化的时间分布，不够直观。火焰图（flame graph）能够帮助大家更直观的发现问题。本文将以 Presto 为例，介绍火焰图的使用技巧。</p>
+<h2 id="初识火焰图"><a href="#初识火焰图" class="headerlink" title="初识火焰图"></a>初识火焰图</h2><p>Perf 的原理是这样子的：每隔一个固定的时间，就在 CPU 上（每个核上都有）产生一个中断，在中断上看看，当前是哪个 pid，哪个函数，然后给对应的 pid 和函数加一个统计值，这样，我们就知道 CPU 有百分几的时间在某个 pid，或者某个函数上了。而火焰图（Flame Graph）是由 Linux 性能优化大师 Brendan Gregg 发明的，和所有其他的 profiling 方法不同的是，火焰图以一个全局的视野来看待时间分布，它从底部往顶部，列出所有可能导致性能瓶颈的调用栈。</p>
+<img src="/img/2021/03/01.png" width = "90%" />
+
+<p>火焰图整个图形看起来就像一个跳动的火焰，这就是它名字的由来。火焰图有以下特征（这里以采样CPU 火焰图为例）：</p>
+<ul>
+<li>每一列代表一个调用栈，每一个格子代表一个函数。</li>
+<li>纵轴展示了栈的深度，按照调用关系从下到上排列。最顶上格子代表采样时，正在占用 CPU 的函数</li>
+<li>横轴的意义是指：火焰图将采集的多个调用栈信息，并行关系。横轴格子的宽度代表其在采样中出现频率，所以一个格子的宽度越大，说明它是瓶颈原因的可能性就越大。</li>
+<li>火焰图格子的颜色是随机的暖色调，方便区分各个调用信息。</li>
+<li>其他的采样方式也可以使用火焰图， 比如内存</li>
+</ul>
+<p>所以，火焰图就是看顶层的哪个函数占据的宽度最大。只要有”平顶”，就表示该函数可能存在性能问题，也是我们性能优化收益最大的地方。<br>Java生态常见的用于perf的工具有：allocation-instrumenter、YourKit Profiler、async-profiler、JProfiler、Arthas（基于 async-profiler ）。笔者推荐使用阿里巴巴出品的 Arthas 或 async-profiler，笔者喜欢使用 async-profiler 这个 perf 工具生成火焰图，主要原因是用法简单，足够满足日常排查性能问题了。</p>
+<span id="more"></span>
+
+<h2 id="async-profiler-介绍"><a href="#async-profiler-介绍" class="headerlink" title="async-profiler 介绍"></a>async-profiler 介绍</h2><p>Async-profiler是一款没有 Safepoint bias problem 的低开销 Java 采集分析器，它的实现是基于HotSpot 特有的 API，通过这些特有的 API 收集堆栈跟踪和跟踪内存分配，因而其可以和 OpenJDK、Oracle JDK 和其他基于 HotSpot JVM 的 Java 应用在运行时协同工作。</p>
+<p>Async-profiler 可以跟踪以下类型的事件：</p>
+<ul>
+<li>CPU 周期；</li>
+<li>硬件和软件性能计数器，如 cache misses, branch misses, page faults, context switches 等；</li>
+<li>Java 堆中的分配；</li>
+<li>锁尝试，包括 Java 对象监视器和可重入锁；<br>支持的平台</li>
+<li>Linux &#x2F; x64 &#x2F; x86 &#x2F; ARM &#x2F; AArch64</li>
+<li>macOS &#x2F; x64</li>
+</ul>
+<p>并且 IntelliJ IDEA Ultimate 2018.3 之后的版本也集成了 async-profiler。Github 项目链接地址：<a href="https://github.com/jvm-profiling-tools/async-profiler">https://github.com/jvm-profiling-tools/async-profiler</a><br>主页上有已经编译好的包，找到对应的平台下载即可：</p>
+<img src="/img/2021/03/02.png" width = "90%" />
+
+<h2 id="async-profiler-使用"><a href="#async-profiler-使用" class="headerlink" title="async-profiler 使用"></a>async-profiler 使用</h2><p>下载好的文件解压后，有一个profiler.sh脚本，运行脚本即可对 Java 进程进行 CPU 分析。例如 Presto 的 Java 进程 id 为 8983。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">jps</span></span><br><span class="line">9234 Jps</span><br><span class="line">8983 PrestoServer</span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">./profiler.sh start 8983</span></span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">./profiler.sh stop 8983</span></span><br></pre></td></tr></table></figure>
+<p>或者可以用-d指定剖析的时间（秒），我们将其重定向到一个文本文件里。</p>
+<figure class="highlight stata"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./<span class="keyword">profiler</span>.<span class="keyword">sh</span> -<span class="keyword">d</span> 30 8983 &gt; 8983.txt</span><br></pre></td></tr></table></figure>
+
+<p>执行完成后会输出采集的信息，这些信息可以帮我看到详细的函数调用逻辑，这非常有用，因为假如你新接触一个新的 OLAP 引擎，想快速入门，比如想了解其读写流程及代码执行流程，通过这些采集信息就可以快速帮我们捋清楚执行流程，如下：</p>
+<img src="/img/2021/03/03.png" width = "90%" />
+
+<p>如果你想生成火焰图，只需要执行如下命令即可：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">./profiler.sh -d 30 -f /tmp/flamegraph.svg 8983</span></span><br></pre></td></tr></table></figure>
+<p>生成的svg火焰图如下图所示：</p>
+<img src="/img/2021/03/04.png" width = "90%" />
+
+<p>从上图我们可以看到大约 91.63% 的CPU用于GC，如果当前系统 CPU 使用率比较高，那就说明这些 CPU 没有在干正事，都耗费在 GC 里了，当前服务的主要瓶颈在 JVM 层，需要找下 JVM 瓶颈。</p>
+<h2 id="event-参数介绍"><a href="#event-参数介绍" class="headerlink" title="event 参数介绍"></a>event 参数介绍</h2><p>event 可选参数使用如下命令查看，不同 CPU 支持的 event 是不一样的。</p>
+<figure class="highlight lsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./profiler.sh <span class="type">list</span> <span class="type">list</span> <span class="number">8983</span></span><br></pre></td></tr></table></figure>
+<p>输出结果：</p>
+<figure class="highlight llvm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">[presto<span class="title">@localhost</span> ~]$ ./profiler.sh list list <span class="number">8983</span></span><br><span class="line">Basic events:</span><br><span class="line">  cpu</span><br><span class="line">  alloc</span><br><span class="line">  lock</span><br><span class="line">  wall</span><br><span class="line">  itimer</span><br><span class="line">Perf events:</span><br><span class="line">  page-faults</span><br><span class="line">  context-switches</span><br><span class="line">  cycles</span><br><span class="line">  instructions</span><br><span class="line">  cache-references</span><br><span class="line">  cache-misses</span><br><span class="line">  branches</span><br><span class="line">  branch-misses</span><br><span class="line">  bus-cycles</span><br><span class="line">  L<span class="number">1</span>-dcache-<span class="keyword">load</span>-misses</span><br><span class="line">  LLC-<span class="keyword">load</span>-misses</span><br><span class="line">  dTLB-<span class="keyword">load</span>-misses</span><br><span class="line"><span class="symbol">  mem:</span>breakpoint</span><br><span class="line"><span class="symbol">  trace:</span>tracepoint</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>event 默认为 cpu ，假如想查看内存分配，可以使用 alloc 查看，命令如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./profiler.sh -e alloc -d 30 -f /tmp/flamegraph.svg 8983</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>火焰图如下：</p>
+<img src="/img/2021/03/05.png" width = "90%" />
+
+<p>如上图所示，可以看到内存占用主要包括三大部分：Presto执行、数据交互及读取HDFS，知道这些信息后，我们就可以针对性的优化了。</p>
+<h2 id="使用过程中常见的问题"><a href="#使用过程中常见的问题" class="headerlink" title="使用过程中常见的问题"></a>使用过程中常见的问题</h2><p>在使用 Async-profiler 过程中，我们有时候会遇到如下错误：</p>
+<figure class="highlight livecodeserver"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Could <span class="keyword">not</span> <span class="built_in">start</span> attach mechanism: No such <span class="built_in">file</span> <span class="keyword">or</span> <span class="built_in">directory</span></span><br></pre></td></tr></table></figure>
+<p>这是因为 Java 程序第一次执行 jmap 或 jstack 等 perf 命令后会在 &#x2F;tmp 下创建 socket 文件，socket 文件路径为 &#x2F;tmp&#x2F;.java_pidXXX，但是操作系统默认 10 天会删除这个临时文件，之后再执行 perf 命令就不行了，解决方法是在 &#x2F;usr&#x2F;lib&#x2F;tmpfiles.d&#x2F;tmp.conf 中添加 x &#x2F;tmp&#x2F;.java* ，这样就不会删除这个 socket 文件了。</p>
+<p>参考资料：</p>
+<ol>
+<li><a href="https://github.com/jvm-profiling-tools/async-profiler">https://github.com/jvm-profiling-tools/async-profiler</a></li>
+</ol>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9D%E8%AF%86%E7%81%AB%E7%84%B0%E5%9B%BE"><span class="toc-number">1.</span> <span class="toc-text">初识火焰图</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#async-profiler-%E4%BB%8B%E7%BB%8D"><span class="toc-number">2.</span> <span class="toc-text">async-profiler 介绍</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#async-profiler-%E4%BD%BF%E7%94%A8"><span class="toc-number">3.</span> <span class="toc-text">async-profiler 使用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#event-%E5%8F%82%E6%95%B0%E4%BB%8B%E7%BB%8D"><span class="toc-number">4.</span> <span class="toc-text">event 参数介绍</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8%E8%BF%87%E7%A8%8B%E4%B8%AD%E5%B8%B8%E8%A7%81%E7%9A%84%E9%97%AE%E9%A2%98"><span class="toc-number">5.</span> <span class="toc-text">使用过程中常见的问题</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/perf/" rel="tag">perf</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2021/03/26/es-memory-management/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          ES 内存管理分析
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2021/02/07/jvm-bug-causes-Presto-queries-to-slow-down/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">说下那些导致Presto查询变慢的JVM Bug和解决方法&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

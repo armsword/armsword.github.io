@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>实现一个LRU Cache - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="1.什么是Cache和LRU Cache 狭义的Cache指的是位于CPU和主存间的快速RAM， 通常它不像系统主存那样使用DRAM技术，而使用昂贵但较快速的SRAM技术。 广义上的Cache指的是位于速度相差较大的两种硬件之间， 用于协调两者数据传输速度差异的结构。除了CPU与主存之间有Cache， 内存与硬盘之间也有Cache，乃至在硬盘与网络之间也有某种意义上的Cache── 称为Inter">
+<meta property="og:type" content="article">
+<meta property="og:title" content="实现一个LRU Cache">
+<meta property="og:url" content="http://armsword.com/2013/09/26/lru-cache/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="1.什么是Cache和LRU Cache 狭义的Cache指的是位于CPU和主存间的快速RAM， 通常它不像系统主存那样使用DRAM技术，而使用昂贵但较快速的SRAM技术。 广义上的Cache指的是位于速度相差较大的两种硬件之间， 用于协调两者数据传输速度差异的结构。除了CPU与主存之间有Cache， 内存与硬盘之间也有Cache，乃至在硬盘与网络之间也有某种意义上的Cache── 称为Inter">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2013/09/20130926151041.jpg">
+<meta property="article:published_time" content="2013-09-26T07:20:43.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.282Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2013/09/20130926151041.jpg">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-lru-cache" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      实现一个LRU Cache
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2013/09/26/lru-cache/" class="article-date">
+  <time datetime="2013-09-26T07:20:43.000Z" itemprop="datePublished">2013-09-26</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">算法/数据结构</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>1.什么是Cache和LRU Cache</p>
+<p>狭义的Cache指的是位于CPU和主存间的快速RAM， 通常它不像系统主存那样使用DRAM技术，而使用昂贵但较快速的SRAM技术。 广义上的Cache指的是位于速度相差较大的两种硬件之间， 用于协调两者数据传输速度差异的结构。除了CPU与主存之间有Cache， 内存与硬盘之间也有Cache，乃至在硬盘与网络之间也有某种意义上的Cache── 称为Internet临时文件夹或网络内容缓存等。</p>
+<p>CPU中Cache能极大提高存取数据和指令的时间，让整个存储器(Cache和内存)既有Cache的高速度，又能有内存的大容量；操作系统中的内存Page中使用的Cache能使得频繁读取的内存磁盘文件较少的被置换出内存，从而提高访问速度；数据库中数据查询也用到Cache来提高效率；即便是Powerbuilder的DataWindow数据处理也用到了Cache的类似设计。</p>
+<p>Cache的算法设计常见的有FIFO(first in first out)和LRU(least recently used)。LRU是Least Recently Used的缩写，意思是最近最少使用，它是一种Cache替换算法。Cache的容量有限，因此当Cache的容量用完后，而又有新的内容需要添加进来时， 就需要挑选并舍弃原有的部分内容，从而腾出空间来放新内容。LRU Cache 的替换原则就是将最近最少使用的内容替换掉。其实，LRU译成最久未使用会更形象， 因为该算法每次替换掉的就是一段时间内最久没有使用过的内容。</p>
+<span id="more"></span>
+
+<p>注：</p>
+<p>动态随机存取存储器（Dynamic Random Access Memory，DRAM）是一种半导体存储器，主要的作用原理是利用电容内存储电荷的多寡来代表一个二进制比特（bit）是1还是0。由于在现实中电容会有漏电的现象，导致电位差不足而使记忆消失，因此除非电容经常周期性地充电，否则无法确保记忆长存。由于这种需要定时刷新的特性，因此被称为“动态”存储器。相对来说，“静态”存储器（SRAM）只要存入数据后，纵使不刷新也不会丢失记忆。</p>
+<p>静态随机存取存储器（Static Random-Access Memory, SRAM）是随机存取存储器的一种。所谓的“静态”，是指这种存储器只要保持通电，里面储存的数据就可以恒常保持[1]。相对之下，动态随机存取内存（DRAM）里面所储存的数据就需要周期性地更新。然而，当电力供应停止时，SRAM储存的数据还是会消失（被称为volatile memory），这与在断电后还能储存资料的ROM或闪存是不同的。</p>
+<p>下图是存储器层次结构，以前在《深入理解计算机系统》这本书看到的，顺便放到此处：</p>
+<p><img src="/img/2013/09/20130926151041.jpg"></p>
+<p>2.数据结构</p>
+<p>Cache中的存储空间往往是有限的，当Cache中的存储块被用完，而需要把新的数据载入到Cache的时候，就需要设计一种良好的算法来完成数据块的替换。LRU的思想是基于“最近用到的数据被重用的概率比较早用到的大的多”这个设计规则来实现的。</p>
+<p>为了能够快速删除最久没有访问的数据项和插入最新的数据项，我们双向链表连接Cache中的数据项，并且保证链表维持数据项从最近访问到最旧访问的顺序。每次数据项被查询到时，都将此数据项移动到链表头部（O(1)的时间复杂度）。这样，在进行过多次查找操作后，最近被使用过的内容就向链表的头移动，而没有被使用的内容就向链表的后面移动。当需要替换时，链表最后的位置就是最近最少被使用的数据项，我们只需要将最新的数据项放在链表头部，当Cache满时，淘汰链表最后的位置就是了。</p>
+<p>注：<br>对于双向链表的使用，基于两个考虑。首先是Cache中块的命中可能是随机的，和载入进来的顺序无关。其次，双向链表插入、删除很快，可以灵活的调整相互间的次序，时间复杂度为O(1)。</p>
+<p>我们要访问某个结点，就需要顺序地一个个找，时间复杂度是 O(n)。使用哈希表可以让我们在O(1)的时间找到想要访问的结点，或者返回未找到。</p>
+<p>所以：LRU的典型实现是双向链表和哈希表，双向链表用于存储数据结点，并且它是按照结点最近被使用的时间来存储的。哈希表用于快速访问某个结点。</p>
+<p>3.一个面试题</p>
+<pre><code>Question: Implement LRU cache algorithm 
+Implement the LRU cache algorithm with the following interface: 
+—————————————————————————————————
+T get(K key);
+void put(K key, T data);
+</code></pre>
+<p>此题参考价值还是蛮大的，不少公司，特别后台开发职位会考到此题。<a href="http://hawstein.com/posts/lru-cache-impl.html">hawstein</a>大牛用C++代码实现了，我们看下代码：</p>
+<figure class="highlight crmsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br></pre></td><td class="code"><pre><span class="line">// A simple LRU cache written <span class="keyword">in</span> C++</span><br><span class="line">// Hash map + doubly linked list</span><br><span class="line"><span class="comment">#include &lt;iostream&gt;</span></span><br><span class="line"><span class="comment">#include &lt;vector&gt;</span></span><br><span class="line"><span class="comment">#include &lt;ext/hash_map&gt;</span></span><br><span class="line">using namespace std;</span><br><span class="line">using namespace __gnu_cxx;</span><br><span class="line"></span><br><span class="line">template &amp;<span class="keyword">lt</span>;class K, class T&amp;<span class="keyword">gt</span>;</span><br><span class="line">struct <span class="keyword">Node</span><span class="title">&#123;</span></span><br><span class="line"><span class="title"> K</span> key;</span><br><span class="line"> T data;</span><br><span class="line"> <span class="keyword">Node</span> <span class="title">*prev</span>, *next;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">template &amp;<span class="keyword">lt</span>;class K, class T&amp;<span class="keyword">gt</span>;</span><br><span class="line">class LRUCache&#123;</span><br><span class="line">public:</span><br><span class="line"> LRUCache(size_t size)&#123;</span><br><span class="line"> entries_ = new <span class="keyword">Node</span><span class="title">&amp;lt</span>;K,T&amp;<span class="keyword">gt</span>;[size];</span><br><span class="line"> for(int i=<span class="number">0</span>; i<span class="tag">&lt; size; ++i)// 存储可用结点的地址</span></span><br><span class="line"><span class="tag"> free_entries_.push_back(entries_+i);</span></span><br><span class="line"><span class="tag"> head_ = new Node&lt;K,T&gt;</span>;</span><br><span class="line"> tail_ = new <span class="keyword">Node</span><span class="title">&lt;K</span>,T&gt;;</span><br><span class="line"> head_-&gt;prev = NULL;</span><br><span class="line"> head_-&gt;next = tail_;</span><br><span class="line"> tail_-&gt;prev = head_;</span><br><span class="line"> tail_-&gt;next = NULL;</span><br><span class="line"> &#125;</span><br><span class="line"> ~LRUCache()&#123;</span><br><span class="line"> delete head_;</span><br><span class="line"> delete tail_;</span><br><span class="line"> delete[] entries_;</span><br><span class="line"> &#125;</span><br><span class="line"> void Put(K key, T data)&#123;</span><br><span class="line"> <span class="keyword">Node</span><span class="title">&lt;K</span>,T&gt; *<span class="keyword">node</span> <span class="title">= hashmap_</span>[key];</span><br><span class="line"> if(<span class="keyword">node</span><span class="title">)&#123; // node</span> exists</span><br><span class="line"> detach(<span class="keyword">node</span><span class="title">);</span></span><br><span class="line"><span class="title"> node-</span>&gt;data = data;</span><br><span class="line"> attach(<span class="keyword">node</span><span class="title">);</span></span><br><span class="line"><span class="title"> &#125;</span></span><br><span class="line"><span class="title"> else</span>&#123;</span><br><span class="line"> if(free_entries_.empty())&#123;// 可用结点为空，即cache已满</span><br><span class="line"> <span class="keyword">node</span> <span class="title">= tail_-</span>&gt;prev;</span><br><span class="line"> detach(<span class="keyword">node</span><span class="title">);</span></span><br><span class="line"><span class="title"> hashmap_</span>.erase(<span class="keyword">node</span><span class="title">-&gt;key</span>);</span><br><span class="line"> &#125;</span><br><span class="line"> else&#123;</span><br><span class="line"> <span class="keyword">node</span> <span class="title">= free_entries_</span>.back();</span><br><span class="line"> free_entries_.pop_back();</span><br><span class="line"> &#125;</span><br><span class="line"> <span class="keyword">node</span><span class="title">-&gt;key</span> = key;</span><br><span class="line"> <span class="keyword">node</span><span class="title">-&gt;data</span> = data;</span><br><span class="line"> hashmap_[key] = <span class="keyword">node</span><span class="title">;</span></span><br><span class="line"><span class="title"> attach</span>(<span class="keyword">node</span><span class="title">);</span></span><br><span class="line"><span class="title"> &#125;</span></span><br><span class="line"><span class="title"> &#125;</span></span><br><span class="line"><span class="title"> T</span> Get(K key)&#123;</span><br><span class="line"> <span class="keyword">Node</span><span class="title">&lt;K</span>,T&gt; *<span class="keyword">node</span> <span class="title">= hashmap_</span>[key];</span><br><span class="line"> if(<span class="keyword">node</span><span class="title">)&#123;</span></span><br><span class="line"><span class="title"> detach</span>(<span class="keyword">node</span><span class="title">);</span></span><br><span class="line"><span class="title"> attach</span>(<span class="keyword">node</span><span class="title">);</span></span><br><span class="line"><span class="title"> return</span> <span class="keyword">node</span><span class="title">-&gt;data</span>;</span><br><span class="line"> &#125;</span><br><span class="line"> else&#123;// 如果cache中没有，返回T的默认值。与hashmap行为一致</span><br><span class="line"> return T();</span><br><span class="line"> &#125;</span><br><span class="line"> &#125;</span><br><span class="line">private:</span><br><span class="line"> // 分离结点</span><br><span class="line"> void detach(<span class="keyword">Node</span><span class="title">&lt;K</span>,T&gt;* <span class="keyword">node</span><span class="title">)&#123;</span></span><br><span class="line"><span class="title"> node-</span>&gt;prev-&gt;next = <span class="keyword">node</span><span class="title">-&gt;next</span>;</span><br><span class="line"> <span class="keyword">node</span><span class="title">-&gt;next-</span>&gt;prev = <span class="keyword">node</span><span class="title">-&gt;prev</span>;</span><br><span class="line"> &#125;</span><br><span class="line"> // 将结点插入头部</span><br><span class="line"> void attach(<span class="keyword">Node</span><span class="title">&lt;K</span>,T&gt;* <span class="keyword">node</span><span class="title">)&#123;</span></span><br><span class="line"><span class="title"> node-</span>&gt;prev = head_;</span><br><span class="line"> <span class="keyword">node</span><span class="title">-&gt;next</span> = head_-&gt;next;</span><br><span class="line"> head_-&gt;next = <span class="keyword">node</span><span class="title">;</span></span><br><span class="line"><span class="title"> node-</span>&gt;next-&gt;prev = <span class="keyword">node</span><span class="title">;</span></span><br><span class="line"><span class="title"> &#125;</span></span><br><span class="line"><span class="title">private</span>:</span><br><span class="line"> hash_map<span class="tag">&lt;K, Node&lt;K,T&gt;</span>* &gt; hashmap_;</span><br><span class="line"> vector<span class="tag">&lt;Node&lt;K,T&gt;</span>* &gt; free_entries_; // 存储可用结点的地址</span><br><span class="line"> <span class="keyword">Node</span><span class="title">&lt;K</span>,T&gt; *head_, *tail_;</span><br><span class="line"> <span class="keyword">Node</span><span class="title">&lt;K</span>,T&gt; *entries_; // 双向链表中的结点</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">int main()&#123;</span><br><span class="line"> hash_map<span class="tag">&lt;int, int&gt;</span> map;</span><br><span class="line"> map[<span class="number">9</span>]= <span class="number">999</span>;</span><br><span class="line"> cout<span class="tag">&lt;&lt;map[9]&lt;&lt;endl;</span></span><br><span class="line"><span class="tag"> cout&lt;&lt;map[10]&lt;&lt;endl;</span></span><br><span class="line"><span class="tag"> LRUCache&lt;int, string&gt;</span> lru_cache(<span class="number">100</span>);</span><br><span class="line"> lru_cache.Put(<span class="number">1</span>, <span class="string">&quot;one&quot;</span>);</span><br><span class="line"> cout<span class="tag">&lt;&lt;lru_cache.Get(1)&lt;&lt;endl;</span></span><br><span class="line"><span class="tag"> if(lru_cache.Get(2) == &quot;&quot;)</span></span><br><span class="line"><span class="tag"> lru_cache.Put(2, &quot;two&quot;);</span></span><br><span class="line"><span class="tag"> cout&lt;&lt;lru_cache.Get(2);</span></span><br><span class="line"><span class="tag"> return 0;</span></span><br><span class="line"><span class="tag">&#125;</span></span><br><span class="line"><span class="tag"></span></span><br></pre></td></tr></table></figure>
+<p>看到此处，我就想研究下redis和memcache的cache是怎么设计的了。等下次研究完后，再做下笔记吧。</p>
+<p>参考链接：</p>
+<p><a href="http://www.cs.uml.edu/~jlu1/doc/codes/lruCache.html">http://www.cs.uml.edu/~jlu1&#x2F;doc&#x2F;codes&#x2F;lruCache.html</a></p>
+<p><a href="http://hawstein.com/posts/lru-cache-impl.html">http://hawstein.com/posts/lru-cache-impl.html</a></p>
+<p><a href="http://blog.csdn.net/hexinuaa/article/details/6630384">http://blog.csdn.net/hexinuaa/article/details/6630384</a></p>
+<p>&nbsp;</p>
+
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2013/12/14/tcp-and-udp-note/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          记录下传输层协议TCP和UDP的一些特性
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2013/08/25/linux-memory-and-manage/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">linux内存空间分配和内存管理&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

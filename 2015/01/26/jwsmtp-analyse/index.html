@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>jwSMTP源码剖析 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="前段时间事情太多了，忙着写毕业论文，考试，然后又被抽到了盲审，不过好在有惊无险，最后也在学院提交三月中旬申请答辩成功，如果盲审顺利的话，4月份就可以毕业了。不过这段时间总算可以看代码、看书了，感觉自己操作系统方面有些不扎实，索性买了本孙钟秀的《操作系统教程》看，之后顺便阅读和分析了jwSMTP源码，这里写篇文章记录下。本文不想对代码细节作太多分析，因为代码比较好读，并且文章末尾我会放出我注释过的源">
+<meta property="og:type" content="article">
+<meta property="og:title" content="jwSMTP源码剖析">
+<meta property="og:url" content="http://armsword.com/2015/01/26/jwsmtp-analyse/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="前段时间事情太多了，忙着写毕业论文，考试，然后又被抽到了盲审，不过好在有惊无险，最后也在学院提交三月中旬申请答辩成功，如果盲审顺利的话，4月份就可以毕业了。不过这段时间总算可以看代码、看书了，感觉自己操作系统方面有些不扎实，索性买了本孙钟秀的《操作系统教程》看，之后顺便阅读和分析了jwSMTP源码，这里写篇文章记录下。本文不想对代码细节作太多分析，因为代码比较好读，并且文章末尾我会放出我注释过的源">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2015-01-26T05:50:48.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.280Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-jwsmtp-analyse" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      jwSMTP源码剖析
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2015/01/26/jwsmtp-analyse/" class="article-date">
+  <time datetime="2015-01-26T05:50:48.000Z" itemprop="datePublished">2015-01-26</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C-C/">C/C++</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>前段时间事情太多了，忙着写毕业论文，考试，然后又被抽到了盲审，不过好在有惊无险，最后也在学院提交三月中旬申请答辩成功，如果盲审顺利的话，4月份就可以毕业了。不过这段时间总算可以看代码、看书了，感觉自己操作系统方面有些不扎实，索性买了本孙钟秀的《操作系统教程》看，之后顺便阅读和分析了jwSMTP源码，这里写篇文章记录下。本文不想对代码细节作太多分析，因为代码比较好读，并且文章末尾我会放出我注释过的源码链接，所以此文多介绍下原理吧。</p>
+<h2 id="jwSMTP"><a href="#jwSMTP" class="headerlink" title="jwSMTP"></a>jwSMTP</h2><p>jwSMTP是一个由C++编写的发送邮件的库，支持Linux、Windows平台。可使用HTML或纯文本方式发送邮件。也可添加附件，支持多个收件人。并且支持LOGIN和PLAIN两种服务器验证方式。</p>
+<h2 id="两种调用方式"><a href="#两种调用方式" class="headerlink" title="两种调用方式"></a>两种调用方式</h2><h3 id="第一种方式"><a href="#第一种方式" class="headerlink" title="第一种方式"></a>第一种方式</h3><span id="more"></span>
+
+<figure class="highlight less"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">mailer</span> <span class="selector-tag">mail</span>(“myfriend<span class="variable">@friend</span>.com”, <span class="comment">// who the mail is too</span></span><br><span class="line">“someone<span class="variable">@somewhere</span>.net”, <span class="comment">// who the mail is from</span></span><br><span class="line">“There is always room for FooBar”, <span class="comment">// subject for the email</span></span><br><span class="line">“Foo\nBar”, <span class="comment">// content of the message</span></span><br><span class="line">“ns.somewhere.net”); <span class="comment">// the nameserver to contact</span></span><br><span class="line"><span class="comment">// to query for an MX record</span></span><br><span class="line"><span class="selector-tag">mail</span><span class="selector-class">.send</span>( );</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="第二种方式"><a href="#第二种方式" class="headerlink" title="第二种方式"></a>第二种方式</h3><figure class="highlight less"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">mailer</span> <span class="selector-tag">mail</span>(“myfriend<span class="variable">@friend</span>.com”, <span class="comment">// who the mail is too</span></span><br><span class="line">“someone<span class="variable">@somewhere</span>.net”, <span class="comment">// who the mail is from</span></span><br><span class="line">“There is always room for FooBar”, <span class="comment">// subject for the email</span></span><br><span class="line">vec, <span class="comment">// content of the message</span></span><br><span class="line">“mail.somewhere.net”, <span class="comment">// the smtp server to mail to</span></span><br><span class="line"><span class="attribute">mailer</span>::SMTP_PORT, <span class="comment">// default smtp port (25)</span></span><br><span class="line">false); <span class="comment">// do not query MX records,</span></span><br><span class="line"><span class="comment">// mail directly to mail.somewhere.net</span></span><br></pre></td></tr></table></figure>
+<p>主要区别是一个查询MX record，一个不查询MX record，直接发送给SMTP Server。</p>
+<h2 id="base64编码"><a href="#base64编码" class="headerlink" title="base64编码"></a>base64编码</h2><p>Base64是网络上最常见的用于传输8Bit字节代码的编码方式之一，设计此种编码是为了使二进制数据可以通过非纯8bit的传输层传输，Base64编码可用于在HTTP环境下传递较长的标识信息，另一方面，采用Base64编码具有不可读性，即所编码的数据不会被人用肉眼所直接看到。<br>电子邮件的主题，MIME都会用到base64编码。我们现在说下其原理：</p>
+<p>Base64编码方法：</p>
+<ul>
+<li>base64的编码都是按字符串长度，以每3个8bit的字符为一组，然后针对每组，首先获取每个字符的ASCII编码，然后将ASCII编码转换成8bit的二进制，得到一组3*8&#x3D;24bit的字节，然后再将这24bit划分为4个6bit的字节，并在每个6bit的字节前面都填两个高位0，得到4个8bit的字节，然后将这4个8bit的字节转换成10进制，对照Base64编码表，得到对应编码后的字符。</li>
+<li>不是3的整数倍的，需要补齐而出现的0，转化成十进制的时候就不能按常规用base64编码表来对应，可以理解成为一种特殊的“异常”，编码应该对应“&#x3D;”。<br>代码base64.cpp&#x2F;base64.h是对Base64编码的实现，更多原理请参考下参考链接关于base64编码的原理与实现一文。打开一封Email，查看其原始信息，一般为如下所示：<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">Date</span>: Thu, <span class="number">25</span> Dec <span class="number">2014</span> <span class="number">06</span>:<span class="number">33</span>:<span class="number">07</span> +<span class="number">0800</span> </span><br><span class="line"><span class="attribute">From</span>: A&lt;A@yeah.net&gt;</span><br><span class="line"><span class="attribute">To</span>: <span class="string">&quot;B&quot;</span>&lt;b@<span class="number">126</span>.com&gt; </span><br><span class="line"><span class="attribute">Subject</span>: </span><br><span class="line"><span class="attribute">X</span>-mailer: Foxmail <span class="number">5</span>.<span class="number">0</span> beta2<span class="meta"> [cn] </span></span><br><span class="line"><span class="meta">Mime-Version: 1.0 </span></span><br><span class="line"><span class="meta">Content-Type: text/plain; </span></span><br><span class="line"><span class="meta">charset=&quot;gb2312&quot; </span></span><br><span class="line"><span class="meta">Content-Transfer-Encoding: base64 </span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">xOO6w6OsU25haVgNCg0KoaGhodXiysfSu7j2QmFzZTY0tcSy4srU08q8/qOhDQoNCkJlc3QgV2lz </span></span><br><span class="line"><span class="meta">aGVzIQ0KIAkJCQkNCqGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaEgICAgICAgICAgICAgICBl </span></span><br><span class="line"><span class="meta">U1g/IQ0KoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoSAgICAgICAgICAgICAgIHNuYWl4QHll </span></span><br><span class="line"><span class="meta">YWgubmV0DQqhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhICAgICAgICAgMjAwMy0x </span></span><br><span class="line"><span class="meta">Mi0yNQ0K </span></span><br><span class="line"><span class="meta"></span></span><br></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="程序流程"><a href="#程序流程" class="headerlink" title="程序流程"></a>程序流程</h2><p>程序一般为先设置发件人信息，之后设置收件人信息，对应的函数为setsender()和addrecipient()函数，此处没什么可说的。之后是setmessage&#x2F;setmessageHTML函数，两者的主要区别是不是需要base64编码，方法前面已说，此处主要说下checkRFCcompat()函数，此函数主要功能是：将消息结尾改为CRLF（\r\n）形式，之后注意此处：</p>
+<figure class="highlight gml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(<span class="variable language_">message</span>.size() == <span class="number">1</span>) &#123;</span><br><span class="line">   <span class="keyword">if</span>(*(<span class="variable language_">message</span>.<span class="keyword">begin</span>()) == <span class="string">&#x27;.&#x27;</span>)</span><br><span class="line">      <span class="variable language_">message</span>.push_back(<span class="string">&#x27;.&#x27;</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span> <span class="keyword">if</span>(<span class="variable language_">message</span>.size() == <span class="number">2</span>) &#123;</span><br><span class="line">   <span class="keyword">if</span>(*(<span class="variable language_">message</span>.<span class="keyword">begin</span>()) == <span class="string">&#x27;.&#x27;</span>) &#123;</span><br><span class="line">      it = <span class="variable language_">message</span>.<span class="keyword">begin</span>();</span><br><span class="line">      it = <span class="variable language_">message</span>.insert(it, <span class="string">&#x27;.&#x27;</span>);</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span> &#123;</span><br><span class="line">   <span class="keyword">if</span>(*(<span class="variable language_">message</span>.<span class="keyword">begin</span>()) == <span class="string">&#x27;.&#x27;</span>) &#123;         </span><br><span class="line">      it = <span class="variable language_">message</span>.<span class="keyword">begin</span>();</span><br><span class="line">      it = <span class="variable language_">message</span>.insert(it, <span class="string">&#x27;.&#x27;</span>);</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">for</span>(it = <span class="variable language_">message</span>.<span class="keyword">begin</span>()+<span class="number">2</span>; it != <span class="variable language_">message</span>.<span class="keyword">end</span>(); ++it) &#123;</span><br><span class="line">      <span class="comment">// follow the rfc. Add &#x27;.&#x27; if the first character on a line is &#x27;.&#x27;</span></span><br><span class="line">      <span class="keyword">if</span>(*it == <span class="string">&#x27;\n&#x27;</span>) &#123;</span><br><span class="line">         <span class="keyword">if</span>( ((it + <span class="number">1</span>) != <span class="variable language_">message</span>.<span class="keyword">end</span>()) &amp;&amp; (*(it +<span class="number">1</span>) == <span class="string">&#x27;.&#x27;</span>) ) &#123;</span><br><span class="line">            it = <span class="variable language_">message</span>.insert(it + <span class="number">1</span>, <span class="string">&#x27;.&#x27;</span>);</span><br><span class="line">            ++it; <span class="comment">// step past</span></span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此处是根据<a href="https://www.ietf.org/rfc/rfc2821.txt">RFC2821</a>（SMTP协议）的4.5.2 Transparency编写的，内容为下：</p>
+<ol>
+<li><p>Before sending a line of mail text, the SMTP client checks the first character of the line.  If it is a period, one additional period is inserted at the beginning of the line.</p>
+</li>
+<li><p>When a line of mail text is received by the SMTP server, it checks the line.  If the line is composed of a single period, it is treated as the end of mail indicator.  If the first character is a period and there are other characters on the line, the first character is deleted.</p>
+</li>
+</ol>
+<p>然后就是每一行消息不能超过1000个字符，见RFC2821的text line小节。</p>
+<p>之后的一些setsubject、setserver、addrecipent等等函数，都不做解释了，都是用来添加&#x2F;删除主机、设置服务器、增加&#x2F;删除收件人列表相关的，很好明白。我们重点说下邮件发送函数send()里的operator()()函数，如果lookupMXRecord为真，就调用gethostaddresses()函数，用来查询MX记录，这涉及到DNS协议相关知识，请查DNS小节。如果为fasle，则直接连接SMTP server，operator()()和makesmtpmessage()函数主要是完成了如下流程（并不完全一致，仅参考）：</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">C： telnet smtp.<span class="number">163</span>.<span class="keyword">com</span> <span class="number">25</span> （连接到<span class="number">163</span>的SMTP服务器，协议规定SMTP服务器的端口号为<span class="number">25</span>）</span><br><span class="line">S： Trying <span class="number">202.108</span>.<span class="number">5.83</span>...</span><br><span class="line">    Connected <span class="keyword">to</span> smtp.<span class="number">163</span>.<span class="keyword">split</span>.netease.<span class="keyword">com</span>.</span><br><span class="line">    Escape character <span class="keyword">is</span> <span class="string">&#x27;^]&#x27;</span>.</span><br><span class="line">    <span class="number">220</span> <span class="number">163</span>.<span class="keyword">com</span> Anti-spam GT <span class="keyword">for</span> Coremail System (<span class="number">163</span><span class="keyword">com</span>[<span class="number">071018</span>]) （<span class="number">220</span> 表示连接成功）</span><br><span class="line">C： HELO smtp.<span class="number">163</span>.<span class="keyword">com</span> （协议规定的握手过程，格式为HELO + 服务器名称）</span><br><span class="line">S： <span class="number">250</span> OK （<span class="number">250</span> 表示握手成功）</span><br><span class="line">C： AUTH LOGIN （AUTH LOGIN 是用户登录命令）</span><br><span class="line">S: <span class="number">334</span> dXNlcm5hbWU6 （<span class="number">334</span>表示服务器接受）</span><br><span class="line">C： tommy_mail （输入明文用户名）</span><br><span class="line">S： <span class="number">535</span> Error: authentication failed （服务器拒绝，因为SMTP要求用户名和密码都通过<span class="number">64</span>位编码后再发送）</span><br><span class="line">C： AUTH LOGIN （重新要求SMTP登录）</span><br><span class="line">S: <span class="number">334</span> dXNlcm5hbWU6 </span><br><span class="line">C: dG9tb*****FpbA== （用编码后的内容发送）</span><br><span class="line">S： <span class="number">334</span> UGFzc3dvcmQ6 （<span class="number">334</span>表示接受）</span><br><span class="line">C： ********aXZldXA= （编码后的密码）</span><br><span class="line">S： <span class="number">235</span> Authentication successful （<span class="number">235</span> 登录成功）</span><br><span class="line">C： MAIL FROM:&lt;A@<span class="number">163</span>.<span class="keyword">com</span>&gt; （MAIL FROM：&lt;&gt;格式，用来记录发送者）</span><br><span class="line">S： <span class="number">250</span> Mail OK （<span class="number">250</span> 系统常用确认信息）</span><br><span class="line">C： RCPT TO:&lt;B@<span class="number">126</span>.<span class="keyword">com</span>&gt; （接收者邮箱，可多次使用以实现发送给多个人）</span><br><span class="line">S： <span class="number">250</span> Mail OK</span><br><span class="line">C： DATA （DATA明令表示以下为邮件正文）</span><br><span class="line">S： <span class="number">354</span> End data with <span class="symbol">&lt;CR&gt;</span><span class="symbol">&lt;LF&gt;</span>.<span class="symbol">&lt;CR&gt;</span><span class="symbol">&lt;LF&gt;</span></span><br><span class="line">C： TO:<span class="number">11</span>@<span class="number">11</span> （发送给谁，这里可自由撰写，也是伪造邮件的一个入口，欺骗一般人可以，但会读源码的人欺骗不了）</span><br><span class="line">FROM:<span class="number">22</span>@<span class="number">22</span> （发送者是谁，可串改）</span><br><span class="line">SUBJECT:TEST MAIL SMTP （邮件主题）</span><br><span class="line">             </span><br><span class="line">hello world （空一行写邮件正文）</span><br><span class="line">. （正文以.结束）</span><br><span class="line">S： <span class="number">250</span> Mail OK queued <span class="keyword">as</span> smtp3,DdGowLBLAjqD6_JIg1hfBA==.<span class="number">63235</span>S2 <span class="number">1223879684</span> （服务器接受）</span><br><span class="line">C： noop （空操作，延迟退出时间）</span><br><span class="line">S： <span class="number">250</span> OK</span><br><span class="line">C： <span class="keyword">quit</span> （退出SMTP服务器连接）</span><br><span class="line">S： <span class="number">221</span> Bye</span><br></pre></td></tr></table></figure>
+
+<h2 id="DNS协议"><a href="#DNS协议" class="headerlink" title="DNS协议"></a>DNS协议</h2><p>调用gethostaddresses()函数，用来查询MX记录，这涉及到DNS协议相关知识，本函数可以使用nslookup命令模拟，我本地模拟如下：</p>
+<figure class="highlight gams"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">imlinuxer@imlinuxer:~<span class="symbol">$</span> nslookup </span><br><span class="line">&gt; <span class="keyword">set</span> type=mx</span><br><span class="line">&gt; mail.qq.com</span><br><span class="line">Server:		127.0.1.1</span><br><span class="line">Address:	127.0.1.1#53</span><br><span class="line"></span><br><span class="line">Non-authoritative <span class="comment">answer:</span></span><br><span class="line"><span class="comment">*** Can&#x27;t find mail.qq.com: No answer</span></span><br><span class="line"></span><br><span class="line">Authoritative <span class="comment">answers can be found from:</span></span><br><span class="line">mail.qq.com</span><br><span class="line">	origin <span class="comment">= qq.com</span></span><br><span class="line">	mail <span class="comment">addr = webmaster.qq.com</span></span><br><span class="line">	serial <span class="comment">= 1186990741</span></span><br><span class="line">	refresh <span class="comment">= 300</span></span><br><span class="line">	retry <span class="comment">= 600</span></span><br><span class="line">	expire <span class="comment">= 86400</span></span><br><span class="line">	minimum <span class="comment">= 86400</span></span><br></pre></td></tr></table></figure>
+<p>DNS查询的过程一般是：客户向DNS服务器的53端口发送UDP报文，DNS服务器收到后进行处理，并把结果记录仍以UDP报文的形式返回过来。除了报文头是固定的12字节外，其他每一部分的长度均为不定字节数。我们只关心的是报文头、问题、回答这三个部分<br>DNS的协议为<a href="http://www.ietf.org/rfc/rfc1035.txt">rfc1035</a>，但是枯燥难懂，可以查看参考链接的DNS消息格式，比较容易理解。</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">unsigned</span> char dns[<span class="number">512</span>] = &#123;<span class="number">1</span>,<span class="number">1</span>,   <span class="number">1</span>,<span class="number">0</span>,      <span class="number">0</span>,<span class="number">1</span>,      <span class="number">0</span>,<span class="number">0</span>, <span class="number">0</span>,<span class="number">0</span>, <span class="number">0</span>,<span class="number">0</span>&#125;; </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>比如此处即为DNS Header消息头部信息。<br>之后几段代码是请求部分格式，代码里我已详细注释，之后发送请求，解析应答即可。</p>
+<h2 id="SMTP验证方式"><a href="#SMTP验证方式" class="headerlink" title="SMTP验证方式"></a>SMTP验证方式</h2><p>比较简单，原理见此：<a href="http://blog.csdn.net/mhfh611/article/details/9470599">SMTP验证方式种类（LOGIN、PLAIN、CRAM-MD5）</a><br>jwSMTP代码只实现了两种验证方式：LOGIN和PLAIN。</p>
+<p>说的有点多了，感觉很多原理都解释了，逻辑稍微有一点混乱，主要是自己不是那么擅长组织语言，如果读者有兴趣，可以多了解下原理，知道SMTP和DNS原理，基本上代码就不需要多看了。</p>
+<p>最后扔出我的中文源码剖析代码，在Github上：</p>
+<p><a href="https://github.com/armsword/Source/tree/master/jwSMTP">https://github.com/armsword/Source/tree/master/jwSMTP</a></p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><p><a href="http://www.cnblogs.com/hongru/archive/2012/01/14/2321397.html">关于base64编码的原理与实现</a><br><a href="http://blog.csdn.net/zhangchaomao1987528/article/details/8719733">POP3 SMTP协议分析学习笔记</a><br><a href="http://www.cnblogs.com/cobbliu/archive/2013/04/02/2996333.html">DNS消息格式</a></p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#jwSMTP"><span class="toc-number">1.</span> <span class="toc-text">jwSMTP</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%A4%E7%A7%8D%E8%B0%83%E7%94%A8%E6%96%B9%E5%BC%8F"><span class="toc-number">2.</span> <span class="toc-text">两种调用方式</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%B8%80%E7%A7%8D%E6%96%B9%E5%BC%8F"><span class="toc-number">2.1.</span> <span class="toc-text">第一种方式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E7%A7%8D%E6%96%B9%E5%BC%8F"><span class="toc-number">2.2.</span> <span class="toc-text">第二种方式</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#base64%E7%BC%96%E7%A0%81"><span class="toc-number">3.</span> <span class="toc-text">base64编码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A8%8B%E5%BA%8F%E6%B5%81%E7%A8%8B"><span class="toc-number">4.</span> <span class="toc-text">程序流程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DNS%E5%8D%8F%E8%AE%AE"><span class="toc-number">5.</span> <span class="toc-text">DNS协议</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#SMTP%E9%AA%8C%E8%AF%81%E6%96%B9%E5%BC%8F"><span class="toc-number">6.</span> <span class="toc-text">SMTP验证方式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E9%93%BE%E6%8E%A5"><span class="toc-number">7.</span> <span class="toc-text">参考链接</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2015/01/31/baidu-lossless-music-downloader/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          写了一个Chrome插件 - 百度无损音乐下载插件
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2014/10/29/tinyhttpd-code-analyse/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">tinyhttpd源码剖析&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

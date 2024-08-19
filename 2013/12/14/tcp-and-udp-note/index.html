@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>记录下传输层协议TCP和UDP的一些特性 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="在TCP&#x2F;IP中能够实现传输层功能的、具有代表性的协议是TCP和UDP。 TCPTCP是面向连接的、可靠的流协议。流就是指不间断的数据结构，你可以把它想象成排水道中的水流。当应用程序采用TCP发送消息时，虽然可以保证发送的顺序，但还是犹如没有任何间隔的数据流发送给接收端。TCP充分地实现了数据传输时各种控制功能，可以进行丢包时的重发控制，还可以对次序乱掉的分包进行顺序控制。而这些在UDP">
+<meta property="og:type" content="article">
+<meta property="og:title" content="记录下传输层协议TCP和UDP的一些特性">
+<meta property="og:url" content="http://armsword.com/2013/12/14/tcp-and-udp-note/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="在TCP&#x2F;IP中能够实现传输层功能的、具有代表性的协议是TCP和UDP。 TCPTCP是面向连接的、可靠的流协议。流就是指不间断的数据结构，你可以把它想象成排水道中的水流。当应用程序采用TCP发送消息时，虽然可以保证发送的顺序，但还是犹如没有任何间隔的数据流发送给接收端。TCP充分地实现了数据传输时各种控制功能，可以进行丢包时的重发控制，还可以对次序乱掉的分包进行顺序控制。而这些在UDP">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2014/02/20140214001551.jpg">
+<meta property="og:image" content="http://armsword.com/img/2014/02/20140214001552.jpg">
+<meta property="og:image" content="http://armsword.com/img/2014/02/20140214001553.jpg">
+<meta property="og:image" content="http://armsword.com/img/2014/02/20140214001554.jpg">
+<meta property="og:image" content="http://armsword.com/img/2014/02/20140214001555.jpg">
+<meta property="og:image" content="http://armsword.com/img/2014/02/20140214114741.jpg">
+<meta property="article:published_time" content="2013-12-13T17:05:21.000Z">
+<meta property="article:modified_time" content="2023-12-26T11:30:43.000Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2014/02/20140214001551.jpg">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-tcp-and-udp-note" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      记录下传输层协议TCP和UDP的一些特性
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2013/12/14/tcp-and-udp-note/" class="article-date">
+  <time datetime="2013-12-13T17:05:21.000Z" itemprop="datePublished">2013-12-14</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/">计算机网络</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>在TCP&#x2F;IP中能够实现传输层功能的、具有代表性的协议是TCP和UDP。</p>
+<h2 id="TCP"><a href="#TCP" class="headerlink" title="TCP"></a>TCP</h2><p>TCP是面向连接的、可靠的流协议。流就是指不间断的数据结构，你可以把它想象成排水道中的水流。当应用程序采用TCP发送消息时，虽然可以保证发送的顺序，但还是犹如没有任何间隔的数据流发送给接收端。TCP充分地实现了数据传输时各种控制功能，可以进行丢包时的重发控制，还可以对次序乱掉的分包进行顺序控制。而这些在UDP中都没有。此外，TCP作为一种面向有连接的协议，只有在确认通信对端存在时才会发送数据，从而可以控制通信流量的浪费。根据TCP的这些机制，在IP这种无连接的网络上也能够实现高可靠性的通信。</p>
+<p>TCP为提供可靠性传输，实行“顺序控制”或“重发控制”机制。此外还具备“流控制（流量控制）”、“拥塞控制”、提供网络利用率等众多功能。</p>
+<p>TCP通过检验和、序列号、确认应答、重发控制、连接管理以及窗口控制等机制实现可靠性传输。</p>
+<span id="more"></span>
+
+<h3 id="通过序列号与确认应答提高可靠性"><a href="#通过序列号与确认应答提高可靠性" class="headerlink" title="通过序列号与确认应答提高可靠性"></a>通过序列号与确认应答提高可靠性</h3><p>在TCP中，当发送端的数据到达接收主机时，接收端主机会返回一个已收到消息的通知。这个消息叫做确认应答（ACK）。<br><img src="/img/2014/02/20140214001551.jpg"><br>TCP通过肯定的确认应答（ACK）实现可靠的数据传输。当发送端将数据发出之后会等待对端的确认应答。如果有确认应答，说明数据已经成功到达对端。反之，则数据丢失的可能性很大。在一定时间内没有等到确认应答，发送端就可以认为数据已经丢失，并进行重发。由此，即使产生了丢包，仍然能够保证数据能够到达对端，实现可靠传输。未收到确认应答并不意味着数据一定丢失。也有可能是数据对方已经收到，只是返回的确认应答在途中丢失。这种情况也会导致发送端因没有收到确认应答，而认为数据没有到达目的地，从而进行重新发发送。</p>
+<p>上述这些确认应答处理、重发控制以及重复控制等功能都可以通过序列号实现。序列号是按顺序给发送数据的每一个字节（8位字节）都标上号码的编号。接收端查询接收数据TCP首部中的序列号和数据的长度，将自己下一步应该接收的序号作为确认应答返送回去。就这样，通过序列号和确认应答号，TCP可以实现可靠传输。</p>
+<h3 id="重发超时如何确实"><a href="#重发超时如何确实" class="headerlink" title="重发超时如何确实"></a>重发超时如何确实</h3><p>重发超时是指在重发数据之前，等待确认应答到来的那个特定时间间隔。如果超过了这个时间仍未收到确认应答，发送端将进行数据重发。那么这个重发超时的具体时间长度又是如何确定的呢？</p>
+<p>最理想的是，找到一个最小时间，它能保证“确认应答一定能在这个时间内返回”。然而这个时间长短随着数据包途径的网络环境的不同而有所变化。例如在高速的LAN中时间相对较短，而在长距离的通信当中应该比LAN要长一些。即使是在同一个网络中，根据不同时段的网络堵塞程度时间的长短也会发生变化。TCP要求不论处在何种网络环境下都要提供高性能通信，并且无论网络拥堵情况发生何种变化，都必须保持这一特性。为此，它在每次发包时都会计算往返时间及其偏差。将这个往返时间和偏差相加重发超时的时间，就是比这个总和要稍大一点的值。</p>
+<p>在BSD的Unix以及Windows系统中，超时都以0.5秒为单位进行控制，因此重发超时都是0.5秒的整数倍。不过，由于最初的数据包还不知道往返时间，所以其重发超时一般设置为6秒左右。数据被重发之后若还是收不到确认应答，则进行再次发送。此时，等待确认应答的时间将会以2倍、4倍的指数函数延长。此外，数据也不会被无限、反复地重发。达到一定重发次数之后，如果仍没有任何确认应答返回，就会判断为网络或对端主机发生了异常，强制关闭连接。并且通知应用通信异常强行终止。</p>
+<h3 id="连接管理"><a href="#连接管理" class="headerlink" title="连接管理"></a>连接管理</h3><p>UDP是一种面向无连接的通信协议，因此不检查对端是否可以通信，直接将UDP包发送出去。TCP与此相反，它会在数据通信之前，通过TCP首部发送一个SYN包作为建立连接的请求等待确认应答。如果对端发来确认应答，则认为可以进行数据通信。如果对端的确认应答未能到达，就不会进行数据通信。此外，在通信结束时会进行断开连接的处理（FIN包）。</p>
+<p>可以使用TCP首部用于控制的字段来管理TCP连接。一个连接的建立与断开，正常过程至少需要来回发送7个包才能完成。<br><img src="/img/2014/02/20140214001552.jpg"></p>
+<h3 id="TCP以段为单位发送数据"><a href="#TCP以段为单位发送数据" class="headerlink" title="TCP以段为单位发送数据"></a>TCP以段为单位发送数据</h3><p>在建立TCP连接的同时，也可以确认发送数据包的单位，我们也可以称其为“最大消息长度”（MSS：Maximum Segment Size）。最理想的情况是，最大消息长度正好是IP中不会被分片处理的最大数据长度。</p>
+<p>TCP在传送大量数据时，是以MSS的大小将数据进行分割发送。进行重发时也是以MSS为单位。</p>
+<p>MSS是在三次握手的时候，在两端主机之间被计算得出。两端的主机在发出建立连接的请求时，会在TCP首部中写入MSS选项，告诉对方自己的接口能够适应MSS的大小。然后会在两者之间选择一个较小的值投入使用。<br><img src="/img/2014/02/20140214001553.jpg"></p>
+<h3 id="利用窗口控制提高速度"><a href="#利用窗口控制提高速度" class="headerlink" title="利用窗口控制提高速度"></a>利用窗口控制提高速度</h3><p>TCP以1个段为单位，每发一个段进行一次确认应答的处理，这样的传输方式有一个缺点，那就是，包的往返时间越长通信性能就越低。</p>
+<p>为解决这个问题，TCP引入了窗口这个概念。即使在往返时间较长的情况下，它也能控制网络性能的下降。确认应答不再是以每个分段，而是以更大的单位进行确认时，转发时间将会大幅度的缩短。也就是说，发送端主机，在发送了一个段以后不必要一直等待确认应答，而是继续发送。<br><img src="/img/2014/02/20140214001554.jpg"><br>窗口大小就是无需等待确认应答而可以继续发送数据的最大值，如上，窗口大小为4个段。这个机制实现了使用大量的缓冲区，通过对多个段同时进行确认应答的功能。<br>收到确认应答的情况下，将窗口滑动到确认应答中的序列号的位置。这样可以顺序地将多个段同时发送提高通信性能。这种机制也被成为滑动窗口控制。<br><img src="/img/2014/02/20140214001555.jpg"></p>
+<h3 id="流控制"><a href="#流控制" class="headerlink" title="流控制"></a>流控制</h3><p>发送端根据自己的实际情况发送数据。但是，接收端可能收到的是一个毫无关系的数据包又可能会在处理其他问题上花费一些时间。因此在为这个数据包做其他处理时会耗费一些时间，甚至在高负荷的情况下无法接收任何数据。如此一来，如果接收端将本应该接收的数据丢弃的话，就又会触发重发机制，从而导致网络流量的无端浪费。</p>
+<p>为了防止这种现象的发生，TCP提供一种机制可以让发送端根据接收端的实际接收能力控制发送的数据量。这就是所谓的流控制。它的具体操作是，接收端主机向发送端主机通知自己可以接收数据的大小，于是发送端会发送不超过这个限度的数据。该大小限度就被称作窗口大小。</p>
+<p>TCP首部中，专门有一个字段用来通知窗口大小。接收主机将自己可以接收的缓冲区大小放入这个字段中通知给发送端。这个字段的值越大，说明网络的吞吐量越高。</p>
+<p>不过，接收端的这个缓冲区一旦面临数据溢出时，窗口大小的值也会随之被设置为一个更小的值通知给发送端，从而控制数据发送量。也就是说，发送端主机会根据接收端主机的指示，对发送数据的量进行控制。这也就形成了一个完整的TCP流控制（流量控制）。<br><img src="/img/2014/02/20140214114741.jpg"></p>
+<h3 id="拥塞控制"><a href="#拥塞控制" class="headerlink" title="拥塞控制"></a>拥塞控制</h3><p>有了TCP的窗口控制，收发主机之间即使不再以一个数据段为单位发送确认应答，也能够连续发送大量数据包。然而，如果在通信刚开始时就发送大量数据，也可能会引发其他问题。在网络出现堵塞时，如果突然发送一个较大量的数据，极有可能导致整个网络的瘫痪。TCP为了防止该问题的出现，在通信一开始时就会通过一个叫做慢启动的算法得出的数值，对发送数据量进行控制。</p>
+<p>首先，为了在发送端调节所要发送数据的量，定义了一个叫做“拥塞窗口”的概念。于是在慢启动的时候，将这个拥塞窗口的大小设置为1个数据段（1MSS）发送数据，之后每收到一次确认应答（ACK），拥塞窗口的值就加1.在发送数据包时，将拥塞窗口的大小与接收端主机通知的窗口大小做比较，然后按照它们当中较小的那个值，发送比其还要小的数据量。</p>
+<h3 id="提高网络利用率的规范"><a href="#提高网络利用率的规范" class="headerlink" title="提高网络利用率的规范"></a>提高网络利用率的规范</h3><p>Nagle算法：</p>
+<p>TCP中为了提高网络的利用率，经常使用一个叫做Nagle的算法。该算法是指发送端即使还有应该发送的数据，但如果这部分数据很少的话，则进行延迟发送的一种处理机制。具体来说，就是仅在下列任意一种条件下才能发送数据。如果两个条件都不满足，那么暂时等待一段时间以后再进行数据发送。</p>
+<p>1&gt;已发送的数据都已经收到确认应答时</p>
+<p>2&gt;可以发送最大段长度（MSS）的数据时</p>
+<p>延迟确认应答：</p>
+<p>当某个接收端收到这个小窗口的通知以后，会以它为上限发送数据，从而又降低了网络的利用率。为此，引入了一个方法，那就是收到数据以后并不立即返回确认应答，而是延迟一段时间的机制。</p>
+<p>捎带应答：</p>
+<p>捎带应答是指在同一个TCP包中既发送数据又发送确认应答的一种机制。由此，网络的利用率会提高，计算机的负荷也会减轻。不过，确认应答必须得等到应用处理完数据并将作为回执的数据返回为止，才能进行捎带应答。</p>
+<h2 id="UDP"><a href="#UDP" class="headerlink" title="UDP"></a>UDP</h2><p>UDP是User Datagram Protocol的缩写。UDP是不具有可靠性的数据报协议。细微的处理它会交给上层的应用去完成。在UDP的情况下，虽然可以确保发送消息的大小，却不能保证消息一定会到达。因此，应用有时会根据自己的需要进行重发处理。</p>
+<p>UDP不提供复杂的控制机制，利用IP提供面向无连接的通信服务。并且它是将应用程序发来的数据在收到的那一刻，立即按照原样发送到网络上的一种机制。</p>
+<p>即使是出现网络堵塞的情况下，UDP也无法进行流量控制等避免网络拥塞的行为。此外，传输途中即使出现丢包，UDP也不负责重发。甚至当出现包的到达顺序乱掉时也没有纠正的功能。如果需要这些细节控制，那么不得不交由采用UDP的应用程序去处理。UDP有点类似于用户说什么听什么的机制，但是需要用户充分考虑好上层协议类型并制作相应的应用程序。因此，也可以说，UDP按照“制造程序的那些用户的指示行事”。</p>
+<p>由于UDP面向无连接，它可以随时发送数据。再加上UDP本身的处理既简单又高效，因此经常用于以下几个方面：</p>
+<p>1&gt;包总量较少的通信（DNS、SNMP等）</p>
+<p>2&gt;视频、音频等多媒体通信（即时通信）</p>
+<p>3&gt;限定于LAN等特定网络中的应用通信</p>
+<p>4&gt;广播通信（广播、多播）</p>
+<p>可能有人会认为，鉴于TCP是可靠的传输协议，那么它一定优于UDP。其实不然。TCP与UDP的优缺点无法简单地、绝对地去做比较。那么，对这两种协议应该如何加以区分使用呢？下面，我就对此问题做一简单说明。</p>
+<p>TCP用于在传输层有必要实现可靠的情况。由于它是面向有连接并具备顺序控制、重发控制等机制的，所以它可以为应用提供可靠传输。</p>
+<p>而UDP主要用于那些对高速传输和实时性有较高要求的通信或广播通信。我们拿通过IP电话进行通话作为例子。如果使用TCP，数据在传送途中如果丢失会重发，但这样无法刘畅地传输通话人的声音，会导致无法进行正常交流。而采用UDP，它不会进行重发处理。从而也就不会有声音大幅度延迟到达的问题。即使有部分数据丢失，也只是会影响某一小部分的通话。此外，在多播与广播通信中也使用UDP而不是TCP。RIP、DHCP等基于广播的协议也要依赖于UDP。因此，TCP和UDP应该根据应用的目的按需使用。</p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#TCP"><span class="toc-number">1.</span> <span class="toc-text">TCP</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%80%9A%E8%BF%87%E5%BA%8F%E5%88%97%E5%8F%B7%E4%B8%8E%E7%A1%AE%E8%AE%A4%E5%BA%94%E7%AD%94%E6%8F%90%E9%AB%98%E5%8F%AF%E9%9D%A0%E6%80%A7"><span class="toc-number">1.1.</span> <span class="toc-text">通过序列号与确认应答提高可靠性</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%87%8D%E5%8F%91%E8%B6%85%E6%97%B6%E5%A6%82%E4%BD%95%E7%A1%AE%E5%AE%9E"><span class="toc-number">1.2.</span> <span class="toc-text">重发超时如何确实</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%9E%E6%8E%A5%E7%AE%A1%E7%90%86"><span class="toc-number">1.3.</span> <span class="toc-text">连接管理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#TCP%E4%BB%A5%E6%AE%B5%E4%B8%BA%E5%8D%95%E4%BD%8D%E5%8F%91%E9%80%81%E6%95%B0%E6%8D%AE"><span class="toc-number">1.4.</span> <span class="toc-text">TCP以段为单位发送数据</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%A9%E7%94%A8%E7%AA%97%E5%8F%A3%E6%8E%A7%E5%88%B6%E6%8F%90%E9%AB%98%E9%80%9F%E5%BA%A6"><span class="toc-number">1.5.</span> <span class="toc-text">利用窗口控制提高速度</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B5%81%E6%8E%A7%E5%88%B6"><span class="toc-number">1.6.</span> <span class="toc-text">流控制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6"><span class="toc-number">1.7.</span> <span class="toc-text">拥塞控制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8F%90%E9%AB%98%E7%BD%91%E7%BB%9C%E5%88%A9%E7%94%A8%E7%8E%87%E7%9A%84%E8%A7%84%E8%8C%83"><span class="toc-number">1.8.</span> <span class="toc-text">提高网络利用率的规范</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#UDP"><span class="toc-number">2.</span> <span class="toc-text">UDP</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2014/03/07/linux-io-multiplexing/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          Linux IO复用—select poll 和 epoll
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2013/09/26/lru-cache/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">实现一个LRU Cache&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>准备看下Redis的源代码 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Redis是一个开源，BSD授权，高性能的key-value数据库，使用ANSI C编写。Redis的出现很大程度补偿了memcached这类key-value存储的不足，因为： Memcached基本只支持简单的key-value存储，不支持枚举，不支持持久化和复制能功能。 Redis除key-value之外，还支持list,set,sorted set,hash等众多数据结构，提供了KEYS进">
+<meta property="og:type" content="article">
+<meta property="og:title" content="准备看下Redis的源代码">
+<meta property="og:url" content="http://armsword.com/2013/08/04/redis-source/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="Redis是一个开源，BSD授权，高性能的key-value数据库，使用ANSI C编写。Redis的出现很大程度补偿了memcached这类key-value存储的不足，因为： Memcached基本只支持简单的key-value存储，不支持枚举，不支持持久化和复制能功能。 Redis除key-value之外，还支持list,set,sorted set,hash等众多数据结构，提供了KEYS进">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2013-08-04T07:22:57.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.291Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-redis-source" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      准备看下Redis的源代码
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2013/08/04/redis-source/" class="article-date">
+  <time datetime="2013-08-04T07:22:57.000Z" itemprop="datePublished">2013-08-04</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Database/">Database</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Redis是一个开源，BSD授权，高性能的key-value数据库，使用ANSI C编写。Redis的出现很大程度补偿了memcached这类key-value存储的不足，因为：</p>
+<p>Memcached基本只支持简单的key-value存储，不支持枚举，不支持持久化和复制能功能。</p>
+<p>Redis除key-value之外，还支持list,set,sorted set,hash等众多数据结构，提供了KEYS进行枚举操作，但不能在线上使用，如果需要枚举线上数据，Redis提供了工具可以直接扫描其dump文件，枚举出所有数据，Redis还同时提供了持久化和复制等功能。</p>
+<p>如果简单地比较Redis与Memcached的区别，大多数都会得到以下观点：</p>
+<ul>
+<li>Redis不仅仅支持简单的k&#x2F;v类型的数据，同时还提供list，set，hash等数据结构的存储。</li>
+<li>Redis支持数据的备份，即master-slave模式的数据备份。</li>
+<li>Redis支持数据的持久化，可以将内存中的数据保持在磁盘中，重启的时候可以再次加载进行使用。<br>Redis和memcached不同之处还在以下方面：1.网络IO模型 2.内存管理方面 3.数据一致性问题 4.存储方式及其它方面（上文提到了）等等，这里不在细说。</li>
+</ul>
+<span id="more"></span>
+
+<p>数据模型：</p>
+<p>Redis 的外围由一个键、值映射的字典构成。与其他非关系型数据库主要不同在于：Redis 中值的类型不仅限于字符串，还支持如下抽象数据类型：<br>1.字符串列表<br>2.无序不重复的字符串集合<br>3.有序不重复的字符串集合<br>4.键、值都为字符串的哈希表<br>值的类型决定了值本身支持的操作。Redis 支持不同无序、有序的列表，无序、有序的集合间的交集、并集等高级服务器端原子操作。</p>
+<p>持久化：</p>
+<p>Redis 通常将全部的数据存储在内存中。2.4版本后可配置为使用虚拟内存，一部分数据集存储在硬盘上，但这个特性废弃了。<br>目前通过两种方式实现持久化：<br>使用快照，一种半持久耐用模式。不时的将数据集以异步方式从内存以 RDB 格式写入硬盘。<br>1.1版本开始使用更安全的 AOF 格式替代，一种只能追加的日志类型。将数据集修改操作记录起来。Redis 能够在后台对只可追加的记录作修改来避免无限增长的日志。</p>
+<p>同步：</p>
+<p>Redis支持主从同步。数据可以从主服务器向任意数量的从服务器上同步，从服务器可以是关联其他从服务器的主服务器。这使得 Redis 可执行单层树复制。从盘可以有意无意的对数据进行写操作。由于完全实现了发布&#x2F;订阅机制，使得从数据库在任何地方同步树时，可订阅一个频道并接收主服务器完整的消息发布记录。同步对读取操作的可扩展性和数据冗余很有帮助。</p>
+<p>性能：</p>
+<p>当数据依赖不再需要，Redis 这种基于内存的性质，与在执行一个事务时将每个变化都写入硬盘的数据库系统相比就显得执行效率非常高。写与读操作速度没有明显差别。</p>
+<p>上面东西，是从维基百科摘抄下来的，只是更好的了解此数据库。关于源码解读，发现有热心网友专门写了源码剖析，见下面链接：</p>
+<p><a href="http://www.redisbook.com/en/latest/">Redis设计与实现</a></p>
+<p>打算边看源码边看下此剖析。</p>
+<h1 id="Installation"><a href="#Installation" class="headerlink" title="Installation"></a>Installation</h1><p>Download, extract and compile Redis with:<br><code>$ wget http://redis.googlecode.com/files/redis-2.6.14.tar.gz $ tar xzf redis-2.6.14.tar.gz $ cd redis-2.6.14 $ make </code><br>The binaries that are now compiled are available in the <code>src</code> directory. Run Redis with:<br>$ src&#x2F;redis-server</p>
+<p>You can interact with Redis using the built-in client:<br><code>$ src/redis-cli redis&amp;gt; set foo bar OK redis&amp;gt; get foo &quot;bar&quot;</code></p>
+<p>tutorial:<br><a href="http://try.redis.io/">http://try.redis.io/</a></p>
+<p>参考连接：</p>
+<p><a href="http://zh.wikipedia.org/wiki/Redis">http://zh.wikipedia.org/wiki/Redis</a></p>
+<p><a href="http://www.redis.io/">http://www.redis.io/</a></p>
+<p><a href="http://simple-is-better.com/news/684">http://simple-is-better.com/news/684</a></p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Installation"><span class="toc-number">1.</span> <span class="toc-text">Installation</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2013/08/25/linux-memory-and-manage/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          linux内存空间分配和内存管理
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2012/11/27/some-methods-about-gcc-and-gdb/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">编译和调试C/C++程序常用到的一些知识点&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

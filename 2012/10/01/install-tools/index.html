@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>工欲善其事必先利其器 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Emacs开发环境配置Vim开发环境配置首先，我们先看下自己的VIM都安装了什么插件，命令：:scriptnames 我们先配置下vimrc文件，vim ~&#x2F;.vimrc ，我们先设置让其显示行号和高亮代码，添加如下代码： set nu!  “显示行号syntax enable   “语法高亮syntax on TagList功能：有点像VC里面的工作区，里面列出了当前文件的所有的宏，全">
+<meta property="og:type" content="article">
+<meta property="og:title" content="工欲善其事必先利其器">
+<meta property="og:url" content="http://armsword.com/2012/10/01/install-tools/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="Emacs开发环境配置Vim开发环境配置首先，我们先看下自己的VIM都安装了什么插件，命令：:scriptnames 我们先配置下vimrc文件，vim ~&#x2F;.vimrc ，我们先设置让其显示行号和高亮代码，添加如下代码： set nu!  “显示行号syntax enable   “语法高亮syntax on TagList功能：有点像VC里面的工作区，里面列出了当前文件的所有的宏，全">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2012-10-01T12:22:29.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.286Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-install-tools" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      工欲善其事必先利其器
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2012/10/01/install-tools/" class="article-date">
+  <time datetime="2012-10-01T12:22:29.000Z" itemprop="datePublished">2012-10-01</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Emacs开发环境配置"><a href="#Emacs开发环境配置" class="headerlink" title="Emacs开发环境配置"></a>Emacs开发环境配置</h2><h2 id="Vim开发环境配置"><a href="#Vim开发环境配置" class="headerlink" title="Vim开发环境配置"></a>Vim开发环境配置</h2><p>首先，我们先看下自己的VIM都安装了什么插件，命令：:scriptnames</p>
+<p>我们先配置下vimrc文件，vim ~&#x2F;.vimrc ，我们先设置让其显示行号和高亮代码，添加如下代码：</p>
+<p>set nu!  “显示行号<br>syntax enable   “语法高亮<br>syntax on</p>
+<h3 id="TagList"><a href="#TagList" class="headerlink" title="TagList"></a>TagList</h3><p>功能：有点像VC里面的工作区，里面列出了当前文件的所有的宏，全局变量，函数名等。CTRL+W 连续2下可以左右切换。</p>
+<p>下载taglist压缩包, 下载地址：<a href="http://www.vim.org/scripts/script.php?script_id=273">http://www.vim.org/scripts/script.php?script_id&#x3D;273</a>，然后把解压的两个文件taglist.vim 和 taglist.txt 分别放到$HOME&#x2F;.vim&#x2F;plugin 和 $HOME&#x2F;.vim&#x2F;doc 目录中。</p>
+<p>之后在～&#x2F;.vimrc中添加如下几条命令：</p>
+<p>let Tlist_Auto_Open &#x3D; 1<br>let Tlist_Ctags_Cmd &#x3D; ‘&#x2F;usr&#x2F;bin&#x2F;ctags’<br>let Tlist_Show_One_File &#x3D; 1<br>let Tlist_Exit_OnlyWindow &#x3D; 1</p>
+<p>此时，我们打开一个.c文件查看，发现左边多出一个workspace，当不想出现此工作区时，使用:Tlist可以关闭和打开。</p>
+<span id="more"></span>
+
+<h3 id="Ctags"><a href="#Ctags" class="headerlink" title="Ctags"></a>Ctags</h3><p>功能：ctags的作用是为系统头文件及自己的程序头文件建立索引，有了这个索引后，就可以使用其它VIM插件来实现相应的功能，比如我需要的功能就是代码提示，那就需要用omnicppcomplete插件，但该插件是依赖于ctags的。VIM默认已安装此插件。</p>
+<p>sudo apt-get install exuberant-ctags</p>
+<p>我们在源代码的最上层目录下使用此命令：</p>
+<p>ctags -R –c++-kinds&#x3D;+p 或者ctags -R –c-types&#x3D;+p+x</p>
+<p>再在VIM中运行此命令：</p>
+<p>:set tags&#x3D;&#x2F;home&#x2F;linuxer&#x2F;source&#x2F;tags 该命令将tags文件加入到vim中，也可以加入到~&#x2F;.vimrc中。</p>
+<p>使用方法：</p>
+<p>我们把光标移动到函数上，按下CTRL+]，VIM会自动切换到意义的函数处。返回时，我们输入CTRL+t。</p>
+<p>vim“找到 tag: 1&#x2F;? 或更多” 其他定义的查看方法:</p>
+<p>:tselect 显示列表</p>
+<p>:tn和:tp 显示后一个tag和前一个tag</p>
+<p>或者g] 就可以了。</p>
+<h3 id="WinManager"><a href="#WinManager" class="headerlink" title="WinManager"></a>WinManager</h3><p>功能：作用是一个文件管理器，能列出当前目标中的文件，可以通过这个浏览工程中的源文件。当光标停在某个文件或文件夹的时候，回车可以打开该文件或文件夹。</p>
+<p>在说这个插件之前，我们先说下netrw.vim插件，这个插件在安装VIM时候就已经安装到系统里了，我们打开VIM输入:e &#x2F;home&#x2F;linuxer&#x2F;source 就可以显示出该文件夹里面的文件，我们的插件其实原理就是由这个插件实现的。</p>
+<p>使用方法：</p>
+<p><a href="http://www.vim.org/scripts/script.php?script_id=95">http://www.vim.org/scripts/script.php?script_id&#x3D;95</a> ，将对应的plugin和doc放入 ~&#x2F;.vim 文件夹下对应的plugin和doc文件夹下。</p>
+<p>在~&#x2F;.vimrc下添加以下两行：</p>
+<p>let g:winManagerWindowLayout&#x3D;’FileExplorer|TagList’</p>
+<p>或者 let g:winManagerWindowLayout&#x3D;’FileExplorer’   “这2个显示方式不一样，读者选择自己喜欢的吧，一个是左右两列，一个是上下2列</p>
+<p>nmap wm :WMToggle&lt;cr&gt;</p>
+<p>在正常情况下输入wm（无:号）可以开启和打开，注意：第一种会把Taglist也关闭，此时用:Tlist可以重新打开。本人倾向第二种，使用时候用wm开启就可已了。</p>
+<h3 id="C-C-自动补全插件：clang-complete"><a href="#C-C-自动补全插件：clang-complete" class="headerlink" title="C&#x2F;C++自动补全插件：clang complete"></a>C&#x2F;C++自动补全插件：clang complete</h3><p>这个插件需要clang编译器的支持，我们先安装下：</p>
+<p>sudo apt-get install clang</p>
+<p>之后下载clang complete：<a href="http://www.vim.org/scripts/script.php?script_id=3302">http://www.vim.org/scripts/script.php?script_id&#x3D;3302</a></p>
+<p>方法：vim clang_complete.vmb -c ‘so %’ -c ‘q’</p>
+<p>之后在~&#x2F;.vimrc里添加 <code>set</code> <code>completeopt=longest </code></p>
+<p>配合CTRL+N函数、变量补全基本就差不多了。</p>
+<p>上传了一份目前我使用的Vimrc配置到github，主要是为了方便你我使用，点击下面链接进入，<a href="https://github.com/armsword/Scripts/tree/master/Vim">我的Vimrc设置</a>。</p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Emacs%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE"><span class="toc-number">1.</span> <span class="toc-text">Emacs开发环境配置</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Vim%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE"><span class="toc-number">2.</span> <span class="toc-text">Vim开发环境配置</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#TagList"><span class="toc-number">2.1.</span> <span class="toc-text">TagList</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Ctags"><span class="toc-number">2.2.</span> <span class="toc-text">Ctags</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#WinManager"><span class="toc-number">2.3.</span> <span class="toc-text">WinManager</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#C-C-%E8%87%AA%E5%8A%A8%E8%A1%A5%E5%85%A8%E6%8F%92%E4%BB%B6%EF%BC%9Aclang-complete"><span class="toc-number">2.4.</span> <span class="toc-text">C&#x2F;C++自动补全插件：clang complete</span></a></li></ol></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2012/11/27/some-methods-about-gcc-and-gdb/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          编译和调试C/C++程序常用到的一些知识点
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2012/08/01/hello-world/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title"> 人生大病，只是一“傲”字&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>编译和调试C/C++程序常用到的一些知识点 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="做个笔记，记录下编译和调试C&#x2F;C++程序常用的一些知识点，主要就是gcc、gdb的一些常用使用方法。 gcc如图所示，先看下C&#x2F;C++代码生成可执行文件的过程，共4步：预处理、编译、汇编、链接。  一步到位的编译命令为： 12gcc -Wall -g test.c -o test">
+<meta property="og:type" content="article">
+<meta property="og:title" content="编译和调试C&#x2F;C++程序常用到的一些知识点">
+<meta property="og:url" content="http://armsword.com/2012/11/27/some-methods-about-gcc-and-gdb/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="做个笔记，记录下编译和调试C&#x2F;C++程序常用的一些知识点，主要就是gcc、gdb的一些常用使用方法。 gcc如图所示，先看下C&#x2F;C++代码生成可执行文件的过程，共4步：预处理、编译、汇编、链接。  一步到位的编译命令为： 12gcc -Wall -g test.c -o test">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2012/11/gcc.png">
+<meta property="article:published_time" content="2012-11-27T07:14:54.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.286Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2012/11/gcc.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-some-methods-about-gcc-and-gdb" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      编译和调试C/C++程序常用到的一些知识点
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2012/11/27/some-methods-about-gcc-and-gdb/" class="article-date">
+  <time datetime="2012-11-27T07:14:54.000Z" itemprop="datePublished">2012-11-27</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>做个笔记，记录下编译和调试C&#x2F;C++程序常用的一些知识点，主要就是gcc、gdb的一些常用使用方法。</p>
+<h2 id="gcc"><a href="#gcc" class="headerlink" title="gcc"></a>gcc</h2><p>如图所示，先看下C&#x2F;C++代码生成可执行文件的过程，共4步：预处理、编译、汇编、链接。</p>
+<p><img src="/img/2012/11/gcc.png"></p>
+<p>一步到位的编译命令为：</p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -Wall -g <span class="keyword">test</span>.c -o <span class="keyword">test</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<span id="more"></span>
+
+<h3 id="预处理"><a href="#预处理" class="headerlink" title="预处理"></a>预处理</h3><p>命令为：</p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -E <span class="keyword">test</span>.c -o <span class="keyword">test</span>.i 或 gcc -E <span class="keyword">test</span>.c</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>生成的test.i文件，可以通过vim或emacs直接打开。</p>
+<p>gcc的-E选项，可以让编译器在预处理后停止，并输出预处理结果。比如预处理结果就是将stdio.h 文件中的内容插入到test.c中了。</p>
+<h3 id="编译为汇编代码-Compilation"><a href="#编译为汇编代码-Compilation" class="headerlink" title="编译为汇编代码(Compilation)"></a>编译为汇编代码(Compilation)</h3><p>预处理之后，可直接对生成的test.i文件编译，生成汇编代码：</p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -S <span class="keyword">test</span>.i -o <span class="keyword">test</span>.s</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>gcc的-S选项，表示在程序编译期间，在生成汇编代码后，停止，-o输出汇编代码文件。</p>
+<h3 id="汇编-Assembly"><a href="#汇编-Assembly" class="headerlink" title="汇编(Assembly)"></a>汇编(Assembly)</h3><p>对于上一小节中生成的汇编代码文件test.s，gas汇编器负责将其编译为目标文件，如下：</p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -c <span class="keyword">test</span>.s -o <span class="keyword">test</span>.o</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="连接-Linking"><a href="#连接-Linking" class="headerlink" title="连接(Linking)"></a>连接(Linking)</h3><p>gcc连接器是gas提供的，负责将程序的目标文件与所需的所有附加的目标文件连接起来，最终生成可执行文件。附加的目标文件包括静态连接库和动态连接库。</p>
+<p>对于上一小节中生成的test.o，将其与Ｃ标准输入输出库进行连接，最终生成程序test</p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc <span class="keyword">test</span>.o -o <span class="keyword">test</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="一些技巧"><a href="#一些技巧" class="headerlink" title="一些技巧"></a>一些技巧</h3><p>生成的汇编代码可以使用vim或emacs直接打开，如下代码文件名为main.c。<br>x86系统：</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -S -O2 <span class="selector-tag">code</span><span class="selector-class">.cpp</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>x64系统：</p>
+<figure class="highlight gcode"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -<span class="name">m32</span> -S -<span class="meta">O2</span> code.cpp</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">f1</span><span class="params">(<span class="type">int</span> *a)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">3</span>;i++) &#123;</span><br><span class="line">        a[i] = a[i] + <span class="number">2</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">f2</span><span class="params">(<span class="type">int</span> *a)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    a[<span class="number">0</span>] = a[<span class="number">0</span>] + <span class="number">2</span>;</span><br><span class="line">    a[<span class="number">1</span>] = a[<span class="number">1</span>] + <span class="number">2</span>;</span><br><span class="line">    a[<span class="number">2</span>] = a[<span class="number">2</span>] + <span class="number">2</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="type">int</span> a[<span class="number">3</span>] = &#123;<span class="number">0</span>,<span class="number">1</span>,<span class="number">2</span>&#125;;</span><br><span class="line">    <span class="built_in">f1</span>(a);</span><br><span class="line">    <span class="built_in">f2</span>(a);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意使用-O2编译，生成的.s文件可以直接打开，部分代码如下：</p>
+<figure class="highlight jboss-cli"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">.LFB961</span>:</span><br><span class="line">        <span class="string">.cfi_startproc</span></span><br><span class="line">        <span class="string">.cfi_personality</span> 0x0,__gxx_personality_v0</span><br><span class="line">        pushl   %ebp</span><br><span class="line">        <span class="string">.cfi_def_cfa_offset</span> 8</span><br><span class="line">        <span class="string">.cfi_offset</span> 5, -8</span><br><span class="line">        movl    %esp, %ebp</span><br><span class="line">        <span class="string">.cfi_def_cfa_register</span> 5</span><br><span class="line">        movl    8<span class="params">(%ebp)</span>, %eax</span><br><span class="line">        addl    $2, <span class="params">(%eax)</span></span><br><span class="line">        addl    $2, 4<span class="params">(%eax)</span></span><br><span class="line">        addl    $2, 8<span class="params">(%eax)</span></span><br><span class="line">        popl    %ebp</span><br><span class="line">        <span class="string">.cfi_restore</span> 5</span><br><span class="line">        <span class="string">.cfi_def_cfa</span> 4, 4</span><br><span class="line">        ret</span><br><span class="line">        <span class="string">.cfi_endproc</span></span><br><span class="line"><span class="string">.LFE961</span>:</span><br><span class="line">        <span class="string">.size</span>   _Z2f1Pi, <span class="string">.-_Z2f1Pi</span></span><br><span class="line">        <span class="string">.p2align</span> 4,,15</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h2 id="objdump"><a href="#objdump" class="headerlink" title="objdump"></a>objdump</h2><p>最常用命令为：</p>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">objdump</span> -S <span class="meta">code</span></span><br></pre></td></tr></table></figure>
+<p>即同时显示源代码和汇编代码，部分代码为：</p>
+<figure class="highlight mel"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">void f1(<span class="keyword">int</span> *a)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">3</span>;i++) &#123;</span><br><span class="line">        a[i] = a[i] + <span class="number">2</span>;</span><br><span class="line">  <span class="number">400680</span>:	<span class="number">83</span> <span class="number">07</span> <span class="number">02</span>             	addl   $0x2,(%rdi)</span><br><span class="line">  <span class="number">400683</span>:	<span class="number">83</span> <span class="number">47</span> <span class="number">04</span> <span class="number">02</span>          	addl   $0x2,<span class="number">0x4</span>(%rdi)   <span class="comment">// 取出寄存器的值，然后加上4，得到的值作为地址，间接寻址得到需要的数据</span></span><br><span class="line">  <span class="number">400687</span>:	<span class="number">83</span> <span class="number">47</span> <span class="number">08</span> <span class="number">02</span>          	addl   $0x2,<span class="number">0x8</span>(%rdi)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">  <span class="number">40068</span>b:	c3                   	retq</span><br><span class="line">  <span class="number">40068</span>c:	<span class="number">0</span>f <span class="number">1</span>f <span class="number">40</span> <span class="number">00</span>          	nopl   <span class="number">0x0</span>(%rax)</span><br></pre></td></tr></table></figure>
+
+<p>二进制文件也可以使用vim或emacs打开，使用十六进制打开即可:</p>
+<figure class="highlight elixir"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim命令为<span class="symbol">:%</span>!xxd</span><br></pre></td></tr></table></figure>
+<p>emacs命令为：</p>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALT+<span class="attribute">X</span> hexl-mode</span><br></pre></td></tr></table></figure>
+<p>当然也可以使用hexdump查询十六进制(od也可以，只是默认八进制)，命令为：</p>
+<figure class="highlight stata"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">hexdump</span> -C 二进制文件 | <span class="keyword">more</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="gdb"><a href="#gdb" class="headerlink" title="gdb"></a>gdb</h2><p>gdb有2种使用方式，一个是直接挂载指定的进程，命令为</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gdb -p <span class="tag">&lt;<span class="name">pid</span>&gt;</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>另一种方式就加载二进制文件或core文件，命令为：</p>
+<figure class="highlight llvm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gdb -<span class="keyword">c</span> core  得到二进制文件地址</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>加载二进制文件方式：</p>
+<figure class="highlight autoit"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">gdb <span class="built_in">binary</span> 或</span><br><span class="line"></span><br><span class="line">gdb <span class="built_in">binary</span> core</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="运行相关"><a href="#运行相关" class="headerlink" title="运行相关"></a>运行相关</h3><figure class="highlight autoit"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">run</span>：简记为 r ，其作用是运行程序，当遇到断点后，程序会在断点处停止运行，等待用户输入下一步的命令。</span><br><span class="line">continue （简写c ）：继续执行，到下一个断点处（或运行结束）</span><br><span class="line"><span class="keyword">next</span>：（简写 n），单步跟踪程序，当遇到函数调用时，也不进入此函数体；此命令同 <span class="keyword">step</span> 的主要区别是，<span class="keyword">step</span> 遇到用户自定义的函数，将步进到函数中去运行，而 <span class="keyword">next</span> 则直接调用函数，不会进入到函数体内。</span><br><span class="line"><span class="keyword">step</span> （简写s）：单步调试如果有函数调用，则进入函数；与命令n不同，n是不进入调用的函数的</span><br><span class="line"><span class="keyword">until</span>：当你厌倦了在一个循环体内单步跟踪时，这个命令可以运行程序直到退出循环体。</span><br><span class="line"><span class="keyword">until</span>+行号： 运行至某行，不仅仅用来跳出循环</span><br><span class="line">finish： 运行程序，直到当前函数完成返回，并打印函数返回时的堆栈地址和返回值及参数值等信息。</span><br><span class="line"><span class="built_in">call</span> 函数(参数)：调用程序中可见的函数，并传递“参数”，如：<span class="built_in">call</span> gdb_test(<span class="number">55</span>)</span><br><span class="line">frame/f 帧编号： 选择栈帧</span><br><span class="line">start：开始执行程序，停在main函数第一行语句前面等待命令</span><br><span class="line">quit：简记为 q ，退出gdb</span><br></pre></td></tr></table></figure>
+
+<h3 id="break"><a href="#break" class="headerlink" title="break"></a>break</h3><figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">b</span> <span class="selector-tag">main</span>           <span class="comment">// main函数设置断点</span></span><br><span class="line"><span class="selector-tag">b</span> <span class="number">8</span>             <span class="comment">// 第8行设置断点</span></span><br><span class="line"><span class="selector-tag">b</span> <span class="selector-tag">main</span><span class="selector-class">.cpp</span>:<span class="selector-tag">main</span> <span class="comment">//main文件的main函数设置断点</span></span><br><span class="line"><span class="selector-tag">b</span> <span class="selector-tag">main</span><span class="selector-class">.cpp</span>:<span class="number">8</span>    <span class="comment">//main文件的第8行设置断点</span></span><br><span class="line">delete 断点号n  <span class="comment">//删除第n个断点</span></span><br><span class="line">disable 断点号n <span class="comment">//暂停第n个断点</span></span><br><span class="line">enable 断点号n  <span class="comment">//开启第n个断点</span></span><br><span class="line">delete breakpoints <span class="comment">//清除所有断点</span></span><br></pre></td></tr></table></figure>
+<h3 id="info"><a href="#info" class="headerlink" title="info"></a>info</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">查看当前程序栈的信息: <span class="built_in">info</span> frame----list general <span class="built_in">info</span> about the frame</span><br><span class="line">查看当前程序栈的参数: <span class="built_in">info</span> args---lists arguments <span class="keyword">to</span> the function</span><br><span class="line">查看当前程序栈的局部变量: <span class="built_in">info</span> locals---list variables stored <span class="keyword">in</span> the frame</span><br><span class="line">查看当前寄存器的值：<span class="built_in">info</span> registers(不包括浮点寄存器) <span class="built_in">info</span> all-registers(包括浮点寄存器)</span><br><span class="line">查看当前栈帧中的异常处理器：<span class="built_in">info</span> catch(exception handlers)</span><br><span class="line">查看断点信息： <span class="built_in">info</span> break</span><br><span class="line">查看当前线程： <span class="built_in">info</span> threads</span><br></pre></td></tr></table></figure>
+
+<h3 id="查看源码"><a href="#查看源码" class="headerlink" title="查看源码"></a>查看源码</h3><figure class="highlight lsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">list</span> ：简记为 l ，其作用就是列出程序的源代码，默认每次显示<span class="number">10</span>行。</span><br><span class="line"><span class="type">list</span> 行号：将显示当前文件以“行号”为中心的前后<span class="number">10</span>行代码，如：<span class="type">list</span> <span class="number">12</span></span><br><span class="line"><span class="type">list</span> 函数名：将显示“函数名”所在函数的源代码，如：<span class="type">list</span> main</span><br></pre></td></tr></table></figure>
+
+<h3 id="打印"><a href="#打印" class="headerlink" title="打印"></a>打印</h3><figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">p</span>/<span class="attribute">x</span> <span class="selector-tag">var</span>   //以十六进制打印整数<span class="selector-tag">var</span></span><br><span class="line"><span class="selector-tag">p</span>/<span class="selector-tag">a</span> addr  //打印十六进制形式的地址</span><br><span class="line"><span class="selector-tag">p</span>/u <span class="selector-tag">var</span>   //变量<span class="selector-tag">var</span>无符号整数打印</span><br></pre></td></tr></table></figure>
+
+<h3 id="分割窗口"><a href="#分割窗口" class="headerlink" title="分割窗口"></a>分割窗口</h3><figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">layout</span>：用于分割窗口，可以一边查看代码，一边测试</span><br><span class="line"><span class="keyword">layout</span> src：显示源代码窗口</span><br><span class="line"><span class="keyword">layout</span> asm：显示反汇编窗口</span><br><span class="line"><span class="keyword">layout</span> regs：显示源代码/反汇编和CPU寄存器窗口</span><br><span class="line"><span class="keyword">layout</span> split：显示源代码和反汇编窗口  <span class="comment">//推荐这个命令，汇编的si/ni对应源码的s/n,si会进入汇编和C函数内部,ni不会</span></span><br><span class="line">Ctrl + L：刷新窗口</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="多线程"><a href="#多线程" class="headerlink" title="多线程"></a>多线程</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">info threads   <span class="comment">//查看当前进程的线程</span></span><br><span class="line">thread &lt;id&gt;    <span class="comment">//切换线程</span></span><br><span class="line">f <span class="number">3</span> <span class="comment">//选择栈帧</span></span><br></pre></td></tr></table></figure>
+
+<p>参考链接：<br><a href="http://www.cnblogs.com/ggjucheng/archive/2011/12/14/2287738.html">http://www.cnblogs.com/ggjucheng/archive/2011/12/14/2287738.html</a><br><a href="http://man.linuxde.net/objdump">http://man.linuxde.net/objdump</a><br><a href="http://linuxtools-rst.readthedocs.io/zh_CN/latest/tool/gdb.html">http://linuxtools-rst.readthedocs.io/zh_CN&#x2F;latest&#x2F;tool&#x2F;gdb.html</a></p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#gcc"><span class="toc-number">1.</span> <span class="toc-text">gcc</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A2%84%E5%A4%84%E7%90%86"><span class="toc-number">1.1.</span> <span class="toc-text">预处理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BC%96%E8%AF%91%E4%B8%BA%E6%B1%87%E7%BC%96%E4%BB%A3%E7%A0%81-Compilation"><span class="toc-number">1.2.</span> <span class="toc-text">编译为汇编代码(Compilation)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B1%87%E7%BC%96-Assembly"><span class="toc-number">1.3.</span> <span class="toc-text">汇编(Assembly)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%9E%E6%8E%A5-Linking"><span class="toc-number">1.4.</span> <span class="toc-text">连接(Linking)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%80%E4%BA%9B%E6%8A%80%E5%B7%A7"><span class="toc-number">1.5.</span> <span class="toc-text">一些技巧</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#objdump"><span class="toc-number">2.</span> <span class="toc-text">objdump</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#gdb"><span class="toc-number">3.</span> <span class="toc-text">gdb</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E7%9B%B8%E5%85%B3"><span class="toc-number">3.1.</span> <span class="toc-text">运行相关</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#break"><span class="toc-number">3.2.</span> <span class="toc-text">break</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#info"><span class="toc-number">3.3.</span> <span class="toc-text">info</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E6%BA%90%E7%A0%81"><span class="toc-number">3.4.</span> <span class="toc-text">查看源码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%89%93%E5%8D%B0"><span class="toc-number">3.5.</span> <span class="toc-text">打印</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%86%E5%89%B2%E7%AA%97%E5%8F%A3"><span class="toc-number">3.6.</span> <span class="toc-text">分割窗口</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%9A%E7%BA%BF%E7%A8%8B"><span class="toc-number">3.7.</span> <span class="toc-text">多线程</span></a></li></ol></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2013/08/04/redis-source/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          准备看下Redis的源代码
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2012/10/01/install-tools/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">工欲善其事必先利其器&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

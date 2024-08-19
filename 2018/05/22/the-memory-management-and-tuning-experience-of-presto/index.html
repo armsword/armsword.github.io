@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Presto内存管理原理和调优 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="内存池Presto有三种内存池，分别为GENERAL_POOL、RESERVED_POOL、SYSTEM_POOL。这三个内存池占用的内存大小是由下面算法进行分配的： 123456789builder.put(RESERVED_POOL, new MemoryPool(RESERVED_POOL, config.getMaxQueryMemoryPerNode()));builder.put(SY">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Presto内存管理原理和调优">
+<meta property="og:url" content="http://armsword.com/2018/05/22/the-memory-management-and-tuning-experience-of-presto/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="内存池Presto有三种内存池，分别为GENERAL_POOL、RESERVED_POOL、SYSTEM_POOL。这三个内存池占用的内存大小是由下面算法进行分配的： 123456789builder.put(RESERVED_POOL, new MemoryPool(RESERVED_POOL, config.getMaxQueryMemoryPerNode()));builder.put(SY">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2018/05/presto.png">
+<meta property="article:published_time" content="2018-05-22T10:32:44.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.291Z">
+<meta property="article:author" content="armsword">
+<meta property="article:tag" content="presto">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2018/05/presto.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-the-memory-management-and-tuning-experience-of-presto" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Presto内存管理原理和调优
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2018/05/22/the-memory-management-and-tuning-experience-of-presto/" class="article-date">
+  <time datetime="2018-05-22T10:32:44.000Z" itemprop="datePublished">2018-05-22</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="内存池"><a href="#内存池" class="headerlink" title="内存池"></a>内存池</h2><p>Presto有三种内存池，分别为GENERAL_POOL、RESERVED_POOL、SYSTEM_POOL。这三个内存池占用的内存大小是由下面算法进行分配的：</p>
+<figure class="highlight gradle"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">builder.put(RESERVED_POOL, <span class="keyword">new</span> MemoryPool(RESERVED_POOL, config.getMaxQueryMemoryPerNode()));</span><br><span class="line"></span><br><span class="line">builder.put(SYSTEM_POOL, <span class="keyword">new</span> MemoryPool(SYSTEM_POOL, systemMemoryConfig.getReservedSystemMemory()));</span><br><span class="line"></span><br><span class="line"><span class="keyword">long</span> maxHeap = <span class="keyword">Runtime</span>.getRuntime().maxMemory();</span><br><span class="line">maxMemory = <span class="keyword">new</span> DataSize(maxHeap - systemMemoryConfig.getReservedSystemMemory().toBytes(), <span class="keyword">BYTE</span>);</span><br><span class="line">DataSize generalPoolSize = <span class="keyword">new</span> DataSize(Math.max(<span class="number">0</span>, maxMemory.toBytes() - config.getMaxQueryMemoryPerNode().toBytes()), <span class="keyword">BYTE</span>);</span><br><span class="line">builder.put(GENERAL_POOL, <span class="keyword">new</span> MemoryPool(GENERAL_POOL, generalPoolSize));</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>梳理这块代码对应的逻辑和配置文件，得出RESERVED_POOL大小由config.properties里的query.max-memory-per-node指定；SYSTEM_POOL由config.properties里的resources.reserved-system-memory指定，如果不指定，默认值为Runtime.getRuntime().maxMemory() * 0.4，即0.4 * Xmx值；而GENERAL_POOL值为 总内存（Xmx值）- 预留的（max-memory-per-node）- 系统的（0.4 * Xmx）。</p>
+<p>而这三种内存池分别用于不同的地方，分析代码和阅读Presto开发手册，大体可以定位出：</p>
+<ul>
+<li>GENERAL_POOL is the memory pool used by the physical operators in a query.</li>
+<li>SYSTEM_POOL is mostly used by the exchange buffers and readers&#x2F;writers.</li>
+<li>RESERVED_POOL is for running a large query when the general pool becomes full.</li>
+</ul>
+<span id="more"></span>
+
+<p>简单说GENERAL_POOL用于普通查询的physical operators；SYSTEM_POOL用于读写buffer；而RESERVED_POOL比较特殊，大部分时间里是不参与计算的，只有当同时满足如下情形下，才会被使用，然后从所有查询里获取占用内存最大的那个查询，然后将该查询放到 RESERVED_POOL 里执行，同时注意RESERVED_POOL只能用于一个Query。</p>
+<p>1、GENERAL_POOL有节点出现阻塞节点（block node）情况，即该node内存不足<br>2、RESERVED_POOL没有被使用</p>
+<p>GENERAL_POOL、RESERVED_POOL、SYSTEM_POOL应配合合理的值，如果并发比较大时，建议SYSTEM_POOL保持默认或者稍微再大一点。目前我的经验配置是SYSTEM_POOL为1&#x2F;3 * Xmx(虽然我们并发较多，但是依然调低了此值)；RESERVED_POOL 为 1&#x2F;9 * XMX。</p>
+<p>当然你可以通过HTTP请求查看每台Worker的&#x2F;v1&#x2F;status，来预估具体需要配置多大的内存，如图所示，显示了各内存池的使用量。</p>
+<img src="/img/2018/05/presto.png" width = "66%" />		
+
+
+<h2 id="内存限制和管理"><a href="#内存限制和管理" class="headerlink" title="内存限制和管理"></a>内存限制和管理</h2><h3 id="单机维度"><a href="#单机维度" class="headerlink" title="单机维度"></a>单机维度</h3><ul>
+<li><p>GENERAL_POOL每次内存申请时，都会判断内存使用量是否超过了最大内存，如果超过了就报错，错误为“Query exceeded local memory limit of x”，这保护了Presto会无限申请内存，只会导致当前查询出错。同时，如果该节点的GENERAL_POOL可使用内存以及可回收内存为0，那么认为该node为Block node。</p>
+</li>
+<li><p>RESERVED_POOL可以认为是查询最大的SQL，其能满足GENERAL_POOL的内存限制策略，那么肯定会满足RESERVED_POOL的策略（复用了GENERAL_POOL策略）。</p>
+</li>
+<li><p>RESERVED_POOL目前版本未发现可以限制内存，所以当并发非常高，且scan的数据非常大时，有低概率会引起OOM问题。但是配合Resource Group，内存设置合理，也基本会避免OOM问题。</p>
+</li>
+</ul>
+<h3 id="集群维度"><a href="#集群维度" class="headerlink" title="集群维度"></a>集群维度</h3><p>同时满足以下两点时，Presto便认为集群超出要求的内存了：</p>
+<ul>
+<li>GENERAL_POOL出现阻塞节点（Block node）</li>
+<li>RESERVED_POOL已经被使用</li>
+</ul>
+<p>当判断出集群超出CLuster Memory时，有两种方式管理内存：<br>1、挨个遍历每个查询，判断当前查询占用的总内存是否超过了query.max-memory（config.properties里配置），如果超过了，那么该查询就被failed。<br>2、如果query.max-memory配置的不合理，值非常大，那么可能过了5秒（默认时间）依然不满足第一种情形，那么将会使用第二种方法管理查询。第二种管理方法又分为两种小的管理，根据LowMemoryKillerPolicy来决定Kill查询策略，其分为total-reservation和total-reservation-on-blocked-nodes。配置total-reservation的作用是kill掉所有查询里最费内存的查询；而total-reservation-on-blocked-nodes杀死在内存不足（阻塞）的节点上使用最多内存的查询。</p>
+<h2 id="Resource-Groups"><a href="#Resource-Groups" class="headerlink" title="Resource Groups"></a>Resource Groups</h2><p><a href="https://prestodb.io/docs/current/admin/resource-groups.html">Resource Groups</a> 可以认为是Presto实现了一个弱资源限制和隔离功能。其可以为每个group指定队列大小、并发大小、内存使用大小。为每个group设置合理的hardConcurrencyLimit（最大并发数）、softMemoryLimit（内存最大使用值）及maxQueued（队列大小）一方面可以使不同业务影响降低，另一方面也大概率避免OOM问题，当然善于运用user及做下二次开发，就可以让Presto支持多用户共用同一分组和权限认证功能。</p>
+<h2 id="OOM"><a href="#OOM" class="headerlink" title="OOM"></a>OOM</h2><p>即使按照上述内存管理做了调优，但Presto依然会遇到OOM问题，此时会显示”INTERNAL_ERROR”，仔细查看错误原因为报类似的错误：</p>
+<figure class="highlight livecodeserver"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Encountered too many errors talking <span class="built_in">to</span> <span class="keyword">a</span> worker node. The node may have crashed <span class="keyword">or</span> be under too much <span class="built_in">load</span>. This is probably <span class="keyword">a</span> transient issue, so please retry your query <span class="keyword">in</span> <span class="keyword">a</span> few minutes.</span><br></pre></td></tr></table></figure>
+
+<p>如果是这种情形，大概率是JVM OOM了。如果确定了确实是JVM OOM的原因，那么可以参考我们的JVM（G1 GC）调参经验，以下配置添加到jvm.config里会明显避免OOM问题。</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">-XX:<span class="attribute">G1ReservePercent</span>=15</span><br><span class="line">-XX:<span class="attribute">InitiatingHeapOccupancyPercent</span>=40</span><br><span class="line">-XX:<span class="attribute">ConcGCThreads</span>=8</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>好了，本文简单介绍了下Presto内存管理方面的原理和一些经验，因为Presto相关的技术文章比较少，且关注的用户越来越多，所以我会不定期更新一些Presto相关的技术文章，如果有错误的地方也请及时提醒，有关注Presto的同行也欢迎与我讨论交流。</p>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E6%B1%A0"><span class="toc-number">1.</span> <span class="toc-text">内存池</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E9%99%90%E5%88%B6%E5%92%8C%E7%AE%A1%E7%90%86"><span class="toc-number">2.</span> <span class="toc-text">内存限制和管理</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8D%95%E6%9C%BA%E7%BB%B4%E5%BA%A6"><span class="toc-number">2.1.</span> <span class="toc-text">单机维度</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9B%86%E7%BE%A4%E7%BB%B4%E5%BA%A6"><span class="toc-number">2.2.</span> <span class="toc-text">集群维度</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Resource-Groups"><span class="toc-number">3.</span> <span class="toc-text">Resource Groups</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#OOM"><span class="toc-number">4.</span> <span class="toc-text">OOM</span></a></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2018/08/11/the-basic-concepts-of-presto/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          Presto的一些基本概念
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2017/12/05/presto/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">分布式SQL查询引擎Presto原理介绍&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

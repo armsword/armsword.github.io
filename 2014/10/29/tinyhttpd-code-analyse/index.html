@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>tinyhttpd源码剖析 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="喊了几天学习Web开发，为了毕业论文，今晚上计划也是看看CSS呢，但是实在是没忍住，读了下经典的tinyhttp的源代码，这款代码还是颇有名气的，网上这么评论的：  tinyhttpd是一个超轻量型Http Server，使用C语言开发，全部代码只有500、600行，附带一个简单的Client，可以通过阅读这段代码理解一个Http Server的本质。  其实，代码颇简单，适合刚学习Web Ser">
+<meta property="og:type" content="article">
+<meta property="og:title" content="tinyhttpd源码剖析">
+<meta property="og:url" content="http://armsword.com/2014/10/29/tinyhttpd-code-analyse/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="喊了几天学习Web开发，为了毕业论文，今晚上计划也是看看CSS呢，但是实在是没忍住，读了下经典的tinyhttp的源代码，这款代码还是颇有名气的，网上这么评论的：  tinyhttpd是一个超轻量型Http Server，使用C语言开发，全部代码只有500、600行，附带一个简单的Client，可以通过阅读这段代码理解一个Http Server的本质。  其实，代码颇简单，适合刚学习Web Ser">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2014/10/2014102901.png">
+<meta property="og:image" content="http://armsword.com/img/2014/10/2014102902.png">
+<meta property="article:published_time" content="2014-10-28T16:46:18.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.290Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2014/10/2014102901.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-tinyhttpd-code-analyse" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      tinyhttpd源码剖析
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/10/29/tinyhttpd-code-analyse/" class="article-date">
+  <time datetime="2014-10-28T16:46:18.000Z" itemprop="datePublished">2014-10-29</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C-C/">C/C++</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>喊了几天学习Web开发，为了毕业论文，今晚上计划也是看看CSS呢，但是实在是没忍住，读了下经典的tinyhttp的源代码，这款代码还是颇有名气的，网上这么评论的：</p>
+<blockquote>
+<p>tinyhttpd是一个超轻量型Http Server，使用C语言开发，全部代码只有500、600行，附带一个简单的Client，可以通过阅读这段代码理解一个Http Server的本质。</p>
+</blockquote>
+<p>其实，代码颇简单，适合刚学习Web Server的童鞋学习，因为我之前写过CGI Server，所以，我还是认为此代码写的一般，并且我在Ubuntu下编译遇到了不少错误，我都懒得写详细分析了，所以随便写下吧，后面的Github地址里有详细的分析。</p>
+<p>源码下载地址：<a href="http://sourceforge.net/projects/tinyhttpd/" title="tinyhttpd源码分析">http://sourceforge.net/projects/tinyhttpd/</a></p>
+<span id="more"></span>
+
+<p>make编译后会有不少错误和警告，我这里说下怎么改正错误：</p>
+<ol>
+<li><p>Makefile文件里的：gcc -W -Wall -lsocket -lpthread -o httpd httpd.c ，修改为：<br>gcc -W -Wall -o httpd httpd.c -lpthread</p>
+</li>
+<li><p>481行的 int client_name_len 改为 socklen_t client_name_len</p>
+</li>
+<li><p>436行 改动与上面相似，改为socklen_t类型即可。</p>
+</li>
+<li><p>34行改为void *accept_request(void *);  所以下面的实现也要修改下：</p>
+</li>
+</ol>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> *<span class="title">accept_request</span><span class="params">(<span class="type">void</span>* client1)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">int</span> client = *(<span class="type">int</span> *)client1;</span><br><span class="line">    <span class="type">char</span> buf[<span class="number">1024</span>];</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 省略</span></span><br><span class="line">    <span class="comment">// 同时注意此函数77 和129行改为return NULL;</span></span><br><span class="line">    <span class="comment">// 497行改为</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">pthread_create</span>(&amp;amp;newthread , <span class="literal">NULL</span>, accept_request, (<span class="type">void</span>*)client_sock) != <span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+
+<p>之后再make，程序就OK了。</p>
+<p>简单说下程序的逻辑吧：</p>
+<p>一个无限循环，一个请求，创建一个线程，之后线程处理函数处理每个请求，然后解析HTTP请求，然后做一些判断处理，之后判断文件是否可执行，不可执行，打开文件，输出给客户端（浏览器）呗，可执行就创建管道，父子进程通信。</p>
+<p>整个流程就这么简单，程序主要处理2种HTTP请求方式：GET和POST，懒得说了，上传两张图片，自己分析吧，图片原始出处不清楚，电脑里存了好久了,。</p>
+<p>GET：</p>
+<p><img src="/img/2014/10/2014102901.png"></p>
+<p>POST：</p>
+<p><img src="/img/2014/10/2014102902.png"></p>
+<p>其实这个源码里有一个地方比较难懂，就是那个解析HTTP每一行的那个get_line函数里的recv的MSG_PEEK参数，详细解释可以参考此<a href="http://www.blogbus.com/gcoder-logs/220779725.html">链接</a>。</p>
+<figure class="highlight sas"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">// 读取socket，判断换行，CRLF标志，之后以<span class="string">&quot;\n&quot;</span>换行，并在字符串后添加<span class="string">&#x27;\0&#x27;</span></span><br><span class="line">int get_line(int sock, char <span class="comment">*buf, int size)</span></span><br><span class="line"><span class="comment">&#123;</span></span><br><span class="line"><span class="comment">    int i = 0;</span></span><br><span class="line">    char c = <span class="string">&#x27;&amp;#92;&amp;#48;&#x27;</span>;</span><br><span class="line">    int n;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ((i <span class="variable">&amp;lt</span>; size - 1) <span class="variable">&amp;amp</span>;<span class="variable">&amp;amp</span>; (c != <span class="string">&#x27;\n&#x27;</span>))</span><br><span class="line">    &#123;</span><br><span class="line">        // 一个字符一个字符的读取</span><br><span class="line">        n = re<span class="meta">cv</span>(sock, <span class="variable">&amp;c</span>, 1, 0);</span><br><span class="line">         <span class="comment">/* DEBUG printf(&quot;%02X\n&quot;, c); */</span></span><br><span class="line">        <span class="keyword">if</span> (n <span class="variable">&amp;gt</span>; 0)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span> (c == <span class="string">&#x27;\r&#x27;</span>)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="comment">/*</span></span><br><span class="line"><span class="comment">                 * 注意MSG_PEEK参数，表示TCP Buffer不删除之前队列数据，从队列里接收数据</span></span><br><span class="line"><span class="comment">                 */</span></span><br><span class="line"></span><br><span class="line">                n = re<span class="meta">cv</span>(sock, <span class="variable">&amp;amp</span>;c, 1, MSG_PEEK);</span><br><span class="line">                <span class="comment">/* DEBUG printf(&amp;quot;%02X\n&amp;quot;, c); */</span></span><br><span class="line">                <span class="keyword">if</span> ((n <span class="variable">&amp;gt</span>; 0) <span class="variable">&amp;amp</span>;<span class="variable">&amp;amp</span>; (c == <span class="string">&#x27;\n&#x27;</span>))</span><br><span class="line">                    re<span class="meta">cv</span>(sock, <span class="variable">&amp;amp</span>;c, 1, 0);</span><br><span class="line">                <span class="keyword">else</span></span><br><span class="line">                    c = <span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            buf[i] = c;</span><br><span class="line">            i++;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            c = <span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    buf[i] = <span class="string">&#x27;&amp;#92;&amp;#48;&#x27;</span>;</span><br><span class="line"></span><br><span class="line">    retur<span class="meta">n</span>(i);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>这代码，没啥写头，很多功能都没实现，请求只实现了GET和POST，Header里只用了第一行，CGI里全局变量只定义了几个，并且我验证程序，发现CGI功能好像是有些问题的，但是因为我CGI水平比较水，懒得检测原因了，总体来说，程序比我之前的那个CGI Server要简单些，功能要稍微弱些吧。</p>
+<p>下面放出我Github里的详细中文注释，欢迎指正，谢谢：</p>
+<p><a href="https://github.com/armsword/Source/tree/master/tinyhttpd" title="tinyhttpd源码剖析">https://github.com/armsword/Source/tree/master/tinyhttpd</a></p>
+
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2015/01/26/jwsmtp-analyse/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          jwSMTP源码剖析
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2014/10/26/webbench-source-analyse/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Webbench源码剖析&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

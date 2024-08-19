@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Elasticsearch常用的命令 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="集群健康状态相关 查看集群健康状态 查看未分配原因 查看具体索引未分配或不搬迁的原因 解释一个索引为什么分配到该节点 重新尝试分配失败的shard 查看等待中的任务 查看nodes 查看active master 查看集群内正在搬迁的索引   索引相关 查看index配置信息 查看index的mapping信息 查看index的模板 查看index的shard信息 修改索引默认延时 索引搬迁 取">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Elasticsearch常用的命令">
+<meta property="og:url" content="http://armsword.com/2022/09/27/the-most-frequently-used-commands-of-elasticsearch/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="集群健康状态相关 查看集群健康状态 查看未分配原因 查看具体索引未分配或不搬迁的原因 解释一个索引为什么分配到该节点 重新尝试分配失败的shard 查看等待中的任务 查看nodes 查看active master 查看集群内正在搬迁的索引   索引相关 查看index配置信息 查看index的mapping信息 查看index的模板 查看index的shard信息 修改索引默认延时 索引搬迁 取">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2022/09/cluster_name.png">
+<meta property="og:image" content="http://armsword.com/img/2022/09/index.png">
+<meta property="og:image" content="http://armsword.com/img/2022/09/tasks.png">
+<meta property="og:image" content="http://armsword.com/img/2022/09/checkpoint.png">
+<meta property="article:published_time" content="2022-09-27T07:10:23.000Z">
+<meta property="article:modified_time" content="2023-08-08T02:12:16.000Z">
+<meta property="article:author" content="armsword">
+<meta property="article:tag" content="elasticsearch">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2022/09/cluster_name.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-the-most-frequently-used-commands-of-elasticsearch" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Elasticsearch常用的命令
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2022/09/27/the-most-frequently-used-commands-of-elasticsearch/" class="article-date">
+  <time datetime="2022-09-27T07:10:23.000Z" itemprop="datePublished">2022-09-27</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ul>
+<li><a href="#%E9%9B%86%E7%BE%A4%E5%81%A5%E5%BA%B7%E7%8A%B6%E6%80%81%E7%9B%B8%E5%85%B3">集群健康状态相关</a><ul>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E9%9B%86%E7%BE%A4%E5%81%A5%E5%BA%B7%E7%8A%B6%E6%80%81">查看集群健康状态</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E6%9C%AA%E5%88%86%E9%85%8D%E5%8E%9F%E5%9B%A0">查看未分配原因</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E5%85%B7%E4%BD%93%E7%B4%A2%E5%BC%95%E6%9C%AA%E5%88%86%E9%85%8D%E6%88%96%E4%B8%8D%E6%90%AC%E8%BF%81%E7%9A%84%E5%8E%9F%E5%9B%A0">查看具体索引未分配或不搬迁的原因</a></li>
+<li><a href="#%E8%A7%A3%E9%87%8A%E4%B8%80%E4%B8%AA%E7%B4%A2%E5%BC%95%E4%B8%BA%E4%BB%80%E4%B9%88%E5%88%86%E9%85%8D%E5%88%B0%E8%AF%A5%E8%8A%82%E7%82%B9">解释一个索引为什么分配到该节点</a></li>
+<li><a href="#%E9%87%8D%E6%96%B0%E5%B0%9D%E8%AF%95%E5%88%86%E9%85%8D%E5%A4%B1%E8%B4%A5%E7%9A%84shard">重新尝试分配失败的shard</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E7%AD%89%E5%BE%85%E4%B8%AD%E7%9A%84%E4%BB%BB%E5%8A%A1">查看等待中的任务</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8Bnodes">查看nodes</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8Bactive-master">查看active master</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E9%9B%86%E7%BE%A4%E5%86%85%E6%AD%A3%E5%9C%A8%E6%90%AC%E8%BF%81%E7%9A%84%E7%B4%A2%E5%BC%95">查看集群内正在搬迁的索引</a></li>
+</ul>
+</li>
+<li><a href="#%E7%B4%A2%E5%BC%95%E7%9B%B8%E5%85%B3">索引相关</a><ul>
+<li><a href="#%E6%9F%A5%E7%9C%8Bindex%E9%85%8D%E7%BD%AE%E4%BF%A1%E6%81%AF">查看index配置信息</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8Bindex%E7%9A%84mapping%E4%BF%A1%E6%81%AF">查看index的mapping信息</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8Bindex%E7%9A%84%E6%A8%A1%E6%9D%BF">查看index的模板</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8Bindex%E7%9A%84shard%E4%BF%A1%E6%81%AF">查看index的shard信息</a></li>
+<li><a href="#%E4%BF%AE%E6%94%B9%E7%B4%A2%E5%BC%95%E9%BB%98%E8%AE%A4%E5%BB%B6%E6%97%B6">修改索引默认延时</a></li>
+<li><a href="#%E7%B4%A2%E5%BC%95%E6%90%AC%E8%BF%81">索引搬迁</a></li>
+<li><a href="#%E5%8F%96%E6%B6%88%E7%B4%A2%E5%BC%95%E6%90%AC%E8%BF%81">取消索引搬迁</a></li>
+<li><a href="#%E7%B4%A2%E5%BC%95shard%E9%87%8D%E5%AE%9A%E5%90%91%E4%B8%A2%E5%BC%83shard">索引shard重定向（丢弃shard）</a></li>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E7%B4%A2%E5%BC%95checkpoint%E4%BF%A1%E6%81%AF">查看索引checkpoint信息</a></li>
+<li><a href="#%E7%B4%A2%E5%BC%95reindex">索引reindex</a></li>
+<li><a href="#%E8%BF%81%E7%A7%BBshard%E5%88%B0%E5%88%AB%E7%9A%84%E8%8A%82%E7%82%B9">迁移shard到别的节点</a></li>
+</ul>
+</li>
+<li><a href="#%E9%9B%86%E7%BE%A4%E7%9B%B8%E5%85%B3%E7%9A%84%E8%AE%BE%E7%BD%AE">集群相关的设置</a><ul>
+<li><a href="#%E6%9F%A5%E7%9C%8B%E8%8A%82%E7%82%B9%E9%85%8D%E7%BD%AE%E7%9A%84%E7%BA%BF%E7%A8%8B%E6%B1%A0%E5%A4%A7%E5%B0%8F">查看节点配置的线程池大小</a></li>
+<li><a href="#%E4%B8%B4%E6%97%B6%E5%85%B3%E9%97%AD%E7%A3%81%E7%9B%98%E6%A3%80%E6%B5%8B%E5%8A%A0%E5%BF%ABmaster%E5%A4%84%E7%90%86%E9%80%9F%E5%BA%A6">临时关闭磁盘检测加快master处理速度</a></li>
+<li><a href="#%E9%9B%86%E7%BE%A4%E7%BA%A7%E5%88%AB%E6%8E%92%E9%99%A4%E6%9F%90%E5%8F%B0%E6%9C%BA%E5%99%A8">集群级别排除某台机器</a></li>
+<li><a href="#%E6%97%A5%E5%BF%97%E7%BA%A7%E5%88%AB%E8%AE%BE%E7%BD%AE">日志级别设置</a></li>
+<li><a href="#%E9%9B%86%E7%BE%A4%E7%9A%84%E8%BF%81%E7%A7%BB%E5%8F%82%E6%95%B0">集群的迁移参数</a></li>
+<li><a href="#shard%E5%9D%87%E8%A1%A1%E7%9A%84%E8%AE%BE%E7%BD%AE">shard均衡的设置</a></li>
+<li><a href="#%E5%9F%BA%E4%BA%8E%E7%A3%81%E7%9B%98%E7%9A%84%E5%88%86%E7%89%87%E5%88%86%E9%85%8D%E8%AE%BE%E7%BD%AE">基于磁盘的分片分配设置</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="集群健康状态相关"><a href="#集群健康状态相关" class="headerlink" title="集群健康状态相关"></a>集群健康状态相关</h2><h3 id="查看集群健康状态"><a href="#查看集群健康状态" class="headerlink" title="查看集群健康状态"></a>查看集群健康状态</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cluster/health</span><br></pre></td></tr></table></figure>
+<img src="/img/2022/09/cluster_name.png" width = "100%" />
+number_of_pending_tasks：是指主节点创建索引并分配shards等任务，如果该指标数值一直未减小代表集群存在不稳定因素 。
+
+<h3 id="查看未分配原因"><a href="#查看未分配原因" class="headerlink" title="查看未分配原因"></a>查看未分配原因</h3><figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GET</span> _cluster/allocation/<span class="keyword">explain</span></span><br></pre></td></tr></table></figure>
+<p>有以下几种可能</p>
+<ul>
+<li>INDEX_CREATED : Unassigned as a result of an API creation of an index.    索引创建 : 由于API创建索引而未分配的</li>
+<li>CLUSTER_RECOVERED : Unassigned as a result of a full cluster recovery.   集群恢复 : 由于整个集群恢复而未分配</li>
+<li>INDEX_REOPENED : Unassigned as a result of opening a closed index.        索引重新打开</li>
+<li>DANGLING_INDEX_IMPORTED : Unassigned as a result of importing a dangling index.   导入危险的索引</li>
+<li>NEW_INDEX_RESTORED : Unassigned as a result of restoring into a new index.   重新恢复一个新索引</li>
+<li>EXISTING_INDEX_RESTORED : Unassigned as a result of restoring into a closed index.  重新恢复一个已关闭的索引</li>
+<li>REPLICA_ADDED : Unassigned as a result of explicit addition of a replica.      添加副本</li>
+<li>ALLOCATION_FAILED : Unassigned as a result of a failed allocation of the shard.    分配分片失败</li>
+<li>NODE_LEFT : Unassigned as a result of the node hosting it leaving the cluster.  集群中节点丢失</li>
+<li>REROUTE_CANCELLED : Unassigned as a result of explicit cancel reroute command.   reroute命令取消</li>
+<li>REINITIALIZED :  When a shard moves from started back to initializing, for example, with shadow replicas.   重新初始化</li>
+<li>REALLOCATED_REPLICA :  A better replica location is identified and causes the existing replica allocation to be cancelled.   重新分配副本</li>
+</ul>
+<h3 id="查看具体索引未分配或不搬迁的原因"><a href="#查看具体索引未分配或不搬迁的原因" class="headerlink" title="查看具体索引未分配或不搬迁的原因"></a>查看具体索引未分配或不搬迁的原因</h3><figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GET</span> _cluster/allocation/<span class="keyword">explain</span></span><br><span class="line">&#123;</span><br><span class="line">  &quot;index&quot;:&quot;index_name&quot;,</span><br><span class="line">  &quot;shard&quot;:<span class="number">0</span>,</span><br><span class="line">  &quot;primary&quot;:<span class="keyword">true</span> </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>返回结果：<br><img src="/img/2022/09/index.png" width = "100%" /></p>
+<ol>
+<li>The current state of the shard.</li>
+<li>The reason for the shard originally becoming unassigned.</li>
+<li>Whether to allocate the shard.</li>
+<li>Whether to allocate the shard to the particular node.</li>
+<li>The decider which led to the no decision for the node.导致该节点没有决策的决策器。</li>
+<li>An explanation as to why the decider returned a no decision, with a helpful hint pointing to the setting that led to the decision.              解释为什么决策器返回“否”决策，并提供一个有用的提示，指出导致该决策的设置。</li>
+</ol>
+<h3 id="解释一个索引为什么分配到该节点"><a href="#解释一个索引为什么分配到该节点" class="headerlink" title="解释一个索引为什么分配到该节点"></a>解释一个索引为什么分配到该节点</h3><figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GET</span> _cluster/allocation/<span class="keyword">explain</span></span><br><span class="line">&#123;</span><br><span class="line">  &quot;index&quot;: &quot;my-index-000001&quot;,</span><br><span class="line">  &quot;shard&quot;: <span class="number">0</span>,</span><br><span class="line">  &quot;primary&quot;: <span class="keyword">false</span>,</span><br><span class="line">  &quot;current_node&quot;: &quot;my-node&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="重新尝试分配失败的shard"><a href="#重新尝试分配失败的shard" class="headerlink" title="重新尝试分配失败的shard"></a>重新尝试分配失败的shard</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">POST _cluster/reroute?retry_failed=<span class="literal">true</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="查看等待中的任务"><a href="#查看等待中的任务" class="headerlink" title="查看等待中的任务"></a>查看等待中的任务</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cat/pending_tasks</span><br></pre></td></tr></table></figure>
+<p>可以看到任务都被指派了优先级（ 比如说 URGENT 要比 HIGH 更早的处理 ）<br><img src="/img/2022/09/tasks.png" width = "100%" /></p>
+<h3 id="查看nodes"><a href="#查看nodes" class="headerlink" title="查看nodes"></a>查看nodes</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cat/nodes</span><br></pre></td></tr></table></figure>
+<span id="more"></span>
+
+<h3 id="查看active-master"><a href="#查看active-master" class="headerlink" title="查看active master"></a>查看active master</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cat/master</span><br></pre></td></tr></table></figure>
+
+<h3 id="查看集群内正在搬迁的索引"><a href="#查看集群内正在搬迁的索引" class="headerlink" title="查看集群内正在搬迁的索引"></a>查看集群内正在搬迁的索引</h3><figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GET</span> _cat/recovery?v&amp;h=<span class="keyword">index</span>,shard,<span class="type">time</span>,<span class="keyword">type</span>,stage,source_node,target_node,files_percent,bytes_percent,translog_ops_percent&amp;s=<span class="keyword">type</span>:<span class="keyword">desc</span>,stage,shard&amp;active_only</span><br></pre></td></tr></table></figure>
+
+<h2 id="索引相关"><a href="#索引相关" class="headerlink" title="索引相关"></a>索引相关</h2><h3 id="查看index配置信息"><a href="#查看index配置信息" class="headerlink" title="查看index配置信息"></a>查看index配置信息</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> index_name/_settings?flat_settings</span><br></pre></td></tr></table></figure>
+<p>查看默认配置</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> index_name/_settings?flat_settings&amp;include_defaults</span><br></pre></td></tr></table></figure>
+
+<h3 id="查看index的mapping信息"><a href="#查看index的mapping信息" class="headerlink" title="查看index的mapping信息"></a>查看index的mapping信息</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> index_name/_mapping</span><br></pre></td></tr></table></figure>
+
+<h3 id="查看index的模板"><a href="#查看index的模板" class="headerlink" title="查看index的模板"></a>查看index的模板</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _template/us01_rlib_dbroker.d-engine.sailing</span><br></pre></td></tr></table></figure>
+
+<h3 id="查看index的shard信息"><a href="#查看index的shard信息" class="headerlink" title="查看index的shard信息"></a>查看index的shard信息</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cat/shards/index_name</span><br></pre></td></tr></table></figure>
+
+<h3 id="修改索引默认延时"><a href="#修改索引默认延时" class="headerlink" title="修改索引默认延时"></a>修改索引默认延时</h3><p>默认情况，集群会等待一分钟来查看节点是否会重新加入，如果这个节点在此期间重新加入，重新加入的节点会保持其现有的分片数据，不会触发新的分片分配。<br>通过修改参数 delayed_timeout ，默认等待时间可以全局设置也可以在索引级别进行修改:</p>
+<figure class="highlight sqf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">PUT /<span class="variable">_all</span>/<span class="variable">_settings</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;settings&quot;</span>: &#123;</span><br><span class="line">    <span class="string">&quot;index.unassigned.node_left.delayed_timeout&quot;</span>: <span class="string">&quot;5m&quot;</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过使用 <code>_all</code> 索引名，我们可以为集群里面的所有的索引使用这个参数。默认时间被修改成了 5 分钟。<br>这个配置是动态的，可以在运行时进行修改。如果你希望分片立即分配而不想等待，你可以设置参数： delayed_timeout: 0.<br>延迟分配不会阻止副本被提拔为主分片。集群还是会进行必要的提拔来让集群回到 yellow 状态。缺失副本的重建是唯一被延迟的过程。</p>
+<h3 id="索引搬迁"><a href="#索引搬迁" class="headerlink" title="索引搬迁"></a>索引搬迁</h3><figure class="highlight leaf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">POST _cluster/reroute</span><br><span class="line">&#123;</span><br><span class="line">  &quot;commands&quot;: [ &#123;</span><br><span class="line">    &quot;move&quot;: &#123;</span><br><span class="line">      &quot;index&quot;: &quot;index_name&quot;,</span><br><span class="line">      &quot;shard&quot;: 01,</span><br><span class="line">      &quot;from_node&quot;: &quot;ebSuUo1ZRDS812E4Yj30RQ&quot;, <span class="punctuation">#</span><span class="params">(<span class="variable">datanode</span>)</span></span><br><span class="line">      &quot;to_node&quot;: &quot;dZYvpuDMRx-gQALljBPjzQ&quot;  <span class="punctuation">#</span><span class="params">(<span class="variable">datanode</span>)</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125; ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="取消索引搬迁"><a href="#取消索引搬迁" class="headerlink" title="取消索引搬迁"></a>取消索引搬迁</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">POST _cluster/reroute</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;commands&quot;</span>: [</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="string">&quot;cancel&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;index&quot;</span>: <span class="string">&quot;index_name&quot;</span>,</span><br><span class="line">        <span class="string">&quot;shard&quot;</span>: 0,</span><br><span class="line">        <span class="string">&quot;node&quot;</span>: <span class="string">&quot;ZBQ63g9NR7-LnVHHR7VdDw&quot;</span>,   <span class="comment">#目标节点datanode，取消不影响主分片</span></span><br><span class="line">        <span class="string">&quot;allow_primary&quot;</span>:  <span class="literal">true</span></span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="索引shard重定向（丢弃shard）"><a href="#索引shard重定向（丢弃shard）" class="headerlink" title="索引shard重定向（丢弃shard）"></a>索引shard重定向（丢弃shard）</h3><figure class="highlight ada"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">POST /_cluster/reroute</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;commands&quot;</span> : [</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="string">&quot;allocate_empty_primary&quot;</span> : &#123;</span><br><span class="line">        <span class="string">&quot;index&quot;</span> : &quot;<span class="type">index_name</span><span class="string">&quot;,</span></span><br><span class="line"><span class="string">        &quot;</span>shard<span class="string">&quot; : 1,</span></span><br><span class="line"><span class="string">        &quot;</span>node<span class="string">&quot; : &quot;</span><span class="number">3</span>NaCOaAPQMqVvATY0hB_3A<span class="string">&quot;,</span></span><br><span class="line"><span class="string">        &quot;</span>accept_data_loss<span class="string">&quot; : true</span></span><br><span class="line"><span class="string">      &#125;</span></span><br><span class="line"><span class="string">    &#125;</span></span><br><span class="line"><span class="string">  ]</span></span><br><span class="line"><span class="string">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="查看索引checkpoint信息"><a href="#查看索引checkpoint信息" class="headerlink" title="查看索引checkpoint信息"></a>查看索引checkpoint信息</h3><figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET <span class="regexp">/index_name/</span>_stats?level=shards  <span class="regexp">//i</span>ndex_name表示对应的索引</span><br></pre></td></tr></table></figure>
+<img src="/img/2022/09/checkpoint.png" width = "100%" />
+
+<h3 id="索引reindex"><a href="#索引reindex" class="headerlink" title="索引reindex"></a>索引reindex</h3><figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">POST _reindex</span><br><span class="line">&#123;</span><br><span class="line">  &quot;<span class="selector-tag">source</span>&quot;: &#123;</span><br><span class="line">    &quot;index&quot;: <span class="string">&quot;old_index&quot;</span> </span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;dest&quot;: &#123;</span><br><span class="line">    &quot;index&quot;: <span class="string">&quot;new_index&quot;</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="迁移shard到别的节点"><a href="#迁移shard到别的节点" class="headerlink" title="迁移shard到别的节点"></a>迁移shard到别的节点</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">POST _cluster/reroute</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;commands&quot;</span>: [</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="string">&quot;move&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;index&quot;</span>: <span class="string">&quot;index_name&quot;</span>,</span><br><span class="line">        <span class="string">&quot;shard&quot;</span>: 0,</span><br><span class="line">        <span class="string">&quot;from_node&quot;</span>: <span class="string">&quot;hostname-a&quot;</span>,</span><br><span class="line">        <span class="string">&quot;to_node&quot;</span>: <span class="string">&quot;hostname-b&quot;</span></span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="集群相关的设置"><a href="#集群相关的设置" class="headerlink" title="集群相关的设置"></a>集群相关的设置</h2><h3 id="查看节点配置的线程池大小"><a href="#查看节点配置的线程池大小" class="headerlink" title="查看节点配置的线程池大小"></a>查看节点配置的线程池大小</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cat/thread_pool/write?v&amp;<span class="attribute">h</span>=node_name,size</span><br></pre></td></tr></table></figure>
+
+<h3 id="临时关闭磁盘检测加快master处理速度"><a href="#临时关闭磁盘检测加快master处理速度" class="headerlink" title="临时关闭磁盘检测加快master处理速度"></a>临时关闭磁盘检测加快master处理速度</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">PUT _cluster/settings?<span class="attribute">master_timeout</span>=360s</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;transient&quot;</span>: &#123;</span><br><span class="line">    <span class="string">&quot;cluster.routing.allocation.disk.threshold_enabled&quot;</span> : <span class="string">&quot;false&quot;</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="集群级别排除某台机器"><a href="#集群级别排除某台机器" class="headerlink" title="集群级别排除某台机器"></a>集群级别排除某台机器</h3><figure class="highlight ada"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">PUT _cluster/settings?flat_settings</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;transient&quot;</span> : &#123;</span><br><span class="line">    <span class="string">&quot;cluster.routing.allocation.exclude._name&quot;</span> : &quot;<span class="type">hostname</span>-a<span class="string">&quot;</span></span><br><span class="line"><span class="string">  &#125;</span></span><br><span class="line"><span class="string">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>也可索引级别排除某台机器</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">PUT router_access_20210401/_settings</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;index.routing.allocation.exclude._name&quot;</span> : <span class="string">&quot;hostname-a&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="日志级别设置"><a href="#日志级别设置" class="headerlink" title="日志级别设置"></a>日志级别设置</h3><p>所有日志（全局不建议开启，容易导致线上故障）</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">PUT _cluster/settings</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;transient&quot;</span>: &#123;</span><br><span class="line">    <span class="string">&quot;logger._root&quot;</span>:<span class="string">&quot;DEBUG&quot;</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>单个类或者模块</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">PUT _cluster/settings</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;transient&quot;</span>: &#123;</span><br><span class="line">    <span class="string">&quot;logger.org.elasticsearch.action.bulk&quot;</span>: <span class="string">&quot;DEBUG&quot;</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="集群的迁移参数"><a href="#集群的迁移参数" class="headerlink" title="集群的迁移参数"></a>集群的迁移参数</h3><ul>
+<li>cluster.routing.allocation.enable</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>all</td>
+<td>允许所有类型shard进行shard分配</td>
+</tr>
+<tr>
+<td>primaries</td>
+<td>允许主分片进行shard分配</td>
+</tr>
+<tr>
+<td>new_primaries</td>
+<td>允许新索引的主分片分配</td>
+</tr>
+<tr>
+<td>none</td>
+<td>所有类型的分片都不可分配</td>
+</tr>
+</tbody></table>
+<ul>
+<li><p>cluster.routing.allocation.node_concurrent_incoming_recoveries , 一个节点上允许发生多少个并发的传入分片恢复。传入恢复是指在节点上分配目标分片（很可能是复制副本，除非分片正在重新定位）。默认为2</p>
+</li>
+<li><p>cluster.routing.allocation.node_concurrent_outgoing_recoveries（同上，传出）</p>
+</li>
+<li><p>cluster.routing.allocation.node_initial_primaries_recoveries（最大初始化主分片的个数）,虽然副本的恢复通过网络进行，但节点重新启动后未分配的主节点的恢复将使用本地磁盘中的数据。这些恢复应该很快，以便在同一个节点上并行进行更多的初始主恢复。默认为4。</p>
+</li>
+<li><p>cluster.routing.allocation.same_shard.host ,允许根据主机名和主机地址执行检查以防止在单个主机上分配同一个碎片的多个实例。默认值为false，表示默认情况下不执行任何检查。此设置仅适用于在同一台计算机上启动多个节点的情况。</p>
+</li>
+</ul>
+<h3 id="shard均衡的设置"><a href="#shard均衡的设置" class="headerlink" title="shard均衡的设置"></a>shard均衡的设置</h3><ul>
+<li><p>cluster.routing.rebalance.enable</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>all</td>
+<td>允许对所有分片进行均衡</td>
+</tr>
+<tr>
+<td>primaries</td>
+<td>只对主分片进行均衡</td>
+</tr>
+<tr>
+<td>replicas</td>
+<td>只对副本分片进行均衡</td>
+</tr>
+<tr>
+<td>none</td>
+<td>对所有分片都不进行均衡</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>cluster.routing.allocation.allow_rebalance</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>always</td>
+<td>始终允许重新均衡</td>
+</tr>
+<tr>
+<td>indices_primaries_active</td>
+<td>只有当群集中的所有主分片都被分配时。</td>
+</tr>
+<tr>
+<td>indices_all_active</td>
+<td>只有当群集中的所有分片都被分配时。(默认)</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>cluster.routing.allocation.cluster_concurrent_rebalance(控制均衡，不控制迁移）<br>允许控制集群范围内允许多少并发分片重新平衡。默认为2。请注意，此设置仅控制由于集群中的不平衡而同时重新定位分片的数量。此设置不限制由于分配筛选或强制感知而导致的分片重新定位。</p>
+</li>
+</ul>
+<h3 id="基于磁盘的分片分配设置"><a href="#基于磁盘的分片分配设置" class="headerlink" title="基于磁盘的分片分配设置"></a>基于磁盘的分片分配设置</h3><p>不能在这些设置中混合使用百分比值和字节值。要么所有值都设置为百分比值，要么全部设置为字节值。这种强制执行使得Elasticsearch可以验证设置是否内部一致，确保低磁盘阈值小于高磁盘阈值，高磁盘阈值小于泛洪水位阈值。</p>
+<ul>
+<li><p>cluster.routing.allocation.disk.threshold_enabled（是否打开磁盘分配决策器）</p>
+</li>
+<li><p>cluster.routing.allocation.disk.watermark.low(低水位线） 副本分片不在分配的界限,控制磁盘使用的低水位线。默认值为85%，这意味着Elasticsearch不会将碎片分配给磁盘使用率超过85%的节点。也可以将其设置为绝对字节值（如500mb），以防止Elasticsearch在可用空间不足时分配分片。此设置不会影响新创建索引的主分片，但会阻止分配其副本。</p>
+</li>
+<li><p>cluster.routing.allocation.disk.watermark.high（高水位线）重新定位的界限,控制高水位线。默认为90%，这意味着弹性搜索将尝试将分片从磁盘使用率超过90%的节点重新定位。如果分片的可用空间小于指定的数量，也可以将其设置为绝对字节值（类似于低水印），以便将碎片重新定位到远离节点的位置。此设置影响所有碎片的分配，无论以前是否分配。</p>
+</li>
+<li><p>cluster.routing.allocation.disk.watermark.flood_stage（洪水水位线）,控制洪水水位线，默认为95%。Elasticsearch强制执行只读索引块(index.blocks.read_only_allow_delete)在节点上分配了一个或多个分片，并且至少有一个磁盘超过泛洪水位的每个索引。此设置是防止节点耗尽磁盘空间的最后手段。当磁盘利用率低于最高值时，索引块将自动释放</p>
+</li>
+<li><p>cluster.info.update.interval（检查磁盘使用率间隔，默认30s）</p>
+</li>
+<li><p>cluster.routing.allocation.disk.include_relocations ,默认值为true，这意味着Elasticsearch将在计算节点的磁盘使用量时考虑当前正在重新定位到目标节点的碎片。但是，考虑到重定位碎片的大小可能意味着节点的磁盘使用量估计错误，因为重新定位可能完成90%，最近检索到的磁盘使用量将包括重新定位碎片的总大小以及正在运行的重定位已使用的空间。</p>
+</li>
+<li><p>index.routing.allocation.total_shards_per_node.   一个索引在各node最多分配数。可以帮助索引分布均衡。</p>
+</li>
+</ul>
+
+      
+    </div>
+    
+      <div class="article-toc">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9B%86%E7%BE%A4%E5%81%A5%E5%BA%B7%E7%8A%B6%E6%80%81%E7%9B%B8%E5%85%B3"><span class="toc-number">1.</span> <span class="toc-text">集群健康状态相关</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E9%9B%86%E7%BE%A4%E5%81%A5%E5%BA%B7%E7%8A%B6%E6%80%81"><span class="toc-number">1.1.</span> <span class="toc-text">查看集群健康状态</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E6%9C%AA%E5%88%86%E9%85%8D%E5%8E%9F%E5%9B%A0"><span class="toc-number">1.2.</span> <span class="toc-text">查看未分配原因</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E5%85%B7%E4%BD%93%E7%B4%A2%E5%BC%95%E6%9C%AA%E5%88%86%E9%85%8D%E6%88%96%E4%B8%8D%E6%90%AC%E8%BF%81%E7%9A%84%E5%8E%9F%E5%9B%A0"><span class="toc-number">1.3.</span> <span class="toc-text">查看具体索引未分配或不搬迁的原因</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E9%87%8A%E4%B8%80%E4%B8%AA%E7%B4%A2%E5%BC%95%E4%B8%BA%E4%BB%80%E4%B9%88%E5%88%86%E9%85%8D%E5%88%B0%E8%AF%A5%E8%8A%82%E7%82%B9"><span class="toc-number">1.4.</span> <span class="toc-text">解释一个索引为什么分配到该节点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%87%8D%E6%96%B0%E5%B0%9D%E8%AF%95%E5%88%86%E9%85%8D%E5%A4%B1%E8%B4%A5%E7%9A%84shard"><span class="toc-number">1.5.</span> <span class="toc-text">重新尝试分配失败的shard</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E7%AD%89%E5%BE%85%E4%B8%AD%E7%9A%84%E4%BB%BB%E5%8A%A1"><span class="toc-number">1.6.</span> <span class="toc-text">查看等待中的任务</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8Bnodes"><span class="toc-number">1.7.</span> <span class="toc-text">查看nodes</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8Bactive-master"><span class="toc-number">1.8.</span> <span class="toc-text">查看active master</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E9%9B%86%E7%BE%A4%E5%86%85%E6%AD%A3%E5%9C%A8%E6%90%AC%E8%BF%81%E7%9A%84%E7%B4%A2%E5%BC%95"><span class="toc-number">1.9.</span> <span class="toc-text">查看集群内正在搬迁的索引</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%B4%A2%E5%BC%95%E7%9B%B8%E5%85%B3"><span class="toc-number">2.</span> <span class="toc-text">索引相关</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8Bindex%E9%85%8D%E7%BD%AE%E4%BF%A1%E6%81%AF"><span class="toc-number">2.1.</span> <span class="toc-text">查看index配置信息</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8Bindex%E7%9A%84mapping%E4%BF%A1%E6%81%AF"><span class="toc-number">2.2.</span> <span class="toc-text">查看index的mapping信息</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8Bindex%E7%9A%84%E6%A8%A1%E6%9D%BF"><span class="toc-number">2.3.</span> <span class="toc-text">查看index的模板</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8Bindex%E7%9A%84shard%E4%BF%A1%E6%81%AF"><span class="toc-number">2.4.</span> <span class="toc-text">查看index的shard信息</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BF%AE%E6%94%B9%E7%B4%A2%E5%BC%95%E9%BB%98%E8%AE%A4%E5%BB%B6%E6%97%B6"><span class="toc-number">2.5.</span> <span class="toc-text">修改索引默认延时</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%B4%A2%E5%BC%95%E6%90%AC%E8%BF%81"><span class="toc-number">2.6.</span> <span class="toc-text">索引搬迁</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%96%E6%B6%88%E7%B4%A2%E5%BC%95%E6%90%AC%E8%BF%81"><span class="toc-number">2.7.</span> <span class="toc-text">取消索引搬迁</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%B4%A2%E5%BC%95shard%E9%87%8D%E5%AE%9A%E5%90%91%EF%BC%88%E4%B8%A2%E5%BC%83shard%EF%BC%89"><span class="toc-number">2.8.</span> <span class="toc-text">索引shard重定向（丢弃shard）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E7%B4%A2%E5%BC%95checkpoint%E4%BF%A1%E6%81%AF"><span class="toc-number">2.9.</span> <span class="toc-text">查看索引checkpoint信息</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%B4%A2%E5%BC%95reindex"><span class="toc-number">2.10.</span> <span class="toc-text">索引reindex</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%81%E7%A7%BBshard%E5%88%B0%E5%88%AB%E7%9A%84%E8%8A%82%E7%82%B9"><span class="toc-number">2.11.</span> <span class="toc-text">迁移shard到别的节点</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9B%86%E7%BE%A4%E7%9B%B8%E5%85%B3%E7%9A%84%E8%AE%BE%E7%BD%AE"><span class="toc-number">3.</span> <span class="toc-text">集群相关的设置</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E8%8A%82%E7%82%B9%E9%85%8D%E7%BD%AE%E7%9A%84%E7%BA%BF%E7%A8%8B%E6%B1%A0%E5%A4%A7%E5%B0%8F"><span class="toc-number">3.1.</span> <span class="toc-text">查看节点配置的线程池大小</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%B4%E6%97%B6%E5%85%B3%E9%97%AD%E7%A3%81%E7%9B%98%E6%A3%80%E6%B5%8B%E5%8A%A0%E5%BF%ABmaster%E5%A4%84%E7%90%86%E9%80%9F%E5%BA%A6"><span class="toc-number">3.2.</span> <span class="toc-text">临时关闭磁盘检测加快master处理速度</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9B%86%E7%BE%A4%E7%BA%A7%E5%88%AB%E6%8E%92%E9%99%A4%E6%9F%90%E5%8F%B0%E6%9C%BA%E5%99%A8"><span class="toc-number">3.3.</span> <span class="toc-text">集群级别排除某台机器</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%97%A5%E5%BF%97%E7%BA%A7%E5%88%AB%E8%AE%BE%E7%BD%AE"><span class="toc-number">3.4.</span> <span class="toc-text">日志级别设置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9B%86%E7%BE%A4%E7%9A%84%E8%BF%81%E7%A7%BB%E5%8F%82%E6%95%B0"><span class="toc-number">3.5.</span> <span class="toc-text">集群的迁移参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#shard%E5%9D%87%E8%A1%A1%E7%9A%84%E8%AE%BE%E7%BD%AE"><span class="toc-number">3.6.</span> <span class="toc-text">shard均衡的设置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9F%BA%E4%BA%8E%E7%A3%81%E7%9B%98%E7%9A%84%E5%88%86%E7%89%87%E5%88%86%E9%85%8D%E8%AE%BE%E7%BD%AE"><span class="toc-number">3.7.</span> <span class="toc-text">基于磁盘的分片分配设置</span></a></li></ol></li></ol>
+      </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/elasticsearch/" rel="tag">elasticsearch</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2023/08/08/didi-es-high-availability-solution/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          探索ES高可用：滴滴自研跨数据中心复制技术详解
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2022/01/18/common-compression-algorithms-in-search-engines/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">科普下搜索索引里常用的压缩算法&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Webbench源码剖析 - armsword&#39;blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="我们知道知名的Web网站压力测试工具有Webbench、ab、http_load、siege等等，这种工具的源码都不是太长，所以，我用了一下午和晚上时间仔细了分析了Webbench的源码，并且写下这篇博客记录下。 我们先看下一般Webbench是怎么做压力测试的吧，方法很简单，如下所示： 1234567891011#模拟200次请求，持续时间5秒的压力测试 -c 后为并发数， -t 后为持续时间[">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Webbench源码剖析">
+<meta property="og:url" content="http://armsword.com/2014/10/26/webbench-source-analyse/index.html">
+<meta property="og:site_name" content="armsword&#39;blog">
+<meta property="og:description" content="我们知道知名的Web网站压力测试工具有Webbench、ab、http_load、siege等等，这种工具的源码都不是太长，所以，我用了一下午和晚上时间仔细了分析了Webbench的源码，并且写下这篇博客记录下。 我们先看下一般Webbench是怎么做压力测试的吧，方法很简单，如下所示： 1234567891011#模拟200次请求，持续时间5秒的压力测试 -c 后为并发数， -t 后为持续时间[">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://armsword.com/img/2014/10/20141026.png">
+<meta property="article:published_time" content="2014-10-25T16:48:01.000Z">
+<meta property="article:modified_time" content="2022-02-24T07:15:33.292Z">
+<meta property="article:author" content="armsword">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://armsword.com/img/2014/10/20141026.png">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="/webfonts/ptserif/main.css" rel='stylesheet' type='text/css'>
+  <link href="/webfonts/source-code-pro/main.css" rel="stylesheet" type="text/css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <a id="main-nav-toggle" class="nav-icon" href="javascript:;"></a>
+      <a id="logo" class="logo" href="/"></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://armsword.com"></form>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+    <section id="main" class="outer"><article id="post-webbench-source-analyse" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Webbench源码剖析
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/10/26/webbench-source-analyse/" class="article-date">
+  <time datetime="2014-10-25T16:48:01.000Z" itemprop="datePublished">2014-10-26</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C-C/">C/C++</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>我们知道知名的Web网站压力测试工具有Webbench、ab、http_load、siege等等，这种工具的源码都不是太长，所以，我用了一下午和晚上时间仔细了分析了Webbench的源码，并且写下这篇博客记录下。</p>
+<p>我们先看下一般Webbench是怎么做压力测试的吧，方法很简单，如下所示：</p>
+<figure class="highlight avrasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#模拟200次请求，持续时间5秒的压力测试 -c 后为并发数， -t 后为持续时间</span></span><br><span class="line">[imlinuxer@imlinuxer webbench<span class="number">-1.5</span>]<span class="meta"># webbench -c 200 -t 5 http://localhost/index.php</span></span><br><span class="line">Webbench - Simple Web Benchmark <span class="number">1.5</span></span><br><span class="line">Copyright (c) Radim Kolar <span class="number">1997</span><span class="number">-2004</span>, GPL Open Source Software.</span><br><span class="line"></span><br><span class="line"><span class="symbol">Benchmarking:</span> GET http://localhost/index.php</span><br><span class="line"><span class="number">200</span> clients, running <span class="number">5</span> <span class="keyword">sec</span>.</span><br><span class="line"></span><br><span class="line">Speed=<span class="number">156804</span> pages/min, <span class="number">128496336</span> bytes/<span class="keyword">sec</span>.</span><br><span class="line"><span class="symbol">Requests:</span> <span class="number">13067</span> susceed, <span class="number">0</span> failed.</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<span id="more"></span>
+
+<p>那Webbench的原理是怎么样的？其实也是很简单的，就是根据提供的参数构造HTTP请求Header，然后使用fork，创建指定大小（webbench提供的参数-c 后的数字，上文为200）个子进程，每个子进程利用socket创建TCP连接到URL，然后通过管道向父进程发送数据，父进程通过管道读取子进程的数据，并作累计，输出即可。其简单流程图如下图所示：</p>
+<p><img src="/img/2014/10/20141026.png"><br>下面简单说下源码吧，源码很短，不到600行，两个文件，分别为socket.c和webbench.c。先说下socket.c，代码为</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">Socket</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *host, <span class="type">int</span> clientPort)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">int</span> sock;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> inaddr;</span><br><span class="line">    <span class="keyword">struct</span> <span class="title class_">sockaddr_in</span> ad;</span><br><span class="line">    <span class="keyword">struct</span> <span class="title class_">hostent</span> *hp;</span><br><span class="line">    <span class="built_in">memset</span>(&amp;amp;ad, <span class="number">0</span>, <span class="built_in">sizeof</span>(ad));</span><br><span class="line">    ad.sin_family = AF_INET;    </span><br><span class="line">    <span class="comment">// 将字符串转换为32位二进制网络字节序的IPv4地址</span></span><br><span class="line">    inaddr = <span class="built_in">inet_addr</span>(host);</span><br><span class="line">    <span class="keyword">if</span> (inaddr != INADDR_NONE)</span><br><span class="line">    <span class="built_in">memcpy</span>(&amp;amp;ad.sin_addr, &amp;amp;inaddr, <span class="built_in">sizeof</span>(inaddr));</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 使用域名或主机名获取ip地址</span></span><br><span class="line">        hp = <span class="built_in">gethostbyname</span>(host);</span><br><span class="line">        <span class="keyword">if</span> (hp == <span class="literal">NULL</span>)</span><br><span class="line">            <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">        <span class="built_in">memcpy</span>(&amp;amp;ad.sin_addr, hp-&amp;gt;h_addr, hp-&amp;gt;h_length);</span><br><span class="line">    &#125;</span><br><span class="line">    ad.sin_port = <span class="built_in">htons</span>(clientPort);</span><br><span class="line">    sock = <span class="built_in">socket</span>(AF_INET, SOCK_STREAM, <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">if</span> (sock &amp;lt; <span class="number">0</span>)</span><br><span class="line">    <span class="keyword">return</span> sock;</span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">connect</span>(sock, (<span class="keyword">struct</span> sockaddr *)&amp;amp;ad, <span class="built_in">sizeof</span>(ad)) &amp;lt; <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    <span class="keyword">return</span> sock;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>自己封装了个socket模块，只需要注意的就是URL可能不是域名，也可能是IP地址。</p>
+<p>然后就是webbench.c文件，咱们从main函数说起，因为需要对命令行做处理，所以使用了getopt_long函数，没使用这个函数的同学可以man getopt_long或者查看在线文件<a href="http://man7.org/linux/man-pages/man3/getopt.3.html" title="getopt_long">man </a>。注意下此结构体为getopt_long的参数：</p>
+<figure class="highlight sas"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">// 长选项，getopt_long的参数</span><br><span class="line">static const struct option long_options[]=</span><br><span class="line">&#123;</span><br><span class="line"> &#123;<span class="variable">&amp;quot</span>;force<span class="variable">&amp;quot</span>;,no_argument,<span class="variable">&amp;amp</span>;force,1&#125;,</span><br><span class="line"> &#123;<span class="variable">&amp;quot</span>;reload<span class="variable">&amp;quot</span>;,no_argument,<span class="variable">&amp;amp</span>;force_reload,1&#125;,</span><br><span class="line"> &#123;<span class="variable">&amp;quot</span>;time<span class="variable">&amp;quot</span>;,required_argument,<span class="keyword">NULL</span>,<span class="string">&#x27;t&#x27;</span>&#125;,</span><br><span class="line"> &#123;<span class="variable">&amp;quot</span>;help<span class="variable">&amp;quot</span>;,no_argument,<span class="keyword">NULL</span>,<span class="string">&#x27;?&#x27;</span>&#125;,</span><br><span class="line"> &#123;<span class="variable">&amp;quot</span>;http09<span class="variable">&amp;quot</span>;,no_argument,<span class="keyword">NULL</span>,<span class="string">&#x27;9&#x27;</span>&#125;,</span><br><span class="line"> &#123;<span class="variable">&amp;quot</span>;http10<span class="variable">&amp;quot</span>;,no_argument,<span class="keyword">NULL</span>,<span class="string">&#x27;1&#x27;</span>&#125;,</span><br><span class="line"> &#123;<span class="variable">&amp;quot</span>;http11<span class="variable">&amp;quot</span>;,no_argument,<span class="keyword">NULL</span>,<span class="string">&#x27;2&#x27;</span>&#125;,</span><br><span class="line"> &#123;<span class="variable">&amp;quot</span>;get<span class="variable">&amp;quot</span>;,no_argument,<span class="variable">&amp;amp</span>;method,METHOD_GET&#125;,</span><br><span class="line"> &#123;<span class="variable">&amp;quot</span>;head<span class="variable">&amp;quot</span>;,no_argument,<span class="variable">&amp;amp</span>;method,METHOD_HEAD&#125;,</span><br><span class="line"> &#123;<span class="variable">&amp;quot</span>;<span class="keyword">options</span><span class="variable">&amp;quot</span>;,no_argument,<span class="variable">&amp;amp</span>;method,METHOD_OPTIONS&#125;,</span><br><span class="line"> &#123;<span class="variable">&amp;quot</span>;trace<span class="variable">&amp;quot</span>;,no_argument,<span class="variable">&amp;amp</span>;method,METHOD_TRACE&#125;,</span><br><span class="line"> &#123;<span class="variable">&amp;quot</span>;version<span class="variable">&amp;quot</span>;,no_argument,<span class="keyword">NULL</span>,<span class="string">&#x27;V&#x27;</span>&#125;,</span><br><span class="line"> &#123;<span class="variable">&amp;quot</span>;proxy<span class="variable">&amp;quot</span>;,required_argument,<span class="keyword">NULL</span>,<span class="string">&#x27;p&#x27;</span>&#125;,</span><br><span class="line"> &#123;<span class="variable">&amp;quot</span>;clients<span class="variable">&amp;quot</span>;,required_argument,<span class="keyword">NULL</span>,<span class="string">&#x27;c&#x27;</span>&#125;,</span><br><span class="line"> &#123;<span class="keyword">NULL</span>,0,<span class="keyword">NULL</span>,0&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>之后是buildr_equest()函数，主要功能是构造HTTP头请求，构造成下面类似情况，具体可以参考代码：</p>
+<figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GET</span> <span class="string">/</span> <span class="meta">HTTP/1.1</span></span><br><span class="line"><span class="attribute">Host</span><span class="punctuation">: </span>www.baidu.com</span><br><span class="line"><span class="attribute">Cache-Control</span><span class="punctuation">: </span>max-age=0</span><br><span class="line"><span class="attribute">Pragma</span><span class="punctuation">: </span>no-cache</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>之后便是打印压力测试的一些信息，没啥可说的，很容易读懂，之后到了return bench()处，bench函数是压力测试的核心代码。<br>bench里根据并发数，使用fork()创建子进程，子进程调用benchcore()函数，此函数里使用alarm和sigaction信号控制定时时间，alarm函数设置了多少时间之后产生SIGALRM信号，一旦产生此信号，运行alarm_handler函数，使得timerexpired等于1，这样可以通过判断timerexpired值来退出程序。然后子进程将数据写入管道。同时父进程读取管道数据，将数据进行累加，当全部读取完子进程后，父进程输出信息退出。</p>
+<p>总体来说，Webbench代码还是很好读懂的，当然此代码也存在一些问题，比如不支持POST请求方式，只能模拟单个IP测试等等。<br>宿舍马上要熄灯了，写的比较着急，可能逻辑混乱些。我Github里对此源码做了非常详细的源码剖析。感兴趣的同学请查看详细的源码剖析吧。</p>
+<p>链接地址：<br><a href="https://github.com/armsword/Source/tree/master/webbench-1.5" title="Webbench源码剖析">https://github.com/armsword/Source/tree/master/webbench-1.5</a></p>
+
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+      </footer>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2014/10/29/tinyhttpd-code-analyse/" id="article-nav-newer" class="article-nav-link-wrap">
+      <div class="article-nav-title"><span>&lt;</span>&nbsp;
+        
+          tinyhttpd源码剖析
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2014/09/04/redis-ae-analyse/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Redis AE事件库源码剖析&nbsp;<span>&gt;</span></div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2024 armsword&nbsp;
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
+    </div>
+  </div>
+</footer>
+    
+
+<script src="/js/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>
