@@ -51,88 +51,362 @@
     </div>
   </div>
 </header>
-    <section id="main" class="outer"><% switch (type) {
-    case 'archive':
-    var last;
-    page.posts.each(function(post, i){
-    var year = post.date.year();
-    if (last != year){
-      if (last != null){ %>
-        </div></section>
-      <% }
-      last = year; %>
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="<%- url_for('archives/' + year) %>" class="archive-year"><%= year %></a>
-        </div>
-        <div class="archives">
-    <% } %>
-    <%- partial('archive-post', {post: post, archive: true}) %>
-  <% });
-    if (page.posts.length){ %>
-    </div></section>
-  <% }
-    if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-  case 'category': %>
-    <section class="archives-wrap">
-    <div class="archive-category-wrap">
-      <span class="archive-category"><%= page.category %></span>
+    <section id="main" class="outer">
+      <article id="post-use-async-profiler-find-cpu-bottleneck" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2021/03/23/use-async-profiler-find-cpu-bottleneck/">使用火焰图定位 OLAP 引擎瓶颈</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2021/03/23/use-async-profiler-find-cpu-bottleneck/" class="article-date">
+  <time datetime="2021-03-23T12:24:35.000Z" itemprop="datePublished">2021-03-23</time>
+</a>
+      
     </div>
-    <div class="archives">
-    <% page.posts.each(function (post, i) { %>
-      <%- partial('archive-post', {post: post, archive: false}) %>
-    <% }); %>
-    </div></section>
-    <% if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-  case 'tag': %>
-    <section class="archives-wrap">
-    <div class="archive-tag-wrap">
-      <span class="archive-tag">#<%= page.tag %></span>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>在维护 OLAP 引擎时，很多时候需要对引擎做系统的性能分析和优化，此时往往需要查看 CPU 耗时，了解主要耗时点及瓶颈在哪里。俗语有曰：兵欲善其事必先利其器，程序员定位性能问题也需要一件“利器”。性能调优工具（perf）能够显示系统的调用栈及时间分布，但是呈现内容上只能单一的列出调用栈或者非层次化的时间分布，不够直观。火焰图（flame graph）能够帮助大家更直观的发现问题。本文将以 Presto 为例，介绍火焰图的使用技巧。</p>
+<h2 id="初识火焰图"><a href="#初识火焰图" class="headerlink" title="初识火焰图"></a>初识火焰图</h2><p>Perf 的原理是这样子的：每隔一个固定的时间，就在 CPU 上（每个核上都有）产生一个中断，在中断上看看，当前是哪个 pid，哪个函数，然后给对应的 pid 和函数加一个统计值，这样，我们就知道 CPU 有百分几的时间在某个 pid，或者某个函数上了。而火焰图（Flame Graph）是由 Linux 性能优化大师 Brendan Gregg 发明的，和所有其他的 profiling 方法不同的是，火焰图以一个全局的视野来看待时间分布，它从底部往顶部，列出所有可能导致性能瓶颈的调用栈。</p>
+<img src="/img/2021/03/01.png" width = "90%" />
+
+<p>火焰图整个图形看起来就像一个跳动的火焰，这就是它名字的由来。火焰图有以下特征（这里以采样CPU 火焰图为例）：</p>
+<ul>
+<li>每一列代表一个调用栈，每一个格子代表一个函数。</li>
+<li>纵轴展示了栈的深度，按照调用关系从下到上排列。最顶上格子代表采样时，正在占用 CPU 的函数</li>
+<li>横轴的意义是指：火焰图将采集的多个调用栈信息，并行关系。横轴格子的宽度代表其在采样中出现频率，所以一个格子的宽度越大，说明它是瓶颈原因的可能性就越大。</li>
+<li>火焰图格子的颜色是随机的暖色调，方便区分各个调用信息。</li>
+<li>其他的采样方式也可以使用火焰图， 比如内存</li>
+</ul>
+<p>所以，火焰图就是看顶层的哪个函数占据的宽度最大。只要有”平顶”，就表示该函数可能存在性能问题，也是我们性能优化收益最大的地方。<br>Java生态常见的用于perf的工具有：allocation-instrumenter、YourKit Profiler、async-profiler、JProfiler、Arthas（基于 async-profiler ）。笔者推荐使用阿里巴巴出品的 Arthas 或 async-profiler，笔者喜欢使用 async-profiler 这个 perf 工具生成火焰图，主要原因是用法简单，足够满足日常排查性能问题了。</p>
+        
+          <p class="article-more-link">
+            <a href="/2021/03/23/use-async-profiler-find-cpu-bottleneck/#more">Read More</a>
+          </p>
+        
+      
     </div>
-    <div class="archives">
-    <% page.posts.each(function (post, i) { %>
-      <%- partial('archive-post', {post: post, archive: false}) %>
-    <% }); %>
-    </div></section>
-    <% if (page.total > 1){ %>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/perf/" rel="tag">perf</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-jvm-bug-causes-Presto-queries-to-slow-down" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2021/02/07/jvm-bug-causes-Presto-queries-to-slow-down/">说下那些导致Presto查询变慢的JVM Bug和解决方法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2021/02/07/jvm-bug-causes-Presto-queries-to-slow-down/" class="article-date">
+  <time datetime="2021-02-07T02:24:48.000Z" itemprop="datePublished">2021-02-07</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>维护Presto集群，遇到了一些JVM Bug会严重导致Presto查询变慢，这里分享下Bugs表现及解决方法。</p>
+<h2 id="Ref-Proc-耗时太久"><a href="#Ref-Proc-耗时太久" class="headerlink" title="Ref Proc 耗时太久"></a>Ref Proc 耗时太久</h2><p>线上Presto运行一段时间后，查询会越来越慢，打了下火焰图，发现30%的CPU都浪费在young gc上了，看了下gc log，如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="number">2020-12-21T20:50:15.009</span><span class="string">+0800:</span> <span class="attr">4753827.928:</span> [<span class="string">GC</span> <span class="string">pause</span> <span class="string">(GCLocker</span> <span class="string">Initiated</span> <span class="string">GC)</span> <span class="string">(young)</span> <span class="string">(initial-mark)</span>, <span class="number">0.5723063</span> <span class="string">secs</span>]</span><br><span class="line">   [<span class="attr">Parallel Time:</span> <span class="number">66.9</span> <span class="string">ms</span>, <span class="attr">GC Workers:</span> <span class="number">33</span>]</span><br><span class="line">      [<span class="attr">GC Worker Start (ms): Min:</span> <span class="number">4753827940.4</span>, <span class="attr">Avg:</span> <span class="number">4753827940.5</span>, <span class="attr">Max:</span> <span class="number">4753827940.7</span>, <span class="attr">Diff:</span> <span class="number">0.4</span>]</span><br><span class="line">      [<span class="attr">Ext Root Scanning (ms): Min:</span> <span class="number">26.2</span>, <span class="attr">Avg:</span> <span class="number">27.3</span>, <span class="attr">Max:</span> <span class="number">54.9</span>, <span class="attr">Diff:</span> <span class="number">28.7</span>, <span class="attr">Sum:</span> <span class="number">899.6</span>]</span><br><span class="line">      [<span class="attr">Update RS (ms): Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">9.2</span>, <span class="attr">Max:</span> <span class="number">9.8</span>, <span class="attr">Diff:</span> <span class="number">9.8</span>, <span class="attr">Sum:</span> <span class="number">304.3</span>]</span><br><span class="line">         [<span class="attr">Processed Buffers: Min:</span> <span class="number">0</span>, <span class="attr">Avg:</span> <span class="number">19.9</span>, <span class="attr">Max:</span> <span class="number">35</span>, <span class="attr">Diff:</span> <span class="number">35</span>, <span class="attr">Sum:</span> <span class="number">657</span>]</span><br><span class="line">      [<span class="attr">Scan RS (ms): Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">0.0</span>, <span class="attr">Max:</span> <span class="number">0.0</span>, <span class="attr">Diff:</span> <span class="number">0.0</span>, <span class="attr">Sum:</span> <span class="number">0.1</span>]</span><br><span class="line">      [<span class="attr">Code Root Scanning (ms): Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">0.0</span>, <span class="attr">Max:</span> <span class="number">0.0</span>, <span class="attr">Diff:</span> <span class="number">0.0</span>, <span class="attr">Sum:</span> <span class="number">0.0</span>]</span><br><span class="line">      [<span class="attr">Object Copy (ms): Min:</span> <span class="number">0.5</span>, <span class="attr">Avg:</span> <span class="number">11.2</span>, <span class="attr">Max:</span> <span class="number">13.8</span>, <span class="attr">Diff:</span> <span class="number">13.3</span>, <span class="attr">Sum:</span> <span class="number">369.9</span>]</span><br><span class="line">      [<span class="attr">Termination (ms): Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">7.8</span>, <span class="attr">Max:</span> <span class="number">8.4</span>, <span class="attr">Diff:</span> <span class="number">8.4</span>, <span class="attr">Sum:</span> <span class="number">256.8</span>]</span><br><span class="line">         [<span class="attr">Termination Attempts: Min:</span> <span class="number">1</span>, <span class="attr">Avg:</span> <span class="number">1.5</span>, <span class="attr">Max:</span> <span class="number">4</span>, <span class="attr">Diff:</span> <span class="number">3</span>, <span class="attr">Sum:</span> <span class="number">51</span>]</span><br><span class="line">      [<span class="attr">GC Worker Other (ms): Min:</span> <span class="number">0.0</span>, <span class="attr">Avg:</span> <span class="number">0.0</span>, <span class="attr">Max:</span> <span class="number">0.0</span>, <span class="attr">Diff:</span> <span class="number">0.0</span>, <span class="attr">Sum:</span> <span class="number">0.5</span>]</span><br><span class="line">      [<span class="attr">GC Worker Total (ms): Min:</span> <span class="number">55.3</span>, <span class="attr">Avg:</span> <span class="number">55.5</span>, <span class="attr">Max:</span> <span class="number">55.7</span>, <span class="attr">Diff:</span> <span class="number">0.5</span>, <span class="attr">Sum:</span> <span class="number">1831.3</span>]</span><br><span class="line">      [<span class="attr">GC Worker End (ms): Min:</span> <span class="number">4753827996.0</span>, <span class="attr">Avg:</span> <span class="number">4753827996.0</span>, <span class="attr">Max:</span> <span class="number">4753827996.1</span>, <span class="attr">Diff:</span> <span class="number">0.1</span>]</span><br><span class="line">   [<span class="attr">Code Root Fixup:</span> <span class="number">0.4</span> <span class="string">ms</span>]</span><br><span class="line">   [<span class="attr">Code Root Purge:</span> <span class="number">0.0</span> <span class="string">ms</span>]</span><br><span class="line">   [<span class="attr">Clear CT:</span> <span class="number">0.6</span> <span class="string">ms</span>]</span><br><span class="line">   [<span class="attr">Other:</span> <span class="number">504.4</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Choose CSet:</span> <span class="number">0.0</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Ref Proc:</span> <span class="number">501.3</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Ref Enq:</span> <span class="number">0.0</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Redirty Cards:</span> <span class="number">0.5</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Humongous Register:</span> <span class="number">0.2</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Humongous Reclaim:</span> <span class="number">0.0</span> <span class="string">ms</span>]</span><br><span class="line">      [<span class="attr">Free CSet:</span> <span class="number">0.2</span> <span class="string">ms</span>]</span><br><span class="line">   [<span class="attr">Eden:</span> <span class="number">320.</span><span class="string">0M(3264.0M)-&gt;0.0B(3392.0M)</span> <span class="attr">Survivors:</span> <span class="number">416.</span><span class="string">0M-&gt;288.0M</span> <span class="attr">Heap:</span> <span class="number">9068.</span><span class="string">7M(72.0G)-&gt;8759.2M(72.0G)</span>]</span><br><span class="line"> [<span class="attr">Times:</span> <span class="string">user=1.70</span> <span class="string">sys=0.39</span>, <span class="string">real=0.57</span> <span class="string">secs</span>]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>从上面我们可以看到 Ref Proc: 501.3 ms，总共young gc耗时0.57s，而Ref Proc耗时就达到了0.5s。我们需要看下Ref Proc耗时主要在哪个地方。<br>我们通过配置gc参数<code>-XX:+PrintReferenceGC</code>，可以看到详细的Reference GC时间，并且如下图Case，JNI Weak Reference是主要瓶颈点。</p>
+        
+          <p class="article-more-link">
+            <a href="/2021/02/07/jvm-bug-causes-Presto-queries-to-slow-down/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-slove-jit-deoptimization-and-es-insert-performance-improvement" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/12/30/slove-jit-deoptimization-and-es-insert-performance-improvement/">解决JIT Deoptimization，ES插入性能提升7倍</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2020/12/30/slove-jit-deoptimization-and-es-insert-performance-improvement/" class="article-date">
+  <time datetime="2020-12-30T12:47:51.000Z" itemprop="datePublished">2020-12-30</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景描述"><a href="#背景描述" class="headerlink" title="背景描述"></a>背景描述</h2><p>ES节点写入到5.7K，会产生比较多的reject，CPU利用率才30%，部分索引延迟在增加。如图所示：</p>
+<img src="/img/2020/12/arius.jpg" width = "90%" />
+
+<p>CPU使用率在30%，但是Rejected记录达到8W行</p>
+<h2 id="原因分析"><a href="#原因分析" class="headerlink" title="原因分析"></a>原因分析</h2><p>写入场景，CPU打不满且出现异常，根据之前Presto的经验，大概率是JVM问题。打下火焰图看下：</p>
+<img src="/img/2020/12/perf.png" width = "90%" />
+
+<p>可以看到接近35%的CPU在做JIT Deoptimization。</p>
+<h3 id="JIT"><a href="#JIT" class="headerlink" title="JIT"></a>JIT</h3><p>为了提高热点代码（Hot Spot Code）的执行效率，在运行时，虚拟机将会把这些代码编译成与本地平台相关的机器码，并进行各种层次的优化，完成这个任务的编译器称为即时编译器（JIT）。</p>
+        
+          <p class="article-more-link">
+            <a href="/2020/12/30/slove-jit-deoptimization-and-es-insert-performance-improvement/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Elasticsearch/" rel="tag">Elasticsearch</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-solve-presto-jvm-coredump" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/12/10/solve-presto-jvm-coredump/">Presto Master JVM Core问题调研</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2020/12/10/solve-presto-jvm-coredump/" class="article-date">
+  <time datetime="2020-12-10T11:24:42.000Z" itemprop="datePublished">2020-12-10</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>Presto master出现jvm coredump情况，排查问题，这里记录下排查过程。</p>
+<h2 id="排查过程"><a href="#排查过程" class="headerlink" title="排查过程"></a>排查过程</h2><p>先看下JVM Coredump日志：</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># There is insufficient memory for the Java Runtime Environment to continue.</span></span><br><span class="line"><span class="comment"># Native memory allocation (mmap) failed to map 12288 bytes for committing reserved memory.</span></span><br><span class="line"><span class="comment"># Possible reasons:</span></span><br><span class="line"><span class="comment">#   The system is out of physical RAM or swap space</span></span><br><span class="line"><span class="comment">#   In 32 bit mode, the process size limit was hit</span></span><br><span class="line"><span class="comment"># Possible solutions:</span></span><br><span class="line"><span class="comment">#   Reduce memory load on the system</span></span><br><span class="line"><span class="comment">#   Increase physical memory or swap space</span></span><br><span class="line"><span class="comment">#   Check if swap backing store is full</span></span><br><span class="line"><span class="comment">#   Use 64 bit Java on a 64 bit OS</span></span><br><span class="line"><span class="comment">#   Decrease Java heap size (-Xmx/-Xms)</span></span><br><span class="line"><span class="comment">#   Decrease number of Java threads</span></span><br><span class="line"><span class="comment">#   Decrease Java thread stack sizes (-Xss)</span></span><br><span class="line"><span class="comment">#   Set larger code cache with -XX:ReservedCodeCacheSize=</span></span><br><span class="line"><span class="comment"># This output file may be truncated or incomplete.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment">#  Out of Memory Error (os_linux.cpp:2640), pid=22120, tid=0x00007ef9d2ed3700</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># JRE version: Java(TM) SE Runtime Environment (8.0_144-b01) (build 1.8.0_144-b01)</span></span><br><span class="line"><span class="comment"># Java VM: Java HotSpot(TM) 64-Bit Server VM (25.144-b01 mixed mode linux-amd64 )</span></span><br><span class="line"><span class="comment"># Core dump written. Default location: /data1/cluster-data/core or core.22120 (max size 52428800 kB). To ensure a full core dump, try &quot;ulimit -c unlimited&quot; before starting Java again</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"></span><br><span class="line"> </span><br><span class="line">---------------  T H R E A D  ---------------</span><br><span class="line"> </span><br><span class="line">Current thread (0x00007eff5eaf5000):  JavaThread <span class="string">&quot;IPC Client (1499102350) connection to presto-host.nmg01/data-node:8020 from user&quot;</span> daemon [_thread_new, <span class="attribute">id</span>=28463, stack(0x00007ef9d2e93000,0x00007ef9d2ed4000)]</span><br><span class="line"> </span><br><span class="line">Stack: [0x00007ef9d2e93000,0x00007ef9d2ed4000],  <span class="attribute">sp</span>=0x00007ef9d2ed2760,  free <span class="attribute">space</span>=253k</span><br><span class="line">Native frames: (<span class="attribute">J</span>=compiled Java code, <span class="attribute">j</span>=interpreted, <span class="attribute">Vv</span>=VM code, <span class="attribute">C</span>=native code)</span><br><span class="line">V  [libjvm.so+0xacb18a]  VMError::report_and_die()+0x2ba</span><br><span class="line">V  [libjvm.so+0x4ff4db]  report_vm_out_of_memory(char const*, int, unsigned long, VMErrorType, char const*)+0x8b</span><br><span class="line">V  [libjvm.so+0x927d23]  os::Linux::commit_memory_impl(char*, unsigned long, bool)+0x103</span><br><span class="line">V  [libjvm.so+0x927dec]  os::pd_commit_memory(char*, unsigned long, bool)+0xc</span><br><span class="line">V  [libjvm.so+0x9217ba]  os::commit_memory(char*, unsigned long, bool)+0x2a</span><br><span class="line">V  [libjvm.so+0x9261df]  os::pd_create_stack_guard_pages(char*, unsigned long)+0x7f</span><br><span class="line">V  [libjvm.so+0xa6ffce]  JavaThread::create_stack_guard_pages()+0x5e</span><br><span class="line">V  [libjvm.so+0xa797b4]  JavaThread::<span class="built_in">run</span>()+0x34</span><br><span class="line">V  [libjvm.so+0x92a338]  java_start(Thread*)+0x108</span><br><span class="line">C  [libpthread.so.0+0x7dc5]  start_thread+0xc5</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+        
+          <p class="article-more-link">
+            <a href="/2020/12/10/solve-presto-jvm-coredump/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-presto-in-didichuxing" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/11/03/presto-in-didichuxing/">Presto 在滴滴的探索和实践</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2020/11/03/presto-in-didichuxing/" class="article-date">
+  <time datetime="2020-11-03T07:59:12.000Z" itemprop="datePublished">2020-11-03</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Presto-简介"><a href="#Presto-简介" class="headerlink" title="Presto 简介"></a>Presto 简介</h2><h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>Presto是Facebook 开源的 MPP (Massive Parallel Processing) SQL 引擎，其理念来源于一个叫 Volcano 的并行数据库，该数据库提出了一个并行执行 SQL 的模型，它被设计为用来专门进行高速、实时的数据分析。Presto是一个SQL计算引擎，分离计算层和存储层，其不存储数据，通过Connector SPI实现对各种数据源（Storage）的访问。</p>
+<h3 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h3><img src="/img/2020/11/架构.png" width = "71%" />
+
+<p>Presto沿用了通用的Master-Slave架构，一个Coordinator，多个Worker。Coordinator负责解析SQL语句，生成执行计划，分发执行任务给Worker节点执行；Worker节点负责实际执行查询任务。Presto提供了一套Connector接口，用于读取元信息和原始数据，Presto 内置有多种数据源，如 Hive、MySQL、Kudu、Kafka 等。同时，Presto 的扩展机制允许自定义 Connector，从而实现对定制数据源的查询。假如配置了Hive Connector，需要配置一个Hive MetaStore服务为Presto提供Hive元信息，Worker节点通过Hive Connector与HDFS交互，读取原始数据。</p>
+<h3 id="实现低延时原理"><a href="#实现低延时原理" class="headerlink" title="实现低延时原理"></a>实现低延时原理</h3><p>Presto是一个交互式查询引擎，我们最关心的是Presto实现低延时查询的原理，以下几点是其性能脱颖而出的主要原因。</p>
+<ul>
+<li>完全基于内存的并行计算</li>
+<li>流水线</li>
+<li>本地化计算</li>
+<li>动态编译执行计划</li>
+<li>小心使用内存和数据结构</li>
+<li>GC控制</li>
+<li>无容错</li>
+</ul>
+<h2 id="Presto-在滴滴的应用"><a href="#Presto-在滴滴的应用" class="headerlink" title="Presto 在滴滴的应用"></a>Presto 在滴滴的应用</h2><h3 id="业务场景"><a href="#业务场景" class="headerlink" title="业务场景"></a>业务场景</h3><ul>
+<li>Hive SQL查询加速</li>
+<li>数据平台Ad-Hoc查询</li>
+<li>报表（BI报表、自定义报表）</li>
+<li>活动营销</li>
+<li>数据质量检测</li>
+<li>资产管理</li>
+<li>固定数据产品</li>
+</ul>
+        
+          <p class="article-more-link">
+            <a href="/2020/11/03/presto-in-didichuxing/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-jetty-cause-presto-memory-leak" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/06/23/jetty-cause-presto-memory-leak/">Jetty导致Presto堆外内存泄露的排查过程</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2020/06/23/jetty-cause-presto-memory-leak/" class="article-date">
+  <time datetime="2020-06-23T10:52:11.000Z" itemprop="datePublished">2020-06-23</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>一个Presto集群报警，显示Coordinator内存不足。看了下，发现RES内存(86.7G) &gt; XMX(72G) + 堆外内存(10G)，然后看了下Presto UI里Resource Utilization的Non-Heap Memory Used，只用了200M。问题奇怪，pmap查看进程的内存映像信息，如下：</p>
+<figure class="highlight tap"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[presto@hostname ~/presto-current]$ pmap -x<span class="number"> 107870 </span>| sort -rn -k3 | head -n 10</span><br><span class="line">total kB        <span class="number"> 106752092 </span>86763996 86684760</span><br><span class="line">00007fd673000000<span class="number"> 75644928 </span>61078708<span class="number"> 61078708 </span>rw---   [ anon ]</span><br><span class="line">00007fd5c8000000<span class="number"> 2654208 </span>2537116<span class="number"> 2537116 </span>rw---   [ anon ]</span><br><span class="line">000000000120a000<span class="number"> 1244772 </span>1244644<span class="number"> 1244644 </span>rw---   [ anon ]</span><br><span class="line">00007fd5803cf000 <span class="number"> 520388 </span><span class="number"> 497972 </span><span class="number"> 497972 </span>rw---   [ anon ]</span><br><span class="line">00007fd08c836000 <span class="number"> 149720 </span><span class="number"> 149720 </span><span class="number"> 149720 </span>rw---   [ anon ]</span><br><span class="line">00007fd0e2fe2000 <span class="number"> 147620 </span><span class="number"> 147620 </span><span class="number"> 147620 </span>rw---   [ anon ]</span><br><span class="line">00007fd0d9b35000 <span class="number"> 146920 </span><span class="number"> 146920 </span><span class="number"> 146920 </span>rw---   [ anon ]</span><br><span class="line">00007fe964000000 <span class="number"> 116672 </span><span class="number"> 114164 </span><span class="number"> 114164 </span>rwx--   [ anon ]</span><br><span class="line">00007fd0612b1000 <span class="number"> 111932 </span><span class="number"> 111932 </span><span class="number"> 111932 </span>rw---   [ anon ]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>第一列表示虚拟空间地址，第二列表示该项在虚拟空间中占用的大小，第三列表示RSS，第四列表示DIRTY，第五列表示该项名称（anon是佚名的）。</p>
+<p>jmap -heap 发现堆内内存占用正常，然后我jmap dump了一份内存，dump后发现只有700M+，应该与堆内存无关了，既然这样查找直接从堆外内存入手了。</p>
+        
+          <p class="article-more-link">
+            <a href="/2020/06/23/jetty-cause-presto-memory-leak/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-the-solution-of-presto-oom-caused-by-orc-statistics" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/06/03/the-solution-of-presto-oom-caused-by-orc-statistics/">记一次Presto Worker OOM的查找过程</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2020/06/03/the-solution-of-presto-oom-caused-by-orc-statistics/" class="article-date">
+  <time datetime="2020-06-03T02:57:48.000Z" itemprop="datePublished">2020-06-03</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近Presto集群又上线了几个新业务，伴之而来的是OOM很频繁，且发生时间多在早晨8点左右，线上稳定性是高优需要解决的，所以查找了下导致Presto集群OOM的原因，发现了一些问题，这里抛砖引玉下，可能其他使用Presto的用户也会遇到类似的问题。</p>
+<h2 id="排查过程"><a href="#排查过程" class="headerlink" title="排查过程"></a>排查过程</h2><p>我给一些业务划分了不同的label，这里说明下我们把Presto引擎改进了下，可以动态将机器划分不同的label，这样SQL查询时候指定不同的label，SQL调度时只根据指定的label查找机器即可。之后发现一个业务方的SQL会导致集群OOM。具体表现为，多次Full GC，之后OOM，看GC日志第一感觉应该是有内存泄露。</p>
+<p>我通过审计日志（之前通过event-listener实现了个日志审计模块）拿到OOM时2K左右条SQL，发现SQL都是简单的SQL，类似这种：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> <span class="keyword">table</span> <span class="keyword">WHERE</span> <span class="keyword">year</span><span class="operator">=</span><span class="string">&#x27;2020&#x27;</span> <span class="keyword">AND</span> <span class="keyword">month</span><span class="operator">=</span><span class="string">&#x27;06&#x27;</span> <span class="keyword">AND</span> <span class="keyword">day</span><span class="operator">=</span><span class="string">&#x27;01&#x27;</span> LIMIT <span class="number">10</span>;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>根据SQL，我猜测可能以下2种原因导致了OOM：</p>
+<ul>
+<li>查询的表存在Hive视图（我让Presto支持了Hive视图）</li>
+<li>异常SQL触发了内存泄露</li>
+</ul>
+        
+          <p class="article-more-link">
+            <a href="/2020/06/03/the-solution-of-presto-oom-caused-by-orc-statistics/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
       <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
+        <a class="extend prev" rel="prev" href="/page/2/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><a class="extend next" rel="next" href="/page/4/">下一页 &gt;&gt;</a>
       </nav>
-    <% }
-    break;
-  default:
-    page.posts.each(function(post){ %>
-      <%- partial('article', {post: post, index: true}) %>
-    <% })
-    if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-} %></section>
+    </section>
     <footer id="footer">
   
   <div class="outer">

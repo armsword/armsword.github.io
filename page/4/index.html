@@ -51,88 +51,358 @@
     </div>
   </div>
 </header>
-    <section id="main" class="outer"><% switch (type) {
-    case 'archive':
-    var last;
-    page.posts.each(function(post, i){
-    var year = post.date.year();
-    if (last != year){
-      if (last != null){ %>
-        </div></section>
-      <% }
-      last = year; %>
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="<%- url_for('archives/' + year) %>" class="archive-year"><%= year %></a>
-        </div>
-        <div class="archives">
-    <% } %>
-    <%- partial('archive-post', {post: post, archive: true}) %>
-  <% });
-    if (page.posts.length){ %>
-    </div></section>
-  <% }
-    if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-  case 'category': %>
-    <section class="archives-wrap">
-    <div class="archive-category-wrap">
-      <span class="archive-category"><%= page.category %></span>
+    <section id="main" class="outer">
+      <article id="post-the-difference-between-prestodb-and-prestosql" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/05/02/the-difference-between-prestodb-and-prestosql/">PrestoDB和PrestoSQL比较及选择</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2020/05/02/the-difference-between-prestodb-and-prestosql/" class="article-date">
+  <time datetime="2020-05-02T06:50:34.000Z" itemprop="datePublished">2020-05-02</time>
+</a>
+      
     </div>
-    <div class="archives">
-    <% page.posts.each(function (post, i) { %>
-      <%- partial('archive-post', {post: post, archive: false}) %>
-    <% }); %>
-    </div></section>
-    <% if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-  case 'tag': %>
-    <section class="archives-wrap">
-    <div class="archive-tag-wrap">
-      <span class="archive-tag">#<%= page.tag %></span>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Presto 社区分家后搞了2个项目，分别为 PrestoDB 和 PrestoSQL，同时他们都成立了自己的基金会。而去年国庆时候，abei写了篇文章比对了2个分支的进展，链接见：<a href="https://zhuanlan.zhihu.com/p/87621360">PrestoDB VS PrestoSQL发展比较</a>。 而现在已经分家17个月了，那我们简单梳理下这2个分支的主要核心功能：</p>
+<h3 id="PrestoDB"><a href="#PrestoDB" class="headerlink" title="PrestoDB"></a>PrestoDB</h3><ul>
+<li>Connector：ElasticSearch 及 Druid</li>
+<li>Master 和Worker 通信协议支持二进制</li>
+<li>Orc 及 Parquet读写性能优化</li>
+<li>Hive写数据支持指定压缩格式</li>
+<li>task通信协议可以指定 thrift</li>
+<li>spi pushdown</li>
+<li>MapReduce-style shuffle，支持部分 etl 任务及大查询</li>
+<li>fix bug 及 improve performace</li>
+</ul>
+<h3 id="PrestoSQL"><a href="#PrestoSQL" class="headerlink" title="PrestoSQL"></a>PrestoSQL</h3><ul>
+<li>Connector：ElasticSearch和MemSQL</li>
+<li>spi pushdown</li>
+<li>S3优化读取</li>
+<li>join 延时物化</li>
+<li>大量的 fix bug 及 improve performance</li>
+</ul>
+        
+          <p class="article-more-link">
+            <a href="/2020/05/02/the-difference-between-prestodb-and-prestosql/#more">Read More</a>
+          </p>
+        
+      
     </div>
-    <div class="archives">
-    <% page.posts.each(function (post, i) { %>
-      <%- partial('archive-post', {post: post, archive: false}) %>
-    <% }); %>
-    </div></section>
-    <% if (page.total > 1){ %>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-presto-scheduling-task" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/04/08/presto-scheduling-task/">Presto调度task选择Worker方法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2020/04/08/presto-scheduling-task/" class="article-date">
+  <time datetime="2020-04-08T06:30:22.000Z" itemprop="datePublished">2020-04-08</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h3 id="Presto调度task方式"><a href="#Presto调度task方式" class="headerlink" title="Presto调度task方式"></a>Presto调度task方式</h3><figure class="highlight angelscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="symbol">SystemPartitioningHandle</span></span><br><span class="line">        <span class="symbol">implements</span> <span class="symbol">ConnectorPartitioningHandle</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">enum</span> SystemPartitioning</span><br><span class="line">    &#123;</span><br><span class="line">        SINGLE,</span><br><span class="line">        FIXED,</span><br><span class="line">        SOURCE,</span><br><span class="line">        SCALED,</span><br><span class="line">        COORDINATOR_ONLY,</span><br><span class="line">        ARBITRARY</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>常见的场景主要包含SINGLE、FIXED及SOURCE类型，其中SINGLE表示最后数据的汇总输出，FIXED表示中间数据的计算，如JOIN等，SOURCE类型表示与源数据打交道的类型。</p>
+<p>以下SQL为例：</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">select</span> * from (select * from <span class="number">1</span>test join <span class="number">2</span>test1 <span class="literal">on</span> <span class="number">1</span>test.id = <span class="number">2</span>test1.<span class="number">123</span>id);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+        
+          <p class="article-more-link">
+            <a href="/2020/04/08/presto-scheduling-task/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-presto-memory-kill-policy" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/02/18/presto-memory-kill-policy/">Presto集群内存不足时保护机制</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2020/02/18/presto-memory-kill-policy/" class="article-date">
+  <time datetime="2020-02-18T14:28:21.000Z" itemprop="datePublished">2020-02-18</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>为了防止集群里节点OOM，Presto有个循环线程来获取当前集群节点和集群整体内存占用情况。通过这篇文章：<a href="http://armsword.com/2019/11/13/the-configuration-settings-of-presto-memory-management/">Presto内存管理相关参数设置</a>  我们知道Presto里分为RESERVED_POOL和GENERAL_POOL。</p>
+<h2 id="判断节点是否阻塞（内存不足）"><a href="#判断节点是否阻塞（内存不足）" class="headerlink" title="判断节点是否阻塞（内存不足）"></a>判断节点是否阻塞（内存不足）</h2><p>如果使用RESERVED_POOL（意思是说最大SQL使用这个POOL），那判断集群内存超出内存的方法就是：</p>
+<p>1、RESERVED_POOL内存被SQL占用了</p>
+<p>2、GENERAL_POOL里有被阻塞的Node</p>
+<p>因为RESERVED_POOL会导致内存浪费，我们集群配置参数没有使用这个POOL，只使用了GENERAL_POOL，所以只需要查看下GENERAL_POOL是怎么判断节点是否Block住的。</p>
+<figure class="highlight less"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">if</span> (poolInfo.<span class="built_in">getFreeBytes</span>() + poolInfo.<span class="built_in">getReservedRevocableBytes</span>() &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="selector-tag">blockedNodes</span>++;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>getReservedRevocableBytes 这个是用于获取spill到磁盘的内存，目前我们集群是不允许内存Spill到磁盘的，因为Presto面向的是ad-hoc场景，要求是快，如果说需要spill到磁盘，那spark是一个更好的选择，且早期版本Presto spill到磁盘之前测试过稳定性比较差，场景也比较少。</p>
+<p>所以就判断GENERAL_POOL里是否还有剩余内存，如果小于等于0，那就表示该节点是个Block状态。</p>
+        
+          <p class="article-more-link">
+            <a href="/2020/02/18/presto-memory-kill-policy/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Presto/" rel="tag">Presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-the-configuration-settings-of-presto-memory-management" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/11/13/the-configuration-settings-of-presto-memory-management/">Presto内存管理相关参数设置</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2019/11/13/the-configuration-settings-of-presto-memory-management/" class="article-date">
+  <time datetime="2019-11-13T09:47:24.000Z" itemprop="datePublished">2019-11-13</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>之前介绍过Presto内存管理和分配策略，但是那个是0.192版本，详细见：<a href="http://armsword.com/2018/05/22/the-memory-management-and-tuning-experience-of-presto/">Presto内存管理原理和调优</a> ，0.201之后内存管理作了新的修改，所以重新简单分析下，然后给出一个配置模板，希望对使用Presto的同学有帮助。</p>
+<h2 id="两种内存"><a href="#两种内存" class="headerlink" title="两种内存"></a>两种内存</h2><p>Presto里面内存只有2种内存，一种是user memory，另一种是system memory。system memory用于input&#x2F;output&#x2F;exchange buffers等，user memory 用于hash join、agg这些。</p>
+<h2 id="内存池"><a href="#内存池" class="headerlink" title="内存池"></a>内存池</h2><p>0.201之前有3种内存POOL，分别是GENERAL_POOL、RESERVED_POOL及SYSTEM_POOL。但是0.201之后，默认SYSTEM_POOL是不开启的，以下参数控制，默认值为false</p>
+<figure class="highlight ceylon"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">deprecated</span>.legacy-system-pool-enabled</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>那SYSTEM_POOL不使用了，这块内存怎么控制呢，去代码里确认了下：</p>
+        
+          <p class="article-more-link">
+            <a href="/2019/11/13/the-configuration-settings-of-presto-memory-management/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-presto-orc-and-performance-optimization" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/09/30/presto-orc-and-performance-optimization/">Presto ORC及其性能优化</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2019/09/30/presto-orc-and-performance-optimization/" class="article-date">
+  <time datetime="2019-09-30T07:06:04.000Z" itemprop="datePublished">2019-09-30</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>ORC的全称是(Optimized Row Columnar)，其是为了加速Hive查询以及节省Hadoop磁盘空间而生的，其使用列式存储，支持多种文件压缩方式。由于其被广泛应用在Hadoop系统中，Presto 0.77版本在Hive Connector里实现了ORC Reader。</p>
+<h2 id="ORC文件结构"><a href="#ORC文件结构" class="headerlink" title="ORC文件结构"></a>ORC文件结构</h2><img src="/img/2019/09/01.jpg" width="800" align=left />
+
+<p>上图（图1）来自网络，有很多文章通过这张图片介绍了ORC文件结构，我这里就不多啰嗦了，我们直接通过数据来看文件格式吧。</p>
+        
+          <p class="article-more-link">
+            <a href="/2019/09/30/presto-orc-and-performance-optimization/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-solve-presto-system-load-too-high" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/09/18/solve-presto-system-load-too-high/">Presto System load过高问题调研</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2019/09/18/solve-presto-system-load-too-high/" class="article-date">
+  <time datetime="2019-09-18T11:04:09.000Z" itemprop="datePublished">2019-09-18</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>我们Presto有个集群，每6.5天会出现System load过高问题，这个集群有个特点，只服务于一个业务方，且SQL基本相似。如图所示：Sys load很高（20-40%），严重影响查询性能。<br><img src="/img/2019/09/01.png" width="800" align=left /></p>
+<p>业务SQL查询时间表现为：</p>
+<p>ScanFilterAndProjectOperator（Source Stage）阶段有机器有明显的长尾现象，比如20台机器，正常这个Operator执行时间只需要1S，但是有几台机器会耗时几分钟。而重启服务后，查询恢复正常。</p>
+        
+          <p class="article-more-link">
+            <a href="/2019/09/18/solve-presto-system-load-too-high/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-presto-compatible-hive-syntax" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/03/31/presto-compatible-hive-syntax/">Presto兼容Hive SQL的一些改造工作</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2019/03/31/presto-compatible-hive-syntax/" class="article-date">
+  <time datetime="2019-03-31T08:23:32.000Z" itemprop="datePublished">2019-03-31</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Presto是一款优秀的分布式SQL查询引擎，适用于即席查询和报表分析等业务，其使用了ANSI SQL语法和语义，使用标准是SQL-92和SQL:2016。但是因为很多业务方一直使用Hive离线引擎来做SQL分析，而Hive使用类似SQL的语法（HQL）。为了使用户能平滑的将业务迁移到Presto上或者能让SQL同时跑到Presto及Hive引擎上，我们对Presto语法及一些算子等做了二次兼容开发，来最大限度降低用户迁移成本。接下来我们介绍下我们的主要兼容工作。</p>
+<h2 id="一、权限认证"><a href="#一、权限认证" class="headerlink" title="一、权限认证"></a>一、权限认证</h2><p>Presto默认如果使用Password，那么必须使用Kerberos协议。因为公司离线数据没有Kerberos协议，所以我们改进了权限认证机制，与离线复用一套权限机制，用户只需要去离线申请权限，指定用户名和密码，即可查询Presto引擎和访问离线数据，并且提供了以下几种方式访问公司Presto，且与公司离线权限体系打通，分别为JDBC、Cli、Go、Python、R、NodeJS。</p>
+<h2 id="二、行为修改"><a href="#二、行为修改" class="headerlink" title="二、行为修改"></a>二、行为修改</h2><h3 id="整数相除返回浮点数"><a href="#整数相除返回浮点数" class="headerlink" title="整数相除返回浮点数"></a>整数相除返回浮点数</h3><p>Presto整数相除沿用了Java整数相除的特性，我们需要修改函数算子行为，如IntegerOperators，将divide相关的函数修改为返回浮点数结果。比如：</p>
+        
+          <p class="article-more-link">
+            <a href="/2019/03/31/presto-compatible-hive-syntax/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
       <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
+        <a class="extend prev" rel="prev" href="/page/3/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><a class="extend next" rel="next" href="/page/5/">下一页 &gt;&gt;</a>
       </nav>
-    <% }
-    break;
-  default:
-    page.posts.each(function(post){ %>
-      <%- partial('article', {post: post, index: true}) %>
-    <% })
-    if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-} %></section>
+    </section>
     <footer id="footer">
   
   <div class="outer">

@@ -51,88 +51,168 @@
     </div>
   </div>
 </header>
-    <section id="main" class="outer"><% switch (type) {
-    case 'archive':
-    var last;
-    page.posts.each(function(post, i){
-    var year = post.date.year();
-    if (last != year){
-      if (last != null){ %>
-        </div></section>
-      <% }
-      last = year; %>
+    <section id="main" class="outer">
       <section class="archives-wrap">
         <div class="archive-year-wrap">
-          <a href="<%- url_for('archives/' + year) %>" class="archive-year"><%= year %></a>
+          <a href="/archives/2014" class="archive-year">2014</a>
         </div>
         <div class="archives">
-    <% } %>
-    <%- partial('archive-post', {post: post, archive: true}) %>
-  <% });
-    if (page.posts.length){ %>
+    
+    <article class="archive-article archive-type-post">
+  <div class="archive-article-inner">
+    <header class="archive-article-header">
+      
+        <a href="/2014/03/07/linux-io-multiplexing/" class="archive-article-date">
+  <time datetime="2014-03-07T09:33:18.000Z" itemprop="datePublished">3月 7</time>
+</a>
+      
+      
+  
+    <h1 itemprop="name">
+      <a class="archive-article-title" href="/2014/03/07/linux-io-multiplexing/">Linux IO复用—select poll 和 epoll</a>
+    </h1>
+  
+
+    </header>
+  </div>
+</article>
+  
+        </div></section>
+      
+      <section class="archives-wrap">
+        <div class="archive-year-wrap">
+          <a href="/archives/2013" class="archive-year">2013</a>
+        </div>
+        <div class="archives">
+    
+    <article class="archive-article archive-type-post">
+  <div class="archive-article-inner">
+    <header class="archive-article-header">
+      
+        <a href="/2013/12/14/tcp-and-udp-note/" class="archive-article-date">
+  <time datetime="2013-12-13T17:05:21.000Z" itemprop="datePublished">12月 14</time>
+</a>
+      
+      
+  
+    <h1 itemprop="name">
+      <a class="archive-article-title" href="/2013/12/14/tcp-and-udp-note/">记录下传输层协议TCP和UDP的一些特性</a>
+    </h1>
+  
+
+    </header>
+  </div>
+</article>
+  
+    <article class="archive-article archive-type-post">
+  <div class="archive-article-inner">
+    <header class="archive-article-header">
+      
+        <a href="/2013/09/26/lru-cache/" class="archive-article-date">
+  <time datetime="2013-09-26T07:20:43.000Z" itemprop="datePublished">9月 26</time>
+</a>
+      
+      
+  
+    <h1 itemprop="name">
+      <a class="archive-article-title" href="/2013/09/26/lru-cache/">实现一个LRU Cache</a>
+    </h1>
+  
+
+    </header>
+  </div>
+</article>
+  
+    <article class="archive-article archive-type-post">
+  <div class="archive-article-inner">
+    <header class="archive-article-header">
+      
+        <a href="/2013/08/25/linux-memory-and-manage/" class="archive-article-date">
+  <time datetime="2013-08-25T14:58:28.000Z" itemprop="datePublished">8月 25</time>
+</a>
+      
+      
+  
+    <h1 itemprop="name">
+      <a class="archive-article-title" href="/2013/08/25/linux-memory-and-manage/">linux内存空间分配和内存管理</a>
+    </h1>
+  
+
+    </header>
+  </div>
+</article>
+  
+    <article class="archive-article archive-type-post">
+  <div class="archive-article-inner">
+    <header class="archive-article-header">
+      
+        <a href="/2013/08/04/redis-source/" class="archive-article-date">
+  <time datetime="2013-08-04T07:22:57.000Z" itemprop="datePublished">8月 4</time>
+</a>
+      
+      
+  
+    <h1 itemprop="name">
+      <a class="archive-article-title" href="/2013/08/04/redis-source/">准备看下Redis的源代码</a>
+    </h1>
+  
+
+    </header>
+  </div>
+</article>
+  
+        </div></section>
+      
+      <section class="archives-wrap">
+        <div class="archive-year-wrap">
+          <a href="/archives/2012" class="archive-year">2012</a>
+        </div>
+        <div class="archives">
+    
+    <article class="archive-article archive-type-post">
+  <div class="archive-article-inner">
+    <header class="archive-article-header">
+      
+        <a href="/2012/11/27/some-methods-about-gcc-and-gdb/" class="archive-article-date">
+  <time datetime="2012-11-27T07:14:54.000Z" itemprop="datePublished">11月 27</time>
+</a>
+      
+      
+  
+    <h1 itemprop="name">
+      <a class="archive-article-title" href="/2012/11/27/some-methods-about-gcc-and-gdb/">编译和调试C/C++程序常用到的一些知识点</a>
+    </h1>
+  
+
+    </header>
+  </div>
+</article>
+  
+    <article class="archive-article archive-type-post">
+  <div class="archive-article-inner">
+    <header class="archive-article-header">
+      
+        <a href="/2012/10/01/install-tools/" class="archive-article-date">
+  <time datetime="2012-10-01T12:22:29.000Z" itemprop="datePublished">10月 1</time>
+</a>
+      
+      
+  
+    <h1 itemprop="name">
+      <a class="archive-article-title" href="/2012/10/01/install-tools/">工欲善其事必先利其器</a>
+    </h1>
+  
+
+    </header>
+  </div>
+</article>
+  
     </div></section>
-  <% }
-    if (page.total > 1){ %>
+  
       <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
+        <a class="extend prev" rel="prev" href="/archives/page/7/">&lt;&lt; 上一页</a><a class="page-number" href="/archives/">1</a><span class="space">&hellip;</span><a class="page-number" href="/archives/page/6/">6</a><a class="page-number" href="/archives/page/7/">7</a><span class="page-number current">8</span><a class="page-number" href="/archives/page/9/">9</a><a class="extend next" rel="next" href="/archives/page/9/">下一页 &gt;&gt;</a>
       </nav>
-    <% }
-    break;
-  case 'category': %>
-    <section class="archives-wrap">
-    <div class="archive-category-wrap">
-      <span class="archive-category"><%= page.category %></span>
-    </div>
-    <div class="archives">
-    <% page.posts.each(function (post, i) { %>
-      <%- partial('archive-post', {post: post, archive: false}) %>
-    <% }); %>
-    </div></section>
-    <% if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-  case 'tag': %>
-    <section class="archives-wrap">
-    <div class="archive-tag-wrap">
-      <span class="archive-tag">#<%= page.tag %></span>
-    </div>
-    <div class="archives">
-    <% page.posts.each(function (post, i) { %>
-      <%- partial('archive-post', {post: post, archive: false}) %>
-    <% }); %>
-    </div></section>
-    <% if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-  default:
-    page.posts.each(function(post){ %>
-      <%- partial('article', {post: post, index: true}) %>
-    <% })
-    if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-} %></section>
+    </section>
     <footer id="footer">
   
   <div class="outer">

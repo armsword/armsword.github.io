@@ -51,88 +51,346 @@
     </div>
   </div>
 </header>
-    <section id="main" class="outer"><% switch (type) {
-    case 'archive':
-    var last;
-    page.posts.each(function(post, i){
-    var year = post.date.year();
-    if (last != year){
-      if (last != null){ %>
-        </div></section>
-      <% }
-      last = year; %>
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="<%- url_for('archives/' + year) %>" class="archive-year"><%= year %></a>
-        </div>
-        <div class="archives">
-    <% } %>
-    <%- partial('archive-post', {post: post, archive: true}) %>
-  <% });
-    if (page.posts.length){ %>
-    </div></section>
-  <% }
-    if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-  case 'category': %>
-    <section class="archives-wrap">
-    <div class="archive-category-wrap">
-      <span class="archive-category"><%= page.category %></span>
+    <section id="main" class="outer">
+      <article id="post-earlybird" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/08/17/earlybird/">Earlybird:Twitter实时搜索引擎</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2016/08/17/earlybird/" class="article-date">
+  <time datetime="2016-08-16T16:49:46.000Z" itemprop="datePublished">2016-08-17</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/">搜索引擎</a>
+  </div>
+
     </div>
-    <div class="archives">
-    <% page.posts.each(function (post, i) { %>
-      <%- partial('archive-post', {post: post, archive: false}) %>
-    <% }); %>
-    </div></section>
-    <% if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-  case 'tag': %>
-    <section class="archives-wrap">
-    <div class="archive-tag-wrap">
-      <span class="archive-tag">#<%= page.tag %></span>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>简单说下，2011年左右的Paper，Paper里说Twitter的实时索引和检索系统叫做Earlybird，Paper中主要讲了2件事，第一个就是支持Twitter的实时索引的倒排索引结构是怎么样的，第二个就是利用Java并发模型，处理并发读写。</p>
+<h4 id="该引擎功能"><a href="#该引擎功能" class="headerlink" title="该引擎功能"></a>该引擎功能</h4><ul>
+<li>低延时、高吞吐能力；</li>
+<li>能处理突发峰值（Weibo的特性）；</li>
+<li>突出时效性，时间越近，排名应该越靠前；</li>
+<li>该实时引擎支持AND、OR、NOT以及短语查询，实时性大约10S，查询latency 50ms；</li>
+</ul>
+<h4 id="该实时引擎，基于Lucene，使用Java开发，理由是"><a href="#该实时引擎，基于Lucene，使用Java开发，理由是" class="headerlink" title="该实时引擎，基于Lucene，使用Java开发，理由是"></a>该实时引擎，基于Lucene，使用Java开发，理由是</h4><ul>
+<li>利用已存在的Lucene代码，并用来做全量索引；</li>
+<li>适用于Twitter以JVM为中心的开发环境；</li>
+<li>利用Java和JVM提供容易理解的并发模型；</li>
+</ul>
+<p>其实上面几条理由与阿里很多开发项目类似，但是阿里的搜索引擎是C++编写的，质量也是非常不错的，叫问天(HA3)。</p>
+        
+          <p class="article-more-link">
+            <a href="/2016/08/17/earlybird/#more">Read More</a>
+          </p>
+        
+      
     </div>
-    <div class="archives">
-    <% page.posts.each(function (post, i) { %>
-      <%- partial('archive-post', {post: post, archive: false}) %>
-    <% }); %>
-    </div></section>
-    <% if (page.total > 1){ %>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-find-socket-bug-in-proxy" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/08/10/find-socket-bug-in-proxy/">记一次线上Bug的查找过程和思路</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2016/08/10/find-socket-bug-in-proxy/" class="article-date">
+  <time datetime="2016-08-10T13:33:40.000Z" itemprop="datePublished">2016-08-10</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>简单说下问题情况，Proxy即作为客户端又有服务端功能，其接受QS（Query Server）的请求，之后向BS（索引服务）发送请求，然后根据BS的返回结果Merge后返回给QS。不能泄露太多东西，所以本文主要是整理一些知识点和问题查找思路。</p>
+<h2 id="问题和现象"><a href="#问题和现象" class="headerlink" title="问题和现象"></a>问题和现象</h2><ul>
+<li>Proxy机器上出现大量的CLOSE_WAIT。</li>
+<li>Proxy失去服务能力，内存使用不为0，CPU使用率为0。</li>
+<li>机器报警，TcpListenOverFlows。</li>
+</ul>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">命令查看：</span><br><span class="line">netstat <span class="operator">-</span>n <span class="operator">|</span> awk &#x27;<span class="regexp">/^tcp/</span> &#123;<span class="operator">++</span><span class="type">S</span>[<span class="variable">$NF</span>]&#125; <span class="type">END</span> &#123;<span class="keyword">for</span>(a <span class="keyword">in</span> <span class="type">S</span>) print a, <span class="type">S</span>[a]&#125;&#x27;</span><br><span class="line"> </span><br><span class="line"> </span><br><span class="line">结果：</span><br><span class="line"><span class="type">TIME_WAIT</span> <span class="number">31927</span></span><br><span class="line"><span class="type">CLOSE_WAIT</span> <span class="number">1570</span></span><br><span class="line"><span class="type">ESTABLISHED</span> <span class="number">40</span></span><br><span class="line"> </span><br><span class="line"><span class="type">TIME_WAIT：表示主动关闭，通过优化系统内核参数可容易解决</span><span class="operator">。</span></span><br><span class="line"><span class="type">CLOSE_WAIT：表示被动关闭，需要从程序本身出发</span><span class="operator">。</span></span><br><span class="line"><span class="type">ESTABLISHED：表示正在通信</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">注：以上数据非真实线上情况，只为举例</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+        
+          <p class="article-more-link">
+            <a href="/2016/08/10/find-socket-bug-in-proxy/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-linux-max-locked-memory-ulimit" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/07/09/linux-max-locked-memory-ulimit/">浅谈Linux ulimit以及max memory locked</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2016/07/09/linux-max-locked-memory-ulimit/" class="article-date">
+  <time datetime="2016-07-09T13:39:42.000Z" itemprop="datePublished">2016-07-09</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>刚入职，我在索引这个组，需要熟悉下之前的搜索索引模块的代码，以便后续开发。我在新申请的测试机器上编译代码部署索引这个模块就报错了。定位出现问题的地方，代码大致流程是这样子的：</p>
+<figure class="highlight gcode"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> <span class="comment">(conf-&gt;use_memlock_for_mmap)</span> &#123;</span><br><span class="line">    <span class="comment">// add MAP_LOCKED to lock the buffer</span></span><br><span class="line"></span><br><span class="line">    attr_hash = <span class="comment">(AttrIndexInfo*)</span>mmap<span class="comment">(NULL, fsize, PROT_WRITE | PROT_READ, MAP_SHARED | MAP_LOCKED, fd, 0)</span>;</span><br><span class="line"></span><br><span class="line">&#125; else &#123;</span><br><span class="line"></span><br><span class="line">    attr_hash = <span class="comment">(AttrIndexInfo*)</span>mmap<span class="comment">(NULL, fsize, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0)</span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>而参数里配置了use_memlock_for_mmap 选项，于是代码就走到第一个mmap逻辑处。</p>
+<p>使用ulimit -a查看下系统属性：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[armsword<span class="meta">@search</span>-querybs1 ~]$ ulimit -a</span><br><span class="line">core file <span class="title function_">size</span>          <span class="params">(blocks, -c)</span> <span class="number">4194304</span></span><br><span class="line">data seg <span class="title function_">size</span>           <span class="params">(kbytes, -d)</span> unlimited</span><br><span class="line">scheduling <span class="title function_">priority</span>             <span class="params">(-e)</span> <span class="number">0</span></span><br><span class="line">file <span class="title function_">size</span>               <span class="params">(blocks, -f)</span> unlimited</span><br><span class="line">pending <span class="title function_">signals</span>                 <span class="params">(-i)</span> <span class="number">256726</span></span><br><span class="line">max locked <span class="title function_">memory</span>       <span class="params">(kbytes, -l)</span> <span class="number">64</span></span><br><span class="line">max memory <span class="title function_">size</span>         <span class="params">(kbytes, -m)</span> unlimited</span><br><span class="line">open <span class="title function_">files</span>                      <span class="params">(-n)</span> <span class="number">1000000</span></span><br><span class="line">pipe <span class="title function_">size</span>            <span class="params">(<span class="number">512</span> bytes, -p)</span> <span class="number">8</span></span><br><span class="line">POSIX message <span class="title function_">queues</span>     <span class="params">(bytes, -q)</span> <span class="number">819200</span></span><br><span class="line">real-time <span class="title function_">priority</span>              <span class="params">(-r)</span> <span class="number">0</span></span><br><span class="line">stack <span class="title function_">size</span>              <span class="params">(kbytes, -s)</span> <span class="number">10240</span></span><br><span class="line">cpu <span class="title function_">time</span>               <span class="params">(seconds, -t)</span> unlimited</span><br><span class="line">max user <span class="title function_">processes</span>              <span class="params">(-u)</span> <span class="number">102400</span></span><br><span class="line">virtual <span class="title function_">memory</span>          <span class="params">(kbytes, -v)</span> unlimited      （注：相当于limits.conf中的as和cgroup中的memory.limit_in_bytes.）</span><br><span class="line">file <span class="title function_">locks</span>                      <span class="params">(-x)</span> unlimited</span><br></pre></td></tr></table></figure>
+        
+          <p class="article-more-link">
+            <a href="/2016/07/09/linux-max-locked-memory-ulimit/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-several-realization-of-hash-algorithm" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/03/02/several-realization-of-hash-algorithm/">几种Hash算法的实现</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2015/03/02/several-realization-of-hash-algorithm/" class="article-date">
+  <time datetime="2015-03-02T08:38:51.000Z" itemprop="datePublished">2015-03-02</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%AE%97%E6%B3%95-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">算法/数据结构</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>哈希被广泛使用在很多领域，如数据存储，加密，计算机视觉（几何哈希），此处就简单整理下几个常见的Hash函数的实现，有空陆续补充吧。</p>
+<h2 id="BKDR-Hash-Function"><a href="#BKDR-Hash-Function" class="headerlink" title="BKDR Hash Function"></a>BKDR Hash Function</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 本算法由于在Brian Kernighan与Dennis Ritchie的《The C Programming Language》一书被展示而得名</span></span><br><span class="line"><span class="comment">// 是一种简单快捷的hash算法。</span></span><br><span class="line"><span class="comment">// 也是Java目前采用的字符串的Hash算法（累乘因子为31）。</span></span><br><span class="line"><span class="comment">// 此哈希函数用的最多</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">class</span> T&gt;</span></span><br><span class="line"><span class="function"><span class="type">size_t</span> <span class="title">BKDRHash</span><span class="params">(<span class="type">const</span> T *str)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">register</span> <span class="type">size_t</span> hash = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">while</span> (<span class="type">size_t</span> ch = (<span class="type">size_t</span>)*str++)</span><br><span class="line">	&#123;		</span><br><span class="line">		hash = hash * <span class="number">131</span> + ch;   <span class="comment">// 也可以乘以31、131、1313、13131、131313..</span></span><br><span class="line">		<span class="comment">// 可将乘法分解为位运算及加减法可以提高效率</span></span><br><span class="line">		<span class="comment">// 如将上式表达为：hash = hash &lt;&lt; 7 + hash &lt;&lt; 1 + hash + ch;</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> hash;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>其中累乘因子也可以为131、1313、13131，比如下述代码就使用了33。</p>
+        
+          <p class="article-more-link">
+            <a href="/2015/03/02/several-realization-of-hash-algorithm/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-baidu-lossless-music-downloader" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/01/31/baidu-lossless-music-downloader/">写了一个Chrome插件 - 百度无损音乐下载插件</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2015/01/31/baidu-lossless-music-downloader/" class="article-date">
+  <time datetime="2015-01-31T12:39:13.000Z" itemprop="datePublished">2015-01-31</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Web-Script/">Web/Script</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>1、之前是从<a href="http://music.baidu.com/">http://music.baidu.com/</a> 入手的，现在发现从此处入手已经找不到方法了。由于我又不是太懂JS语法，于是用了几十分钟，没分析到地址放弃。</p>
+<p>2、灵光一闪，从<a href="http://fm.baidu.com/">http://fm.baidu.com/</a> 入手，在Chrome下抓包，细心分析后，果然发现蜘丝马迹，如下图所示：</p>
+<p><img src="/img/2014/08/20140809213933.png"></p>
+<p>见左图那个灰色的链接，我们打开[链接](<a href="http://music.baidu.com/data/music/fmlink?songIds=1181294,291890,620023,7329389,448152,7325038,2119209,309877">http://music.baidu.com/data/music/fmlink?songIds=1181294,291890,620023,7329389,448152,7325038,2119209,309877</a>,     7331713,2121730&amp;type&#x3D;mp3&amp;rate&#x3D;320&amp;callback&#x3D;jQuery1102037159983557648957_1407590773561&amp;_&#x3D;1407590773570                                  “百度无损音乐下载方法”)看下，嘿，发现了许多歌曲信息哦，如下图所示：</p>
+        
+          <p class="article-more-link">
+            <a href="/2015/01/31/baidu-lossless-music-downloader/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-jwsmtp-analyse" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/01/26/jwsmtp-analyse/">jwSMTP源码剖析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2015/01/26/jwsmtp-analyse/" class="article-date">
+  <time datetime="2015-01-26T05:50:48.000Z" itemprop="datePublished">2015-01-26</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C-C/">C/C++</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>前段时间事情太多了，忙着写毕业论文，考试，然后又被抽到了盲审，不过好在有惊无险，最后也在学院提交三月中旬申请答辩成功，如果盲审顺利的话，4月份就可以毕业了。不过这段时间总算可以看代码、看书了，感觉自己操作系统方面有些不扎实，索性买了本孙钟秀的《操作系统教程》看，之后顺便阅读和分析了jwSMTP源码，这里写篇文章记录下。本文不想对代码细节作太多分析，因为代码比较好读，并且文章末尾我会放出我注释过的源码链接，所以此文多介绍下原理吧。</p>
+<h2 id="jwSMTP"><a href="#jwSMTP" class="headerlink" title="jwSMTP"></a>jwSMTP</h2><p>jwSMTP是一个由C++编写的发送邮件的库，支持Linux、Windows平台。可使用HTML或纯文本方式发送邮件。也可添加附件，支持多个收件人。并且支持LOGIN和PLAIN两种服务器验证方式。</p>
+<h2 id="两种调用方式"><a href="#两种调用方式" class="headerlink" title="两种调用方式"></a>两种调用方式</h2><h3 id="第一种方式"><a href="#第一种方式" class="headerlink" title="第一种方式"></a>第一种方式</h3>
+        
+          <p class="article-more-link">
+            <a href="/2015/01/26/jwsmtp-analyse/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-tinyhttpd-code-analyse" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/10/29/tinyhttpd-code-analyse/">tinyhttpd源码剖析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/10/29/tinyhttpd-code-analyse/" class="article-date">
+  <time datetime="2014-10-28T16:46:18.000Z" itemprop="datePublished">2014-10-29</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C-C/">C/C++</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>喊了几天学习Web开发，为了毕业论文，今晚上计划也是看看CSS呢，但是实在是没忍住，读了下经典的tinyhttp的源代码，这款代码还是颇有名气的，网上这么评论的：</p>
+<blockquote>
+<p>tinyhttpd是一个超轻量型Http Server，使用C语言开发，全部代码只有500、600行，附带一个简单的Client，可以通过阅读这段代码理解一个Http Server的本质。</p>
+</blockquote>
+<p>其实，代码颇简单，适合刚学习Web Server的童鞋学习，因为我之前写过CGI Server，所以，我还是认为此代码写的一般，并且我在Ubuntu下编译遇到了不少错误，我都懒得写详细分析了，所以随便写下吧，后面的Github地址里有详细的分析。</p>
+<p>源码下载地址：<a href="http://sourceforge.net/projects/tinyhttpd/" title="tinyhttpd源码分析">http://sourceforge.net/projects/tinyhttpd/</a></p>
+        
+          <p class="article-more-link">
+            <a href="/2014/10/29/tinyhttpd-code-analyse/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
+        <a class="extend prev" rel="prev" href="/page/5/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/page/7/">7</a><a class="page-number" href="/page/8/">8</a><a class="page-number" href="/page/9/">9</a><a class="extend next" rel="next" href="/page/7/">下一页 &gt;&gt;</a>
       </nav>
-    <% }
-    break;
-  default:
-    page.posts.each(function(post){ %>
-      <%- partial('article', {post: post, index: true}) %>
-    <% })
-    if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-} %></section>
+    </section>
     <footer id="footer">
   
   <div class="outer">

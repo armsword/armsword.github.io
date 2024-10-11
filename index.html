@@ -51,88 +51,393 @@
     </div>
   </div>
 </header>
-    <section id="main" class="outer"><% switch (type) {
-    case 'archive':
-    var last;
-    page.posts.each(function(post, i){
-    var year = post.date.year();
-    if (last != year){
-      if (last != null){ %>
-        </div></section>
-      <% }
-      last = year; %>
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="<%- url_for('archives/' + year) %>" class="archive-year"><%= year %></a>
-        </div>
-        <div class="archives">
-    <% } %>
-    <%- partial('archive-post', {post: post, archive: true}) %>
-  <% });
-    if (page.posts.length){ %>
-    </div></section>
-  <% }
-    if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-  case 'category': %>
-    <section class="archives-wrap">
-    <div class="archive-category-wrap">
-      <span class="archive-category"><%= page.category %></span>
+    <section id="main" class="outer">
+      <article id="post-how-to-become-the-boss-confidant" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2024/10/11/how-to-become-the-boss-confidant/">如何成为一名靠谱的职场人</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2024/10/11/how-to-become-the-boss-confidant/" class="article-date">
+  <time datetime="2024-10-11T12:03:08.000Z" itemprop="datePublished">2024-10-11</time>
+</a>
+      
     </div>
-    <div class="archives">
-    <% page.posts.each(function (post, i) { %>
-      <%- partial('archive-post', {post: post, archive: false}) %>
-    <% }); %>
-    </div></section>
-    <% if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-  case 'tag': %>
-    <section class="archives-wrap">
-    <div class="archive-tag-wrap">
-      <span class="archive-tag">#<%= page.tag %></span>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>带团队几年后，很容易快速判断一个同学是否靠谱。那什么是靠谱？即你把一个事情交给一个人后，完全不用操心后续，因为你知道他肯定能落实，就算中间有困难，他也会及时给与你反馈，然后一起协商后续应该如何快速解决此问题。如果靠谱度需要分级的话，我会将其分为三层：做完、做好、做到极致。但是靠谱度是可以培养的，我认为做好以下几点就基本可以胜出了。</p>
+<h2 id="1、能拿结果"><a href="#1、能拿结果" class="headerlink" title="1、能拿结果"></a>1、能拿结果</h2><p>即做事情要站在结果的角度去考虑和解决问题，以终为始，从目标开始考虑需要什么条件，然后主动想办法去创造条件从而达成问题的解决。但是不要把“过程导向”和“结果导向”对立起来二选一，实际上在职场中，结果导向并不意味着不重视过程，恰恰相反，而是要用以终为始的心态，带着清晰的目标，善用3W分析法，去开启和推进做事情的过程。</p>
+<h2 id="2、具备闭环思维"><a href="#2、具备闭环思维" class="headerlink" title="2、具备闭环思维"></a>2、具备闭环思维</h2><p>简单来说就是“凡事有计划，约定必落实，问题早知会，及时报进程，事后须反馈”。闭环思维的培养需要多使用PDCA法则指导自己。<br><img src="/img/2024/10/pdca.png" width = "100%" /></p>
+<p>同时培养闭环思维时，也需要养成一个“凡事有交代，件件有着落，事事有回音”的好习惯。<br>举例说明，老板安排你重构一个检索服务，你可以按照如下的流程开展：</p>
+<ul>
+<li>1、调研目前服务的痛点和市场上类似服务如何设计的，并给团队分享讨论</li>
+<li>2、制定详细的时间规划表及里程碑</li>
+<li>3、开始实施，中间及时同步进展和风险点</li>
+<li>4、拿到收益，并评估价值</li>
+<li>5、复盘和改进</li>
+</ul>
+<h2 id="3、做事有方法论指导"><a href="#3、做事有方法论指导" class="headerlink" title="3、做事有方法论指导"></a>3、做事有方法论指导</h2><p>能拿到好的结果并不一定说你的方法就是正确的，可能与运气有关。所以为了更好的帮助我们后续的成长，我们需要慢慢琢磨一套方法论，即一种以解决问题为目标的理论体系或系统后续有类似事情可以指导自己及同事。</p>
+<p>方法论如何沉淀？多靠复盘和反思。比如你的服务出现多次CPU被打满的问题？你复盘后发现只有查询突增和异常查询会导致CPU打满，那你就可以总结下2种case的排查方法和解决办法，这其实也是一种解决特殊问题的方法论。</p>
+<p>或者你发现自己的认知不够，产生事情的根本原因总是看不清，然后你发现你学了5WHY分析法后，你可以从结果着手，沿着因果关系链条，顺藤摸瓜，直至找出原有问题的根本原因，那5WHY分析法就是指导你做事的方法论。<br><img src="/img/2024/10/5why.png" width = "100%" /></p>
+
+      
     </div>
-    <div class="archives">
-    <% page.posts.each(function (post, i) { %>
-      <%- partial('archive-post', {post: post, archive: false}) %>
-    <% }); %>
-    </div></section>
-    <% if (page.total > 1){ %>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-how-to-build-a-high-performance-team" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2024/05/22/how-to-build-a-high-performance-team/">如何打造一个高绩效团队</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2024/05/22/how-to-build-a-high-performance-team/" class="article-date">
+  <time datetime="2024-05-22T08:34:17.000Z" itemprop="datePublished">2024-05-22</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="目标设定"><a href="#目标设定" class="headerlink" title="目标设定"></a>目标设定</h1><h2 id="目标透视镜"><a href="#目标透视镜" class="headerlink" title="目标透视镜"></a>目标透视镜</h2><h3 id="看大环境"><a href="#看大环境" class="headerlink" title="看大环境"></a>看大环境</h3><ul>
+<li>看行业：政治、经济、社会、技术，导致的行业规模变化</li>
+<li>看公司：行业竞争导致的公司战略变化</li>
+<li>看业务线：根据公司战略看业务导向变化</li>
+</ul>
+<h3 id="看小环境"><a href="#看小环境" class="headerlink" title="看小环境"></a>看小环境</h3><ul>
+<li>事业群&#x2F;部目标和上级目标</li>
+<li>内&#x2F;外部客户和资源方需求</li>
+<li>本岗位要求和自身发展需求</li>
+</ul>
+<h3 id="主抓工作"><a href="#主抓工作" class="headerlink" title="主抓工作"></a>主抓工作</h3><ul>
+<li>三大主抓工作</li>
+<li>里程碑</li>
+<li>助力&#x2F;阻力</li>
+</ul>
+<h2 id="目标设定的原则（SMART原则）"><a href="#目标设定的原则（SMART原则）" class="headerlink" title="目标设定的原则（SMART原则）"></a>目标设定的原则（SMART原则）</h2><ul>
+<li>Specific&#x3D;明确的，清晰的</li>
+<li>Measurable&#x3D;具体、量化、可衡量</li>
+<li>Achievable&#x3D;可达成并具有挑战性</li>
+<li>Relevant&#x3D;有相关性、实际可行</li>
+<li>Time bound&#x3D;有完成时限</li>
+</ul>
+        
+          <p class="article-more-link">
+            <a href="/2024/05/22/how-to-build-a-high-performance-team/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%9B%A2%E9%98%9F%E7%AE%A1%E7%90%86/" rel="tag">团队管理</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-elasticsearch-in-didi" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2024/05/14/elasticsearch-in-didi/">Elasticsearch 在滴滴的应用与实践</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2024/05/14/elasticsearch-in-didi/" class="article-date">
+  <time datetime="2024-05-14T14:00:08.000Z" itemprop="datePublished">2024-05-14</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="滴滴-Elasticsearch-简介"><a href="#滴滴-Elasticsearch-简介" class="headerlink" title="滴滴 Elasticsearch 简介"></a>滴滴 Elasticsearch 简介</h2><h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>Elasticsearch 是一个基于 Lucene 构建的开源、分布式、RESTful 接口的全文搜索引擎，其每个字段均可被索引，且能够横向扩展至数以百计的服务器存储以及处理 TB 级的数据，其可以在极短的时间内存储、搜索和分析大量的数据。</p>
+<p>滴滴 ES 发展至今，承接了公司绝大部分端上文本检索、少部分日志场景和向量检索场景，包括地图 POI 检索、订单检索、客服、内搜及把脉日志 ELK 场景等。滴滴 ES 在2020年由2.X升级到7.6.0，近几年围绕保稳定、控成本、提效能和优生态这几个方向持续探索和改进，本文会围绕这几个方向展开介绍。</p>
+<h2 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h2><img src="/img/2024/05/infr.png" width = "100%" />
+        
+          <p class="article-more-link">
+            <a href="/2024/05/14/elasticsearch-in-didi/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Elasticsearch/" rel="tag">Elasticsearch</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-Reading-Notes-on-36-Practical-Lectures-on-Technical-Management" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2024/05/06/Reading-Notes-on-36-Practical-Lectures-on-Technical-Management/">读《技术管理实战36讲》</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2024/05/06/Reading-Notes-on-36-Practical-Lectures-on-Technical-Management/" class="article-date">
+  <time datetime="2024-05-06T12:27:39.000Z" itemprop="datePublished">2024-05-06</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="一、管理方法论和角色认知"><a href="#一、管理方法论和角色认知" class="headerlink" title="一、管理方法论和角色认知"></a>一、管理方法论和角色认知</h2><h3 id="1-管理方法论"><a href="#1-管理方法论" class="headerlink" title="1.管理方法论"></a>1.管理方法论</h3><img src="/img/2024/05/manage.png" width = "100%" />
+<img src="/img/2024/05/renzhi.png" width = "100%" />
+
+<h3 id="2-角色转换"><a href="#2-角色转换" class="headerlink" title="2.角色转换"></a>2.角色转换</h3><img src="/img/2024/05/transfer.png" width = "100%" />
+        
+          <p class="article-more-link">
+            <a href="/2024/05/06/Reading-Notes-on-36-Practical-Lectures-on-Technical-Management/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%8A%80%E6%9C%AF%E7%AE%A1%E7%90%86/" rel="tag">技术管理</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-Didi-builds-a-new-generation-of-log-storage-system-based-on-Clickhouse" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2024/03/05/Didi-builds-a-new-generation-of-log-storage-system-based-on-Clickhouse/">滴滴基于 Clickhouse 构建新一代日志存储系统</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2024/03/05/Didi-builds-a-new-generation-of-log-storage-system-based-on-Clickhouse/" class="article-date">
+  <time datetime="2024-03-05T14:12:22.000Z" itemprop="datePublished">2024-03-05</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>此前，滴滴日志主要存储于 ES 中。然而，ES 的分词、倒排和正排等功能导致其写入吞吐量存在明显瓶颈。此外，ES 需要存储原始文本、倒排索引和正排索引，这增加了存储成本，并对内存有较高要求。随着滴滴数据量的不断增长，ES 的性能已无法满足当前需求。</p>
+<p>在追求降低成本和提高效率的背景下，我们开始寻求新的存储解决方案。经过研究，我们决定采用 CK 作为滴滴内部日志的存储支持。据了解，京东、携程、B站等多家公司在业界的实践中也在尝试用 CK 构建日志存储系统。</p>
+<h2 id="挑战"><a href="#挑战" class="headerlink" title="挑战"></a>挑战</h2><p>面临的挑战主要来自下面三个方面：</p>
+<ul>
+<li>数据量大：每天会产生 PB 级别的日志数据，存储系统需要稳定地支撑 PB 级数据的实时写入和存储。</li>
+<li>查询场景多：在一个时间段内的等值查询、模糊查询及排序场景等，查询需要扫描的数据量较大且查询都需要在秒级返回。</li>
+<li>QPS 高：在 PB 级的数据量下，对 Trace 查询同时要满足高 QPS 的要求。</li>
+</ul>
+<h2 id="为什么选-Clickhouse"><a href="#为什么选-Clickhouse" class="headerlink" title="为什么选 Clickhouse"></a>为什么选 Clickhouse</h2><ul>
+<li>大数据量：CK 的分布式架构支持动态扩缩容，可支撑海量数据存储。</li>
+<li>写入性能：CK 的 MergeTree 表的写入速度在200MB&#x2F;s，具有很高吞吐，写入基本没有瓶颈。</li>
+<li>查询性能：CK 支持分区索引和排序索引，具有很高的检索效率，单机每秒可扫描数百万行的数据。</li>
+<li>存储成本：CK 基于列式存储，数据压缩比很高，同时基于HDFS做冷热分离，能够进一步地降低存储成本。</li>
+</ul>
+<h2 id="架构升级"><a href="#架构升级" class="headerlink" title="架构升级"></a>架构升级</h2><img src="/img/2024/03/arch.png" width = "100%" />
+        
+          <p class="article-more-link">
+            <a href="/2024/03/05/Didi-builds-a-new-generation-of-log-storage-system-based-on-Clickhouse/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-my-experiences-in-leading-a-team" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2024/01/17/my-experiences-in-leading-a-team/">关于做好技术团队管理的几点心得</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2024/01/17/my-experiences-in-leading-a-team/" class="article-date">
+  <time datetime="2024-01-17T08:24:41.000Z" itemprop="datePublished">2024-01-17</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>技术Leader核心工作是让团队拿更好的成绩，日常工作主要是制定方案、推进业务、掌控下属、协助领导等四项内容，本次分享主要分享最基础也是最重要的管理职责：</p>
+<ul>
+<li>调动团队同学的工作积极性</li>
+<li>让团队同学更高更快的成长</li>
+</ul>
+<h2 id="1、如何调动团队同学的工作积极性？"><a href="#1、如何调动团队同学的工作积极性？" class="headerlink" title="1、如何调动团队同学的工作积极性？"></a>1、如何调动团队同学的工作积极性？</h2><ul>
+<li>精确的指示。需要更强调为什么做和这么做的意义，没有计划和目的的命令无法为下属提供工作的动力。<ul>
+<li>举例：有个业务需要节省成本，需要要“查询性能提升2倍”。身为主管，自然不能直接告诉下属“查询性能提升2倍”。主管要做的是，考虑怎样才能使性能提升2倍，再用具体的语言指挥下属行动起来。 </li>
+<li>工作边界要清晰</li>
+</ul>
+</li>
+<li>了解下属的能力和意愿<ul>
+<li>根据下属能力进行分工，整体分工需要张弛有度，有能提升硬实力的工作也有易产出有亮眼的工作</li>
+<li>针对个体而言，重点在于提升能力和个人意愿</li>
+<li>针对个体间而言，在于加强分工和协作，分工要有边界</li>
+<li>主管的行为一般有：授权型、参与型、说服型、命令型；根据下属不同性格要有不同的行为</li>
+</ul>
+</li>
+<li>激情会传染。做主管的必须先激情四射，然后才能点燃下属们的激情</li>
+<li>要掌控业务全貌</li>
+<li>技术上能搞事情。能搞定别人解不了的事情，团队影响力越高，团队同学认同感和参与感越强；多思考技术和未来团队发展的事情</li>
+<li>提升下属对你的信任度<ul>
+<li>有一技之长。技术leader某一块技术能力要做到团队最好，影响信服度</li>
+<li>能让对方感受到你是真实的帮助其成长，需要更多换位思考</li>
+<li>利用好团建和聚餐场合</li>
+</ul>
+</li>
+</ul>
+        
+          <p class="article-more-link">
+            <a href="/2024/01/17/my-experiences-in-leading-a-team/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%9B%A2%E9%98%9F%E7%AE%A1%E7%90%86/" rel="tag">团队管理</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
+      <article id="post-resolve-es-JVM-coredump" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2023/12/06/resolve-es-JVM-coredump/">Elasticsearch集群JVM coredump问题排查</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2023/12/06/resolve-es-JVM-coredump/" class="article-date">
+  <time datetime="2023-12-06T08:38:57.000Z" itemprop="datePublished">2023-12-06</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>好几年前的文章了，之前排查问题，随手写的，但是发现其他团队人遇到类似问题没有思路，所以还是发出来，给大家一起解决问题的思路。</p>
+<h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>ES集群磁盘报警，发现&#x2F;home&#x2F;coresave&#x2F; core文件导致根目录磁盘被打满，删除core文件恢复，已知这个集群新上线了jdk 17 zgc，排查下jvm为啥core。而jvm core一般有以下几个原因：资源超了（内存、线程数，vma数等），jvm bug（比如指令集）</p>
+<h2 id="排查过程"><a href="#排查过程" class="headerlink" title="排查过程"></a>排查过程</h2><p>先去elasticsearch根目录查看core日志，即hs_err_pid_xxx.log，内容如下：<br><img src="/img/2023/12/core.png" alt="core日志文件"><br>看core原因是因为资源不足（不一定是内存）导致的问题，jdk 17 zgc core后，fatal error 原因与g1 有明显不同，突然不知道怎么去排查了，研究下，思路如下。资源不足原因我们可以在hs_err.log里查看具体的原因，步骤如下：</p>
+<h3 id="1、先排查meminfo，看下机器内存情况"><a href="#1、先排查meminfo，看下机器内存情况" class="headerlink" title="1、先排查meminfo，看下机器内存情况"></a>1、先排查meminfo，看下机器内存情况</h3>
+        
+          <p class="article-more-link">
+            <a href="/2023/12/06/resolve-es-JVM-coredump/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Elasticsearch/" rel="tag">Elasticsearch</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
       <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
+        <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><a class="extend next" rel="next" href="/page/2/">下一页 &gt;&gt;</a>
       </nav>
-    <% }
-    break;
-  default:
-    page.posts.each(function(post){ %>
-      <%- partial('article', {post: post, index: true}) %>
-    <% })
-    if (page.total > 1){ %>
-      <nav id="page-nav">
-        <%- paginator({
-          prev_text: '&laquo; ' + __('nav.prev'),
-          next_text: __('nav.next') + ' &raquo;'
-        }) %>
-      </nav>
-    <% }
-    break;
-} %></section>
+    </section>
     <footer id="footer">
   
   <div class="outer">
