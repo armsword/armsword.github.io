@@ -52,6 +52,54 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-tinyhttpd-code-analyse" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/10/29/tinyhttpd-code-analyse/">tinyhttpd源码剖析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/10/29/tinyhttpd-code-analyse/" class="article-date">
+  <time datetime="2014-10-28T16:46:18.000Z" itemprop="datePublished">2014-10-29</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/C-C/">C/C++</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>喊了几天学习Web开发，为了毕业论文，今晚上计划也是看看CSS呢，但是实在是没忍住，读了下经典的tinyhttp的源代码，这款代码还是颇有名气的，网上这么评论的：</p>
+<blockquote>
+<p>tinyhttpd是一个超轻量型Http Server，使用C语言开发，全部代码只有500、600行，附带一个简单的Client，可以通过阅读这段代码理解一个Http Server的本质。</p>
+</blockquote>
+<p>其实，代码颇简单，适合刚学习Web Server的童鞋学习，因为我之前写过CGI Server，所以，我还是认为此代码写的一般，并且我在Ubuntu下编译遇到了不少错误，我都懒得写详细分析了，所以随便写下吧，后面的Github地址里有详细的分析。</p>
+<p>源码下载地址：<a href="http://sourceforge.net/projects/tinyhttpd/" title="tinyhttpd源码分析">http://sourceforge.net/projects/tinyhttpd/</a></p>
+        
+          <p class="article-more-link">
+            <a href="/2014/10/29/tinyhttpd-code-analyse/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-webbench-source-analyse" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -340,55 +388,6 @@ Although the above answer is in lexicographical order, your answer could be in a
 
 
     
-      <article id="post-python-in-crawler" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2014/03/31/python-in-crawler/">使用python编写简单网络爬虫技巧总结</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2014/03/31/python-in-crawler/" class="article-date">
-  <time datetime="2014-03-31T10:53:39.000Z" itemprop="datePublished">2014-03-31</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/ML-NLP/">ML/NLP</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>使用python写过几个小玩具，基本上都与爬虫、Web相关的，自己也积累了下经验，也看过很多文章，一直想总结下，可惜现在要忙于找工作，实验室活也比较多，也就落下了。感觉如果时间长不记录，也就懒散了，并且许多东西我写完过个两天，我自己都记不住当时怎么想的了。</p>
-<p>0、HTTP协议</p>
-<p>基本上常见的Web开发里，Web内容都是通过HTTP协议进行传输的（虽然咱不懂Web开发，但是基本的计算机网络知识还是了解的），通过TCP连接服务器的80端口，爬虫其实质就是通过模拟浏览器发送HTTP请求，至于HTTP请求相关知识，点击<a href="http://zh.wikipedia.org/wiki/%E8%B6%85%E6%96%87%E6%9C%AC%E4%BC%A0%E8%BE%93%E5%8D%8F%E8%AE%AE">这里</a>。</p>
-<figure class="highlight oxygene"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">HTTP通常通过创建到服务器<span class="number">80</span>端口的TCP连接进行通信</span><br><span class="line">HTTP协议的内容包括请求方式（<span class="keyword">method</span>）, <span class="title function_">url</span>，<span class="title function_">header</span>，<span class="title function_">body</span>，通常以纯文本方式发送</span><br><span class="line"><span class="title function_">HTTP</span>返回内容包括状态码，<span class="title function_">header</span>，<span class="title function_">body</span>，通常以纯文本方式返回</span><br><span class="line"><span class="title function_">header</span>以及<span class="title function_">body</span>间以<span class="title function_">CRLF</span><span class="params">(\r\n)</span>分割</span><br></pre></td></tr></table></figure>
-<p>1、最基础的抓取网站内容</p>
-<p>使用python编写一个网络爬虫是非常简单的，如下例所示：</p>
-<figure class="highlight gradle"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> urllib2</span><br><span class="line">content = urllib2.urlopen(<span class="string">&#x27;http://armsword.com&#x27;</span>).<span class="keyword">read</span>()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-        
-          <p class="article-more-link">
-            <a href="/2014/03/31/python-in-crawler/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
       <nav id="page-nav">
         <a class="extend prev" rel="prev" href="/page/6/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><span class="page-number current">7</span><a class="page-number" href="/page/8/">8</a><a class="page-number" href="/page/9/">9</a><a class="extend next" rel="next" href="/page/8/">下一页 &gt;&gt;</a>
       </nav>
@@ -397,7 +396,7 @@ Although the above answer is in lexicographical order, your answer could be in a
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2024 armsword&nbsp;
+      &copy; 2025 armsword&nbsp;
       Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
     </div>
   </div>

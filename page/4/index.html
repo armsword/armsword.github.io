@@ -52,6 +52,60 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-the-solution-of-presto-oom-caused-by-orc-statistics" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/06/03/the-solution-of-presto-oom-caused-by-orc-statistics/">记一次Presto Worker OOM的查找过程</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2020/06/03/the-solution-of-presto-oom-caused-by-orc-statistics/" class="article-date">
+  <time datetime="2020-06-03T02:57:48.000Z" itemprop="datePublished">2020-06-03</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近Presto集群又上线了几个新业务，伴之而来的是OOM很频繁，且发生时间多在早晨8点左右，线上稳定性是高优需要解决的，所以查找了下导致Presto集群OOM的原因，发现了一些问题，这里抛砖引玉下，可能其他使用Presto的用户也会遇到类似的问题。</p>
+<h2 id="排查过程"><a href="#排查过程" class="headerlink" title="排查过程"></a>排查过程</h2><p>我给一些业务划分了不同的label，这里说明下我们把Presto引擎改进了下，可以动态将机器划分不同的label，这样SQL查询时候指定不同的label，SQL调度时只根据指定的label查找机器即可。之后发现一个业务方的SQL会导致集群OOM。具体表现为，多次Full GC，之后OOM，看GC日志第一感觉应该是有内存泄露。</p>
+<p>我通过审计日志（之前通过event-listener实现了个日志审计模块）拿到OOM时2K左右条SQL，发现SQL都是简单的SQL，类似这种：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> <span class="keyword">table</span> <span class="keyword">WHERE</span> <span class="keyword">year</span><span class="operator">=</span><span class="string">&#x27;2020&#x27;</span> <span class="keyword">AND</span> <span class="keyword">month</span><span class="operator">=</span><span class="string">&#x27;06&#x27;</span> <span class="keyword">AND</span> <span class="keyword">day</span><span class="operator">=</span><span class="string">&#x27;01&#x27;</span> LIMIT <span class="number">10</span>;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>根据SQL，我猜测可能以下2种原因导致了OOM：</p>
+<ul>
+<li>查询的表存在Hive视图（我让Presto支持了Hive视图）</li>
+<li>异常SQL触发了内存泄露</li>
+</ul>
+        
+          <p class="article-more-link">
+            <a href="/2020/06/03/the-solution-of-presto-oom-caused-by-orc-statistics/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-the-difference-between-prestodb-and-prestosql" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -352,53 +406,6 @@
 
 
     
-      <article id="post-presto-compatible-hive-syntax" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/03/31/presto-compatible-hive-syntax/">Presto兼容Hive SQL的一些改造工作</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2019/03/31/presto-compatible-hive-syntax/" class="article-date">
-  <time datetime="2019-03-31T08:23:32.000Z" itemprop="datePublished">2019-03-31</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Presto是一款优秀的分布式SQL查询引擎，适用于即席查询和报表分析等业务，其使用了ANSI SQL语法和语义，使用标准是SQL-92和SQL:2016。但是因为很多业务方一直使用Hive离线引擎来做SQL分析，而Hive使用类似SQL的语法（HQL）。为了使用户能平滑的将业务迁移到Presto上或者能让SQL同时跑到Presto及Hive引擎上，我们对Presto语法及一些算子等做了二次兼容开发，来最大限度降低用户迁移成本。接下来我们介绍下我们的主要兼容工作。</p>
-<h2 id="一、权限认证"><a href="#一、权限认证" class="headerlink" title="一、权限认证"></a>一、权限认证</h2><p>Presto默认如果使用Password，那么必须使用Kerberos协议。因为公司离线数据没有Kerberos协议，所以我们改进了权限认证机制，与离线复用一套权限机制，用户只需要去离线申请权限，指定用户名和密码，即可查询Presto引擎和访问离线数据，并且提供了以下几种方式访问公司Presto，且与公司离线权限体系打通，分别为JDBC、Cli、Go、Python、R、NodeJS。</p>
-<h2 id="二、行为修改"><a href="#二、行为修改" class="headerlink" title="二、行为修改"></a>二、行为修改</h2><h3 id="整数相除返回浮点数"><a href="#整数相除返回浮点数" class="headerlink" title="整数相除返回浮点数"></a>整数相除返回浮点数</h3><p>Presto整数相除沿用了Java整数相除的特性，我们需要修改函数算子行为，如IntegerOperators，将divide相关的函数修改为返回浮点数结果。比如：</p>
-        
-          <p class="article-more-link">
-            <a href="/2019/03/31/presto-compatible-hive-syntax/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
-
-      </footer>
-    
-  </div>
-  
-</article>
-
-
-    
       <nav id="page-nav">
         <a class="extend prev" rel="prev" href="/page/3/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><a class="extend next" rel="next" href="/page/5/">下一页 &gt;&gt;</a>
       </nav>
@@ -407,7 +414,7 @@
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2024 armsword&nbsp;
+      &copy; 2025 armsword&nbsp;
       Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
     </div>
   </div>

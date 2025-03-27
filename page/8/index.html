@@ -52,6 +52,55 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-python-in-crawler" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/03/31/python-in-crawler/">使用python编写简单网络爬虫技巧总结</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2014/03/31/python-in-crawler/" class="article-date">
+  <time datetime="2014-03-31T10:53:39.000Z" itemprop="datePublished">2014-03-31</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/ML-NLP/">ML/NLP</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>使用python写过几个小玩具，基本上都与爬虫、Web相关的，自己也积累了下经验，也看过很多文章，一直想总结下，可惜现在要忙于找工作，实验室活也比较多，也就落下了。感觉如果时间长不记录，也就懒散了，并且许多东西我写完过个两天，我自己都记不住当时怎么想的了。</p>
+<p>0、HTTP协议</p>
+<p>基本上常见的Web开发里，Web内容都是通过HTTP协议进行传输的（虽然咱不懂Web开发，但是基本的计算机网络知识还是了解的），通过TCP连接服务器的80端口，爬虫其实质就是通过模拟浏览器发送HTTP请求，至于HTTP请求相关知识，点击<a href="http://zh.wikipedia.org/wiki/%E8%B6%85%E6%96%87%E6%9C%AC%E4%BC%A0%E8%BE%93%E5%8D%8F%E8%AE%AE">这里</a>。</p>
+<figure class="highlight oxygene"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">HTTP通常通过创建到服务器<span class="number">80</span>端口的TCP连接进行通信</span><br><span class="line">HTTP协议的内容包括请求方式（<span class="keyword">method</span>）, <span class="title function_">url</span>，<span class="title function_">header</span>，<span class="title function_">body</span>，通常以纯文本方式发送</span><br><span class="line"><span class="title function_">HTTP</span>返回内容包括状态码，<span class="title function_">header</span>，<span class="title function_">body</span>，通常以纯文本方式返回</span><br><span class="line"><span class="title function_">header</span>以及<span class="title function_">body</span>间以<span class="title function_">CRLF</span><span class="params">(\r\n)</span>分割</span><br></pre></td></tr></table></figure>
+<p>1、最基础的抓取网站内容</p>
+<p>使用python编写一个网络爬虫是非常简单的，如下例所示：</p>
+<figure class="highlight gradle"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> urllib2</span><br><span class="line">content = urllib2.urlopen(<span class="string">&#x27;http://armsword.com&#x27;</span>).<span class="keyword">read</span>()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+        
+          <p class="article-more-link">
+            <a href="/2014/03/31/python-in-crawler/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-linux-io-multiplexing" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -333,56 +382,6 @@
 
 
     
-      <article id="post-install-tools" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2012/10/01/install-tools/">工欲善其事必先利其器</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2012/10/01/install-tools/" class="article-date">
-  <time datetime="2012-10-01T12:22:29.000Z" itemprop="datePublished">2012-10-01</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Linux/">Linux</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="Emacs开发环境配置"><a href="#Emacs开发环境配置" class="headerlink" title="Emacs开发环境配置"></a>Emacs开发环境配置</h2><h2 id="Vim开发环境配置"><a href="#Vim开发环境配置" class="headerlink" title="Vim开发环境配置"></a>Vim开发环境配置</h2><p>首先，我们先看下自己的VIM都安装了什么插件，命令：:scriptnames</p>
-<p>我们先配置下vimrc文件，vim ~&#x2F;.vimrc ，我们先设置让其显示行号和高亮代码，添加如下代码：</p>
-<p>set nu!  “显示行号<br>syntax enable   “语法高亮<br>syntax on</p>
-<h3 id="TagList"><a href="#TagList" class="headerlink" title="TagList"></a>TagList</h3><p>功能：有点像VC里面的工作区，里面列出了当前文件的所有的宏，全局变量，函数名等。CTRL+W 连续2下可以左右切换。</p>
-<p>下载taglist压缩包, 下载地址：<a href="http://www.vim.org/scripts/script.php?script_id=273">http://www.vim.org/scripts/script.php?script_id&#x3D;273</a>，然后把解压的两个文件taglist.vim 和 taglist.txt 分别放到$HOME&#x2F;.vim&#x2F;plugin 和 $HOME&#x2F;.vim&#x2F;doc 目录中。</p>
-<p>之后在～&#x2F;.vimrc中添加如下几条命令：</p>
-<p>let Tlist_Auto_Open &#x3D; 1<br>let Tlist_Ctags_Cmd &#x3D; ‘&#x2F;usr&#x2F;bin&#x2F;ctags’<br>let Tlist_Show_One_File &#x3D; 1<br>let Tlist_Exit_OnlyWindow &#x3D; 1</p>
-<p>此时，我们打开一个.c文件查看，发现左边多出一个workspace，当不想出现此工作区时，使用:Tlist可以关闭和打开。</p>
-        
-          <p class="article-more-link">
-            <a href="/2012/10/01/install-tools/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
       <nav id="page-nav">
         <a class="extend prev" rel="prev" href="/page/7/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><span class="page-number current">8</span><a class="page-number" href="/page/9/">9</a><a class="extend next" rel="next" href="/page/9/">下一页 &gt;&gt;</a>
       </nav>
@@ -391,7 +390,7 @@
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2024 armsword&nbsp;
+      &copy; 2025 armsword&nbsp;
       Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
     </div>
   </div>

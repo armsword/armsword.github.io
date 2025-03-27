@@ -52,6 +52,87 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-ilogtail" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2025/03/27/ilogtail/">iLogTail性能跃迁之路</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2025/03/27/ilogtail/" class="article-date">
+  <time datetime="2025-03-27T12:10:21.000Z" itemprop="datePublished">2025-03-27</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>过去滴滴内部基于自研的日志采集 Agent，构建了覆盖全链路的实时日志采集体系。依托分布式架构设计，每日稳定处理数 PB 级超大规模日志数据，实现对集团内部业务应用的高并发、低延迟日志采集支持，为全公司业务监控、故障诊断、数据分析等场景提供了可靠的底层数据基础设施。</p>
+<p>随着AMD机器（核数大幅增加）的引入，面对超大流量采集，原内部Agent逐渐力不从心。经过调研发现iLogTail的架构和性能更契合需求，因此我们决定将内部Agent升级到开源iLogTail，并基于开源版本进行了大量优化。</p>
+<h2 id="iLogTail简介"><a href="#iLogTail简介" class="headerlink" title="iLogTail简介"></a>iLogTail简介</h2><p>iLogTail是阿里云SLS于2022年6月开源的采集器项目，在阿里巴巴以及外部数万家阿里云客户内部广泛应用，装机量近千万，每天采集数十PB可观测数据。</p>
+<p>iLogTail具有轻量级、高性能、低延迟等特点，相比竞品Agent，整体的资源开销、采集性能、以及采集延迟都有一个比较大的优势。</p>
+<h3 id="iLogTail架构"><a href="#iLogTail架构" class="headerlink" title="iLogTail架构"></a>iLogTail架构</h3><p><img src="/img/2025/03/ilogtail.png" alt="iLogTail架构"></p>
+<p>iLogTail架构更像一个集中式架构，每个采集任务的输入模块、处理模块和发送模块都共享一组线程资源，线程之间通过缓冲队列来交换数据。相较于单体架构（每个任务都有独立的线程资源），这种架构在代码实现上会更加复杂，需要自己去管理任务的调度，资源管控等等，但从性能的角度出发，却能极大地节省资源和提升效率。</p>
+<h3 id="iLogTail优势"><a href="#iLogTail优势" class="headerlink" title="iLogTail优势"></a>iLogTail优势</h3><ul>
+<li>高效采集，通过Linux操作系统inotify的一个机制，感知到目录或文件的变化后，立刻进行相关的采集，借助inotify，Logtail有更低延迟和更低的性能消耗。</li>
+<li>高性能，iLogTail的采集部分及发送到SLS部分是C++编写的，C++部分拥有很高的性能，iLogTail还拥有很丰富的插件但这些都是通过Go编写，如发送到Kafka的插件，Go部分拥有功能优势，但是其垃圾回收会带来很大性能消耗，后面会针对这部分进行优化。</li>
+</ul>
+<h2 id="性能优化"><a href="#性能优化" class="headerlink" title="性能优化"></a>性能优化</h2><p>在测试iLogTail的过程中，开源版本的性能并不能满足滴滴内部的需求，下面将介绍在iLogTail上的性能优化。</p>
+<h3 id="多行解析"><a href="#多行解析" class="headerlink" title="多行解析"></a>多行解析</h3><p>多行解析指的是从日志中读取数据时，遇到带有异常堆栈的这种多行日志，需要解析合并成一行日志。</p>
+<p>社区是通过配置正则表达式来实现的，在读取的时候正则匹配每一行数据，来判断是否属于同一行日志，这种正则匹配的方式可以适用于任何场景，但是带来的性能下降却很严重。</p>
+<p>为解决这一问题，我们实现了基于时间规则的多行解析方法。通过解析每行日志中的时间戳，判断日志是否属于异常堆栈（异常堆栈通常不包含时间戳）。若某行日志的时间戳无法成功解析，则将其与前一行合并，从而实现对异常堆栈的准确识别与整合。<br>基于时间的多行解析相对于正则匹配可以减少大量字符比较，大大的提升了解析性能，优化后处理速度可以提升1倍。</p>
+<p>在此基础之上，还引入AVX2指令集，通过向量化来解析换行符，一条指令操作32个字符。</p>
+<p><img src="/img/2025/03/avx.png" alt="avx2"></p>
+<p>优化之前多行解析中耗时主要集中在 GetNextLine 和 ParseTime ：</p>
+<p><img src="/img/2025/03/flame1.png" alt="优化前"></p>
+<p>优化后GetNextLine耗时大大缩短：<br><img src="/img/2025/03/flame2.png" alt="优化后"></p>
+<p>通过向量化优化后CPU性能可以提升8%。</p>
+<h3 id="C-重写FlusherKafka插件"><a href="#C-重写FlusherKafka插件" class="headerlink" title="C++重写FlusherKafka插件"></a>C++重写FlusherKafka插件</h3><p>在AMD机器上进行大流量(100+MB&#x2F;s)测试时，发现性能急剧下降，开始出现大面积采集延迟，通过打印火焰图分析看到60%以上的CPU都花在垃圾回收上。<br><img src="/img/2025/03/flame3.png" alt="GC情况"></p>
+<p>在日志采集的场景中，大量日志对象的频繁创建和销毁会对 Go GC的性能产生很大的压力。</p>
+<p>最初通过调大Go的堆内存和关闭触发堆GC，性能有所好转，但继续增加流量，频繁GC的问题仍会出现。</p>
+<p><img src="/img/2025/03/kafka.png" alt="Kafka采集架构"></p>
+<p>为了彻底解决这个问题，使用C++重写FlusherKafka插件，这样从采集一直到发送都是纯C++编写，这样不仅解决了垃圾回收带来的性能消耗，同时避免了C++调Go时协议转换（C++日志对象需要序列化成字节后，由Go在反序列化成对象）带来的CPU消耗和内存消耗（Go有自己独立的内存空间）。</p>
+<p>通过此优化后，性能得到了巨大的提升，也是支撑下面测试结果的关键。</p>
+<h3 id="引入支持向量化的JSON库"><a href="#引入支持向量化的JSON库" class="headerlink" title="引入支持向量化的JSON库"></a>引入支持向量化的JSON库</h3><p>在解决了垃圾回收的问题后，还有一块对性能影响比较大的是Json的序列化，在将日志数据发送到Kafka之前还需要将内存中的日志对象序列化成Json格式的字符串。</p>
+<p>为了继续压榨性能，这里引入了字节开源的高性能C++ JSON库sonic-cpp。在Json在序列化中最消耗性能的地方就时处理转义字符，这里通过向量化来加速查找转义字符（原理和上面查找换行符一致），可以显著的提高处理速度。除此之外，它还有另一个优化，支持构建Json对象的时候传递 std::string_view ，这样可以避免大量内存拷贝的开销。</p>
+<p>到这里iLogTail的性能已经拉满了。</p>
+<h3 id="发送Kafka失败支持回滚offset及退避重试"><a href="#发送Kafka失败支持回滚offset及退避重试" class="headerlink" title="发送Kafka失败支持回滚offset及退避重试"></a>发送Kafka失败支持回滚offset及退避重试</h3><p>在原生的FlusherKafka插件中，如果发送Kafka失败数据是会丢失的。为了解决数据丢失的问题，实现了回滚offset的功能，对于每批要发送到Kafka的数据，都保存了这批数据最小的offset，当发送失败时，会在回调函数中回滚offset，读取文件的时候将从失败的位置重新读取。</p>
+<p>如果某个任务一直发送不成功，为此还实现了类似TCP的拥塞控制，当发送Kafka失败的时候，会迅速降低采集端速度，当发送成功后则采集速度以指数上升，通过这个机制可以有效的避免存在问题的任务浪费线程资源。</p>
+<h2 id="收益"><a href="#收益" class="headerlink" title="收益"></a>收益</h2><h3 id="iLogTail开源版本与内部优化版本性能对比"><a href="#iLogTail开源版本与内部优化版本性能对比" class="headerlink" title="iLogTail开源版本与内部优化版本性能对比"></a>iLogTail开源版本与内部优化版本性能对比</h3><p>总共创建150个采集任务，测试采集文件的日志数据发送到Kafka，限制CPU上限10C，内存上限为8G， GC堆为5G。同时加载运行这150个采集任务，观察CPU资源使用的情况。<br><img src="/img/2025/03/compare1.png" alt="性能对比"><br>在小流量场景下，iLogTail内部版本相比于开源版本能节省56%的CPU，继续增加流量开源版本由于GC严重性能下降。</p>
+<h3 id="iLogTail内部版本大流量测试"><a href="#iLogTail内部版本大流量测试" class="headerlink" title="iLogTail内部版本大流量测试"></a>iLogTail内部版本大流量测试</h3><p>如下的测试是在AMD机器上测试的，机器配置：384核 1.5T内存，总共600个采集任务，限制CPU上限20C，内存上限20G，iLogTail加载运行这600个采集任务，观察资源使用及采集延迟的情况。<br><img src="/img/2025/03/result.png" alt="流量压测结果"></p>
+<p>iLogTail在面临多任务超大流量时，能保证采集不延迟，且使用不到5core就能采集420+MB&#x2F;s的流量，已经能满足内部的需求。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>经过多维度性能测试与优化迭代，iLogTail内部版本在资源效率、稳定性及扩展能力方面均实现显著突破，具体表现如下：</p>
+<ul>
+<li>1、性能跨越式提升：在相同Kafka发送链路场景下，内部版本CPU资源消耗较开源版本降低56%，整体采集性能提升超过2倍。开源版本在流量增长时因频繁GC导致性能骤降，而内部版本通过内存管理与优化，实现高吞吐场景下的稳定运行。</li>
+<li>2、超大规模流量承载能力：在384核服务器环境下，内部版本仅需分配5个CPU核心即可完成420+MB&#x2F;s的日志采集吞吐，且保持零延迟。单节点可同时支撑600个采集任务的并行处理，内存资源控制在12G以内，充分验证其弹性扩展能力。</li>
+<li>3、生产级可靠性保障：通过精细化资源隔离策略与自适应流量调控机制，内部版本成功突破在资源争抢、任务堆积等方面的瓶颈，满足企业级场景下对稳定性与资源效率的双重要求。</li>
+</ul>
+<p>本次优化不仅验证了iLogTail的先进性，更使其成为支撑海量日志采集场景的核心基础设施，为后续千万级数据管道的构建提供了关键能力保障。</p>
+
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E9%87%87%E9%9B%86/" rel="tag">数据采集</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-how-to-become-the-boss-confidant" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -379,54 +460,6 @@
 
 
     
-      <article id="post-resolve-es-JVM-coredump" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2023/12/06/resolve-es-JVM-coredump/">Elasticsearch集群JVM coredump问题排查</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2023/12/06/resolve-es-JVM-coredump/" class="article-date">
-  <time datetime="2023-12-06T08:38:57.000Z" itemprop="datePublished">2023-12-06</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>好几年前的文章了，之前排查问题，随手写的，但是发现其他团队人遇到类似问题没有思路，所以还是发出来，给大家一起解决问题的思路。</p>
-<h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>ES集群磁盘报警，发现&#x2F;home&#x2F;coresave&#x2F; core文件导致根目录磁盘被打满，删除core文件恢复，已知这个集群新上线了jdk 17 zgc，排查下jvm为啥core。而jvm core一般有以下几个原因：资源超了（内存、线程数，vma数等），jvm bug（比如指令集）</p>
-<h2 id="排查过程"><a href="#排查过程" class="headerlink" title="排查过程"></a>排查过程</h2><p>先去elasticsearch根目录查看core日志，即hs_err_pid_xxx.log，内容如下：<br><img src="/img/2023/12/core.png" alt="core日志文件"><br>看core原因是因为资源不足（不一定是内存）导致的问题，jdk 17 zgc core后，fatal error 原因与g1 有明显不同，突然不知道怎么去排查了，研究下，思路如下。资源不足原因我们可以在hs_err.log里查看具体的原因，步骤如下：</p>
-<h3 id="1、先排查meminfo，看下机器内存情况"><a href="#1、先排查meminfo，看下机器内存情况" class="headerlink" title="1、先排查meminfo，看下机器内存情况"></a>1、先排查meminfo，看下机器内存情况</h3>
-        
-          <p class="article-more-link">
-            <a href="/2023/12/06/resolve-es-JVM-coredump/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Elasticsearch/" rel="tag">Elasticsearch</a></li></ul>
-
-      </footer>
-    
-  </div>
-  
-</article>
-
-
-    
       <nav id="page-nav">
         <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><a class="extend next" rel="next" href="/page/2/">下一页 &gt;&gt;</a>
       </nav>
@@ -435,7 +468,7 @@
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2024 armsword&nbsp;
+      &copy; 2025 armsword&nbsp;
       Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
     </div>
   </div>

@@ -52,6 +52,53 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-presto-compatible-hive-syntax" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/03/31/presto-compatible-hive-syntax/">Presto兼容Hive SQL的一些改造工作</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2019/03/31/presto-compatible-hive-syntax/" class="article-date">
+  <time datetime="2019-03-31T08:23:32.000Z" itemprop="datePublished">2019-03-31</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Presto是一款优秀的分布式SQL查询引擎，适用于即席查询和报表分析等业务，其使用了ANSI SQL语法和语义，使用标准是SQL-92和SQL:2016。但是因为很多业务方一直使用Hive离线引擎来做SQL分析，而Hive使用类似SQL的语法（HQL）。为了使用户能平滑的将业务迁移到Presto上或者能让SQL同时跑到Presto及Hive引擎上，我们对Presto语法及一些算子等做了二次兼容开发，来最大限度降低用户迁移成本。接下来我们介绍下我们的主要兼容工作。</p>
+<h2 id="一、权限认证"><a href="#一、权限认证" class="headerlink" title="一、权限认证"></a>一、权限认证</h2><p>Presto默认如果使用Password，那么必须使用Kerberos协议。因为公司离线数据没有Kerberos协议，所以我们改进了权限认证机制，与离线复用一套权限机制，用户只需要去离线申请权限，指定用户名和密码，即可查询Presto引擎和访问离线数据，并且提供了以下几种方式访问公司Presto，且与公司离线权限体系打通，分别为JDBC、Cli、Go、Python、R、NodeJS。</p>
+<h2 id="二、行为修改"><a href="#二、行为修改" class="headerlink" title="二、行为修改"></a>二、行为修改</h2><h3 id="整数相除返回浮点数"><a href="#整数相除返回浮点数" class="headerlink" title="整数相除返回浮点数"></a>整数相除返回浮点数</h3><p>Presto整数相除沿用了Java整数相除的特性，我们需要修改函数算子行为，如IntegerOperators，将divide相关的函数修改为返回浮点数结果。比如：</p>
+        
+          <p class="article-more-link">
+            <a href="/2019/03/31/presto-compatible-hive-syntax/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/presto/" rel="tag">presto</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-the-basic-concepts-of-presto" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -363,51 +410,6 @@
 
 
     
-      <article id="post-a-high-performace-and-thread-safe-cpp-log-lib" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/09/10/a-high-performace-and-thread-safe-cpp-log-lib/">dlog:高性能线程安全的C++日志库</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2016/09/10/a-high-performace-and-thread-safe-cpp-log-lib/" class="article-date">
-  <time datetime="2016-09-10T13:53:09.000Z" itemprop="datePublished">2016-09-10</time>
-</a>
-      
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Linux/">Linux</a>
-  </div>
-
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>打算闲暇时光写点靠谱的东西比如名字服务、KV存储等基础服务类软件，所以周末就先从封装一些基础库开始。上周末写了个C++日志库，支持多线程，性能也还不错，今天就做了下测试和修改了下bug。这里说下该库的使用方法，以及实现思路以及一些性能调优方法。欢迎交流和指教。</p>
-<h3 id="源码地址"><a href="#源码地址" class="headerlink" title="源码地址"></a>源码地址</h3><p><a href="https://github.com/armsword/dlog">https://github.com/armsword/dlog</a></p>
-<h3 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h3><p>执行build.sh，在上层目录里会生成build文件，测试的可执行文件在release&#x2F;bin目录下。</p>
-        
-          <p class="article-more-link">
-            <a href="/2016/09/10/a-high-performace-and-thread-safe-cpp-log-lib/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-  </div>
-  
-</article>
-
-
-    
       <nav id="page-nav">
         <a class="extend prev" rel="prev" href="/page/4/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><a class="extend next" rel="next" href="/page/6/">下一页 &gt;&gt;</a>
       </nav>
@@ -416,7 +418,7 @@
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2024 armsword&nbsp;
+      &copy; 2025 armsword&nbsp;
       Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
     </div>
   </div>

@@ -52,6 +52,56 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-install-tools" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2012/10/01/install-tools/">工欲善其事必先利其器</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2012/10/01/install-tools/" class="article-date">
+  <time datetime="2012-10-01T12:22:29.000Z" itemprop="datePublished">2012-10-01</time>
+</a>
+      
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Emacs开发环境配置"><a href="#Emacs开发环境配置" class="headerlink" title="Emacs开发环境配置"></a>Emacs开发环境配置</h2><h2 id="Vim开发环境配置"><a href="#Vim开发环境配置" class="headerlink" title="Vim开发环境配置"></a>Vim开发环境配置</h2><p>首先，我们先看下自己的VIM都安装了什么插件，命令：:scriptnames</p>
+<p>我们先配置下vimrc文件，vim ~&#x2F;.vimrc ，我们先设置让其显示行号和高亮代码，添加如下代码：</p>
+<p>set nu!  “显示行号<br>syntax enable   “语法高亮<br>syntax on</p>
+<h3 id="TagList"><a href="#TagList" class="headerlink" title="TagList"></a>TagList</h3><p>功能：有点像VC里面的工作区，里面列出了当前文件的所有的宏，全局变量，函数名等。CTRL+W 连续2下可以左右切换。</p>
+<p>下载taglist压缩包, 下载地址：<a href="http://www.vim.org/scripts/script.php?script_id=273">http://www.vim.org/scripts/script.php?script_id&#x3D;273</a>，然后把解压的两个文件taglist.vim 和 taglist.txt 分别放到$HOME&#x2F;.vim&#x2F;plugin 和 $HOME&#x2F;.vim&#x2F;doc 目录中。</p>
+<p>之后在～&#x2F;.vimrc中添加如下几条命令：</p>
+<p>let Tlist_Auto_Open &#x3D; 1<br>let Tlist_Ctags_Cmd &#x3D; ‘&#x2F;usr&#x2F;bin&#x2F;ctags’<br>let Tlist_Show_One_File &#x3D; 1<br>let Tlist_Exit_OnlyWindow &#x3D; 1</p>
+<p>此时，我们打开一个.c文件查看，发现左边多出一个workspace，当不想出现此工作区时，使用:Tlist可以关闭和打开。</p>
+        
+          <p class="article-more-link">
+            <a href="/2012/10/01/install-tools/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-hello-world" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -100,7 +150,7 @@
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2024 armsword&nbsp;
+      &copy; 2025 armsword&nbsp;
       Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
     </div>
   </div>

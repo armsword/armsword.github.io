@@ -52,6 +52,54 @@
   </div>
 </header>
     <section id="main" class="outer">
+      <article id="post-resolve-es-JVM-coredump" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2023/12/06/resolve-es-JVM-coredump/">Elasticsearch集群JVM coredump问题排查</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-meta">
+      <a href="/2023/12/06/resolve-es-JVM-coredump/" class="article-date">
+  <time datetime="2023-12-06T08:38:57.000Z" itemprop="datePublished">2023-12-06</time>
+</a>
+      
+    </div>
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>好几年前的文章了，之前排查问题，随手写的，但是发现其他团队人遇到类似问题没有思路，所以还是发出来，给大家一起解决问题的思路。</p>
+<h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>ES集群磁盘报警，发现&#x2F;home&#x2F;coresave&#x2F; core文件导致根目录磁盘被打满，删除core文件恢复，已知这个集群新上线了jdk 17 zgc，排查下jvm为啥core。而jvm core一般有以下几个原因：资源超了（内存、线程数，vma数等），jvm bug（比如指令集）</p>
+<h2 id="排查过程"><a href="#排查过程" class="headerlink" title="排查过程"></a>排查过程</h2><p>先去elasticsearch根目录查看core日志，即hs_err_pid_xxx.log，内容如下：<br><img src="/img/2023/12/core.png" alt="core日志文件"><br>看core原因是因为资源不足（不一定是内存）导致的问题，jdk 17 zgc core后，fatal error 原因与g1 有明显不同，突然不知道怎么去排查了，研究下，思路如下。资源不足原因我们可以在hs_err.log里查看具体的原因，步骤如下：</p>
+<h3 id="1、先排查meminfo，看下机器内存情况"><a href="#1、先排查meminfo，看下机器内存情况" class="headerlink" title="1、先排查meminfo，看下机器内存情况"></a>1、先排查meminfo，看下机器内存情况</h3>
+        
+          <p class="article-more-link">
+            <a href="/2023/12/06/resolve-es-JVM-coredump/#more">Read More</a>
+          </p>
+        
+      
+    </div>
+    
+    
+      <footer class="article-footer">
+        
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Elasticsearch/" rel="tag">Elasticsearch</a></li></ul>
+
+      </footer>
+    
+  </div>
+  
+</article>
+
+
+    
       <article id="post-didi-es-zstd" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -441,61 +489,6 @@ number_of_pending_tasks：是指主节点创建索引并分配shards等任务，
 
 
     
-      <article id="post-es-memory-management" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2021/03/26/es-memory-management/">ES 内存管理分析</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-meta">
-      <a href="/2021/03/26/es-memory-management/" class="article-date">
-  <time datetime="2021-03-26T09:55:27.000Z" itemprop="datePublished">2021-03-26</time>
-</a>
-      
-    </div>
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>刚接触ES，研究了下ES内存管理，参考了一些文章，整理了一篇文章，方便自己记忆。</p>
-<p>命令 GET _cat&#x2F;nodes?help 列出所有node, 并展示node所在机器的运行状态信息，help可显示帮助信息</p>
-<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GET</span> _cat/nodes?<span class="attribute">h</span>=name,hp,hm,rp,rm,qcm,rcm,fm,sm&amp;v</span><br></pre></td></tr></table></figure>
-
-<p>解析下上面参数的意义 </p>
-<img src="/img/2021/03/cat.png" width = "100%" />
-
-<p>信息如下：</p>
-<img src="/img/2021/03/node.png" width = "100%" />
-
-<p>以红框里的node为例， 内存占用 &#x3D; (8.6 gb)qcm + (1gb) rcm + (0.35gb) fm + (2.2 gb)sm，大约12 gb。 </p>
-        
-          <p class="article-more-link">
-            <a href="/2021/03/26/es-memory-management/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    
-    
-      <footer class="article-footer">
-        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Elasticsearch/" rel="tag">Elasticsearch</a></li></ul>
-
-      </footer>
-    
-  </div>
-  
-</article>
-
-
-    
       <nav id="page-nav">
         <a class="extend prev" rel="prev" href="/">&lt;&lt; 上一页</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><a class="extend next" rel="next" href="/page/3/">下一页 &gt;&gt;</a>
       </nav>
@@ -504,7 +497,7 @@ number_of_pending_tasks：是指主节点创建索引并分配shards等任务，
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2024 armsword&nbsp;
+      &copy; 2025 armsword&nbsp;
       Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>, theme by <a href="http://github.com/ppoffice">PPOffice</a>
     </div>
   </div>
